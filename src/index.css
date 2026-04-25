@@ -3,91 +3,60 @@
 @tailwind utilities;
 
 /* ──────────────────────────────────────────────────────────
-   VitalWalk® Design System
-   Editorial / direct-response funnel for senior shoppers.
-   All colors HSL. All tokens semantic. No hard-coded colors.
+   VitalWalk® Order Page Design System
+   WCS-spec: clean, minimal, high-trust checkout aesthetic.
+   All colors HSL. All semantic tokens.
    ────────────────────────────────────────────────────────── */
 
 @layer base {
   :root {
-    /* Surfaces — warm cream stack */
-    --background: 42 38% 96%;        /* #FAF7F1 warm cream */
-    --foreground: 222 25% 18%;       /* deep slate ink */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13%;          /* #222 body */
 
     --card: 0 0% 100%;
-    --card-foreground: 222 25% 18%;
+    --card-foreground: 0 0% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 25% 18%;
+    --popover-foreground: 0 0% 13%;
 
-    /* Brand — premium amber CTA */
-    --brand: 26 82% 56%;             /* #E8893A confident amber */
-    --brand-foreground: 0 0% 100%;
-    --brand-deep: 22 75% 42%;        /* hover */
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Primary mirrors brand for shadcn primitives */
-    --primary: 222 30% 16%;
-    --primary-foreground: 42 38% 96%;
+    --secondary: 210 17% 96%;
+    --secondary-foreground: 0 0% 13%;
 
-    --secondary: 40 18% 92%;
-    --secondary-foreground: 222 25% 18%;
+    --muted: 210 14% 95%;
+    --muted-foreground: 0 0% 40%;
 
-    --muted: 40 12% 90%;
-    --muted-foreground: 222 12% 38%;
+    --accent: 210 17% 95%;
+    --accent-foreground: 0 0% 13%;
 
-    --accent: 145 35% 32%;           /* forest green for "save" / verified */
-    --accent-foreground: 0 0% 100%;
-
-    --success: 145 45% 38%;
-    --success-foreground: 0 0% 100%;
-
-    --destructive: 0 75% 50%;
+    --destructive: 0 100% 40%;       /* #CC0000 save red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 14% 86%;
-    --input: 40 14% 86%;
-    --ring: 26 82% 56%;
+    --border: 0 0% 88%;              /* #E0E0E0 */
+    --input: 0 0% 88%;
+    --ring: 226 67% 54%;
 
-    --radius: 0.875rem;
+    --radius: 0.5rem;
 
-    /* Editorial extras */
-    --ink: 222 30% 12%;
-    --paper: 42 50% 98%;
-    --slate-band: 222 30% 14%;       /* announcement bar */
-    --rating-gold: 42 95% 52%;
-
-    /* Shadows */
-    --shadow-soft: 0 8px 28px -12px hsl(222 25% 18% / 0.10);
-    --shadow-lift: 0 20px 60px -22px hsl(222 25% 18% / 0.18);
-    --shadow-card: 0 4px 16px -6px hsl(222 25% 18% / 0.08);
-
-    /* Gradients */
-    --grad-cream: linear-gradient(180deg, hsl(42 50% 98%) 0%, hsl(42 38% 96%) 100%);
-    --grad-warm: linear-gradient(135deg, hsl(40 30% 94%) 0%, hsl(42 38% 96%) 50%, hsl(38 26% 92%) 100%);
-    --grad-overlay: linear-gradient(180deg, hsl(222 30% 12% / 0) 0%, hsl(222 30% 12% / 0.85) 100%);
+    /* WCS-spec semantic tokens */
+    --order-blue: 226 67% 54%;       /* #3B5BDB step bars + selected card */
+    --order-blue-soft: 215 100% 96%; /* #EBF4FF substrip + countdown bg */
+    --order-yellow: 47 91% 53%;      /* #F5C518 CTA */
+    --order-yellow-deep: 42 90% 45%; /* hover */
+    --save-red: 0 100% 40%;          /* #CC0000 */
+    --verified-green: 158 100% 36%;  /* #00B67A trustpilot star */
+    --soft-gray-bar: 0 0% 96%;       /* delivery bar bg */
+    --text-strong: 0 0% 7%;
+    --text-body: 0 0% 20%;
+    --text-mute: 0 0% 45%;
+    --hairline: 0 0% 90%;
   }
 
-  /* Dark mode mirrored for completeness; funnel is light-only by design */
   .dark {
-    --background: 222 30% 8%;
-    --foreground: 42 38% 96%;
-    --card: 222 30% 12%;
-    --card-foreground: 42 38% 96%;
-    --popover: 222 30% 12%;
-    --popover-foreground: 42 38% 96%;
-    --primary: 42 38% 96%;
-    --primary-foreground: 222 30% 12%;
-    --secondary: 222 20% 18%;
-    --secondary-foreground: 42 38% 96%;
-    --muted: 222 20% 18%;
-    --muted-foreground: 42 14% 70%;
-    --accent: 145 35% 42%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 222 20% 22%;
-    --input: 222 20% 22%;
-    --ring: 26 82% 56%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13%;
   }
 }
 
@@ -98,74 +67,45 @@
 
   html {
     -webkit-text-size-adjust: 100%;
-    text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-size: 17px;
-    line-height: 1.6;
-  }
-
-  h1, h2, h3, h4, .font-display {
-    font-family: 'Fraunces', 'Times New Roman', serif;
-    font-feature-settings: 'ss01', 'ss02';
-    letter-spacing: -0.01em;
-  }
-
-  /* Senior-friendly: larger base sizing */
-  p, li {
-    @apply text-[17px] md:text-[18px];
-  }
-
-  /* Selection */
-  ::selection {
-    background: hsl(var(--brand) / 0.25);
-    color: hsl(var(--ink));
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .container-order {
+    @apply mx-auto w-full px-4 sm:px-6;
+    max-width: 1100px;
   }
 
-  .text-pretty {
-    text-wrap: pretty;
+  .text-save-red {
+    color: hsl(var(--save-red));
   }
 
-  .container-page {
-    @apply mx-auto w-full max-w-6xl px-5 lg:px-8;
+  .text-verified {
+    color: hsl(var(--verified-green));
   }
 
-  .container-narrow {
-    @apply mx-auto w-full max-w-3xl px-5 lg:px-8;
+  .bg-order-blue {
+    background-color: hsl(var(--order-blue));
   }
 
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
+  .bg-order-blue-soft {
+    background-color: hsl(var(--order-blue-soft));
   }
 
-  .shadow-lift {
-    box-shadow: var(--shadow-lift);
+  .bg-order-yellow {
+    background-color: hsl(var(--order-yellow));
   }
 
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-
-  .bg-grad-cream {
-    background: var(--grad-cream);
-  }
-
-  .bg-grad-warm {
-    background: var(--grad-warm);
-  }
-
-  .micro-label {
-    @apply text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+  .border-order-blue {
+    border-color: hsl(var(--order-blue));
   }
 }

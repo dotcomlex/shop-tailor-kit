@@ -1,4 +1,4 @@
-import { AnnouncementBar } from "@/components/funnel/AnnouncementBar";
+// Press strip removed — we don't have real press placements and avif logos render inconsistently.
 import { SiteHeader } from "@/components/funnel/SiteHeader";
 import { Hero } from "@/components/funnel/Hero";
 import { PressStrip } from "@/components/funnel/PressStrip";

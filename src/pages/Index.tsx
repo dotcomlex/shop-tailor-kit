@@ -1,16 +1,45 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { AnnouncementBar } from "@/components/funnel/AnnouncementBar";
+import { SiteHeader } from "@/components/funnel/SiteHeader";
+import { Hero } from "@/components/funnel/Hero";
+import { PressStrip } from "@/components/funnel/PressStrip";
+import { ProblemBlock } from "@/components/funnel/ProblemBlock";
+import { PivotBlock } from "@/components/funnel/PivotBlock";
+import { FeatureRows } from "@/components/funnel/FeatureRows";
+import { BenefitGifGrid } from "@/components/funnel/BenefitGifGrid";
+import { PodiatristBlock } from "@/components/funnel/PodiatristBlock";
+import { SocialProofCards } from "@/components/funnel/SocialProofCards";
+import { ConditionsList } from "@/components/funnel/ConditionsList";
+import { GuaranteeBlock } from "@/components/funnel/GuaranteeBlock";
+import { ReviewWall } from "@/components/funnel/ReviewWall";
+import { FaqSection } from "@/components/funnel/FaqSection";
+import { FinalCta } from "@/components/funnel/FinalCta";
+import { SiteFooter } from "@/components/funnel/SiteFooter";
+import { StickyMobileCta } from "@/components/funnel/StickyMobileCta";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background text-foreground">
+      <AnnouncementBar />
+      <SiteHeader />
+      <main>
+        <Hero />
+        <PressStrip />
+        <ProblemBlock />
+        <PivotBlock />
+        <FeatureRows />
+        <BenefitGifGrid />
+        <PodiatristBlock />
+        <SocialProofCards />
+        <ConditionsList />
+        <GuaranteeBlock />
+        <ReviewWall />
+        <FaqSection />
+        <FinalCta />
+      </main>
+      <SiteFooter />
+      <StickyMobileCta />
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;

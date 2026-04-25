@@ -1,203 +1,143 @@
 ## Goal
 
-Build a premium, advertorial-traffic-optimized product page for **The Original VitalWalk® Shoes (Copy)** that visually outperforms WideComfortShoes and matches the editorial polish of your existing vitalwalk.store page — but rebuilt as a true funnel: trust-first, no variant picker on this page, ending in a single conversion CTA that hands off to a separate size/color step.
+Throw out the long-scroll funnel and rebuild `/` as a **single-page, 2-column, 3-step order flow** that mirrors WideComfortShoes' checkout page exactly — but branded as VitalWalk and wired to your real Shopify product (4 colors × 20 sizes) with a real Storefront API cart → checkout handoff.
 
-## Avatar — Locked In
+No long-scroll marketing. No `/select` route. The page IS the funnel.
 
-**Who they are**: Adults 50–80, mostly women, US-based. They suffer from one or more of: edema, diabetes/neuropathy, plantar fasciitis, arthritis, bunions, lymphedema, post-surgery swelling. They've spent hundreds on orthotics that didn't work. They've cancelled plans, skipped grandkids' events, and feel embarrassed about wearing "ugly diabetic shoes."
+## What's getting deleted
 
-**What they want emotionally**: Dignity (shoes that don't look medical), independence (slip on without help), the ability to say yes again (grandson's game, dance recital, Costco trip).
+- `src/pages/Index.tsx` — fully replaced
+- `src/pages/Select.tsx` — deleted
+- `/select` route in `src/App.tsx` — removed
+- All 19 funnel components in `src/components/funnel/` — **deleted** (Hero, ProblemBlock, FeatureRows, BenefitGifGrid, PodiatristBlock, SocialProofCards, ConditionsList, GuaranteeBlock, ReviewWall, FaqSection, FinalCta, StickyMobileCta, AnnouncementBar, SiteHeader, SiteFooter, PivotBlock, PressStrip, CtaButton, StarRating)
+- `src/data/features.ts`, `src/data/faqs.ts`, `src/data/images.ts` — deleted (unused after rebuild)
+- `src/data/testimonials.ts` — replaced with the 4 reviews from your spec
 
-**Voice**: Warm, plainspoken, Reader's-Digest cadence. Not bro-funnel screaming. Earned authority. Real names + ages + states ("Rhonda Spicer, 72, California").
+Keeping: `src/lib/shopify.ts`, `src/hooks/useVitalWalkProduct.ts` (already correctly fetching the Copy product with 4 colors × 20 sizes), all shadcn UI primitives.
 
-**Source of truth**: Every word and benefit on the new page comes from your existing vitalwalk.store copy + WCS structural cues. No invented stats. No fake press logos.
+## Page architecture
 
-## Page Architecture (single route `/`)
+Single route `/`. Max width `1100px`, centered, white background, `system-ui` stack — no Google Fonts, no Fraunces, no marketing tone.
 
-Order is deliberate — this is a long-scroll editorial product page. Cold advertorial traffic lands here pre-warmed, so the page leads with **emotional resonance + product hero**, not a product spec sheet. The CTA repeats ~7 times throughout, all pointing to `/select` (the size/color step we'll build next session).
+### Top of page (full width, above both columns)
 
-### 1. Top announcement bar
-Thin slate band: `⚡ FLASH SALE ENDS TONIGHT — 60-DAY MONEY-BACK GUARANTEE — FREE US SHIPPING`. Subtle, not screaming.
+1. **Delivery estimate bar** — thin gray strip. Left: `🛡️ Estimated Delivery`. Right: `Order Today {today as "DD MMM"} — Get It By {today+8} - {today+12}` (calculated at render).
+2. **Countdown box** — dashed blue border on `#EBF4FF` background. `First-time Buyer Offer Ends in 24 hours! Time left: HH:MM:SS` with the timer in bold red `#CC0000`. Counts down from 24:00:00, resets per page load (honest — it's a session timer, not a fake persistent one).
+3. **Minimal header** above the bars — VitalWalk logo image (max-height 40px) left-aligned. No nav.
 
-### 2. Minimal header
-Centered "VitalWalk®" wordmark in Fraunces serif. No nav. Tiny "Trusted by 10,297+ Seniors" with 5 stars below. Pure focus mode — typical of $10K direct-response funnels.
+### Left column (≈60%) — the 3-step flow
 
-### 3. Editorial hero (above the fold)
-Two-column desktop / stacked mobile:
-- **Left**: Image gallery using your real assets — main shot `23b406cd-224c-430b-8e83-8fcc7b918934.png`, thumbnails for `vitalwalk_compressed.jpg`, the `1729799689-WCSLPGIFSmp4-ezgif.com-crop.webp` (animated demo), `vitalwalk_doctor_compressed.jpg`, `vitalwalk_adjust_compressed.jpg`. Click thumb → swap main. Lightbox on click of main.
-- **Right**: 
-  - "★★★★★ Trusted by 10,297+ Seniors" microline
-  - H1 (Fraunces): **"Finally — A Shoe That Adjusts to You, Not the Other Way Around"**
-  - Subhead: "If swollen, aching feet have turned walking into a daily struggle, VitalWalk® was made for you."
-  - Three icon-bullets (✅⚡🙌): "Built for feet that swell, ache, and never stay the same" / "Loosen in seconds when you need relief" / "Slide them on easy even on your worst days"
-  - Price block: ~~$239.99~~ **$59.95** + green "SAVE 75%" badge + "Pay in 4 interest-free installments of $14.99" Affirm-style microline
-  - **Primary CTA button**: full-width, amber/orange (#E8893A — matches WCS energy without copying), large rounded, **"CHOOSE MY SIZE & COLOR →"** → routes to `/select`
-  - Trust strip below CTA: 🔒 Secure Checkout · 🚚 Free US Shipping · ↩ 60-Day Returns
-  - Tiny payment icons row (Visa/MC/Amex/PayPal/Affirm)
+**Step 1 — Select Quantity** *(visible on load)*
+- Blue `#3B5BDB` header bar: `1. Select Quantity` (bold left) / `Bundle and Save!` (right).
+- Sub-strip on `#EBF4FF`: `You can select color and size on next step`.
+- Three quantity cards, radio-style, only one selectable. Selected = blue border + filled radio.
+  - **1 Pair** — $59.95/ea, compare $119.90, Save 50% *(default selected)*
+  - **2 Pairs** — $53.95/ea ($107.90 total), compare $239.80, Save 55%, "MOST POPULAR" pill above card, green star
+  - **3 Pairs** — $47.96/ea ($143.88 total), compare $359.70, Save 60%, "Best Deal" green tag
+  - Card thumb uses your CDN image `vitalwalk_color_2_compressed.jpg`.
+- **Yellow CTA** `#F5C518` pill button, full width, height 60px, radius 30px: `Select Your Color and Size →` (arrow in dark circular bg). Reveals Step 2 + smooth-scrolls.
+- Trust row: `🔒 SECURE SSL ENCRYPTION   🔒 GUARANTEED SAFE CHECKOUT`.
 
-### 4. "As Seen On" press strip
-Grayscale logo row using your real assets `Group_1000003006.avif`, `_3005`, `_3003`, `_3002`. Single line, restrained.
+**Step 2 — Select Your Color and Size** *(hidden until Step 1 CTA clicked)*
+- Same blue header bar.
+- **Dynamically renders N selector blocks** matching the chosen quantity (1, 2, or 3). Each block:
+  - Label: `1. Select Color:` / `2. Select Color:` / `3. Select Color:`. Updates to `Select Color: Beige` once chosen.
+  - **Color swatches** — 40×40 squares, 4px radius, 2px border (blue when selected). Pulled from the **real Shopify options** for this product: **Beige, Blue, Gray, Black** (4 colors, not the 6 in your spec — your store doesn't carry the others).
+  - **Size dropdown** — uses real Shopify size option list (20 values like `US W 7 / US M 6 / UK 5`). Default placeholder `Select Your Size`.
+- Below all blocks:
+  - `👟 Sizing is currently displayed in US sizes`.
+  - Collapsible **Size Chart** — uses your Shopify-native size strings (US Women / US Men / UK already in each option label, so the chart is just a clean rendering of those 20 rows).
+  - Collapsible **Expert Sizing Tips** — verbatim copy from your spec.
+- **Next button** (yellow CTA). Disabled until every pair has both color + size. Reveals Step 3 + scrolls.
+- Trust row repeated.
 
-### 5. Problem-agitation editorial block
-Pulls verbatim from your existing copy:
-> **"Right now, your feet control everything."**
-> What you wear. Where you go. What you can do. Every shoe squeezes. Every step hurts. You've tried the stretching. The elevation. The ice packs. The pills. **Nothing gives you your life back.**
+**Step 3 — Upgrade your experience** *(hidden until Step 2 complete)*
+- Same blue header bar.
+- Single shipping protection card: shield icon, bold `Free Returns & Exchanges + Package Protection for $5.95`, sub-text from your spec, **green toggle switch** (off by default). When on, adds `$5.95` to the running subtotal shown above the Checkout button.
+- **Checkout button** (yellow CTA): `Checkout`. On click:
+  1. Builds line items from each selected (color, size) pair → resolves to the matching Shopify variant ID by matching `selectedOptions`.
+  2. Calls `cartCreate` via Storefront API with all lines (qty 1 each — N pairs = N lines, or merged if duplicates).
+  3. Opens the returned `checkoutUrl` (with `channel=online_store` param) in a new tab via `window.open(url, '_blank')`.
+  4. Note: shipping protection is a UI-only add-on for now (not a real Shopify product) — surfaced as a line item upsell would need a separate "Shipping Protection" product in Shopify, which isn't in scope here. The toggle reflects in the displayed total but is not added to the Shopify cart. (We can wire a real protection SKU in a follow-up if you want.)
+- Trust row + payment logos row (Visa / Mastercard / Amex / Discover) as styled text badges.
 
-Two-column with `Copy_of_The_perfect_leg_massage_after_long_runs_1.webp` on the right. Slate text on warm cream background.
+### Right column (≈40%) — product info + social proof
 
-### 6. The "10,000+ are walking comfortably again" pivot
-Continues the editorial flow:
-> **"It doesn't have to be this way."** Thousands of men and women are walking comfortably again. They found the only shoe specifically designed for people with aching, swollen feet — whether from diabetes, edema, arthritis, or neuropathy.
+- Top row: `21,734+ Happy Customers` (gray) / `New 2025 Release` (red bold).
+- Product title `The Original VitalWalk® Shoes` left, hero image right (140×140, your `23b406cd-...png` CDN URL).
+- Divider.
+- **100 Day Guarantee block**: red CSS circle badge (70px, white text "100 DAY") + bold heading + body copy verbatim from spec.
+- Divider.
+- **Customer reviews** — 4 reviews from your spec (Mary W., Michael R., Dorothy W., Robert K.). Show first 2 by default; `Show more reviews ▼` link reveals the other 2. Each: 5 green `#00B67A` stars, bold headline, body, `— Name  ✓ Verified Purchaser`.
 
-Inline mid-page CTA: "See if VitalWalk Is Right for You →"
+### Mobile
 
-### 7. Six-feature deep-dive (alternating image/text rows)
-Each row = full-width band, image one side, headline + body other side. Fraunces headlines, Inter body. Heavy whitespace. Uses your real images and your existing benefit copy verbatim:
+Stack: top bars → left column → right column. Same step flow. Yellow CTAs full-width.
 
-1. **DayFlex™ Adjustable Velcro System** → `ChatGPT_Image_Dec_16_2025_03_41_32_PM.png`
-2. **Slide In Effortlessly Without Bending** → `ChatGPT_Image_Dec_16_2025_03_09_25_PM.png`
-3. **Extra Room Where You Need It Most** → `ChatGPT_Image_Dec_16_2025_03_43_30_PM.png`
-4. **Walk With Confidence On Any Surface** (non-slip outsole) → `ChatGPT_Image_Dec_16_2025_03_38_44_PM.png`
-5. **Lightweight So You Forget You're Wearing Them** → `ChatGPT_Image_Dec_16_2025_03_48_09_PM.png`
-6. **Cool, Cushioned Comfort For Sensitive Feet** → `accessory_column_image-03_2.webp`
+## Cart wiring (Shopify Storefront API)
 
-CTA repeated after row 3 and after row 6.
+Per the cart-checkout knowledge file — no manual URLs, no permalinks. Implementation:
 
-### 8. Animated GIF benefit grid (4-up)
-Pulls the four real GIFs from your existing page:
-- `Diabetic_Feet.gif` — "Swelling Relief"
-- `Sport_shoes_2.gif` — "Walking Bliss"
-- `5.gif` — "Cushioned Insole"
-- `12_hours.GIF_3.gif` — "All-Day Rating"
+- Add `CART_CREATE_MUTATION` to `src/lib/shopify.ts` plus a `createCheckoutForLines(lines)` helper that:
+  1. Takes `[{ variantId, quantity }]`.
+  2. Fires `cartCreate` via existing `storefrontApiRequest`.
+  3. Returns `formatCheckoutUrl(checkoutUrl)` (appends `channel=online_store`).
+- The order page calls this on Checkout click → `window.open(url, '_blank')`.
+- No persistent cart store / Zustand needed — this page builds and submits a single ephemeral cart per checkout. Items are never edited after checkout opens. Keeps it dead simple.
+- Variant resolution: match each selected `(color, size)` pair against the live `product.variants[].selectedOptions` from `useVitalWalkProduct()`. If a variant is `availableForSale: false`, surface a sonner toast `"That size is currently sold out — please pick another."` and block checkout.
 
-Caption under each. Cream cards, rounded, soft shadow.
+## State (single `OrderPage` component, local `useState`)
 
-### 9. Podiatrist authority block
-Headline: **"Recommended by Podiatrists Who Actually Understand"**. Image: `vitalwalk_doctor_compressed.jpg`. Verbatim copy from your page about clinical podiatric standards + medical-grade construction with normal appearance. Adds a "Medical-Grade Construction · Normal Appearance" stamp graphic.
+- `quantity: 1 | 2 | 3` (default 1)
+- `currentStep: 1 | 2 | 3` (default 1; advancing reveals next step)
+- `selections: Array<{ color: string | null; size: string | null }>` (length = `quantity`, resized on quantity change)
+- `protectionEnabled: boolean`
+- `countdownSeconds: number` (24*3600, decremented per second via `useEffect` interval)
+- `sizeChartOpen`, `sizingTipsOpen`, `showAllReviews`
+- `isCheckingOut: boolean` (button loading state)
 
-### 10. Social-proof "Reddit/Facebook-style" cards (3 wide)
-Replicates the Margaret S. / Catherine M. / Diane L. format from your existing page exactly — avatar circle, name, time-ago, body text, large image, like/comment/share row. Real testimonial copy verbatim:
-- **Margaret S.** + `adv2_7.webp` — "What I love most is nobody asks about them..."
-- **Catherine M.** + `1_e3923e3c-016c-4c18-9b37-252fe14d566b.jpg` — "My granddaughter's dance recital..."
-- **Diane L.** + `2_fd419914-57d9-4a21-b9ee-ee61c36a0a50.jpg` — "I used to have a rotation of reasons..."
+All resets are sane: changing quantity from 3 → 1 trims `selections` and re-validates Step 3 unlock.
 
-Avatars: `Screenshot_2025-12-04_at_7.43.57_PM.png`, `qr68knyzpm0e1.jpg`, `idosos-abracados-sorrindo.webp` — all already on your CDN. This is **real copy and real images already on your store**, not fabricated reviews.
+## File plan
 
-### 11. "Who They're For" condition list
-Five conditions in a 2-col list with a checkmark for each: Diabetes & neuropathy / Edema & swelling / Plantar fasciitis & heel spurs / Arthritis & stiffness / Bunions & hammertoes. Closing line: "If walking has become a daily battle, these shoes were made for you."
+**Deleted**
+- All files in `src/components/funnel/` (19 files)
+- `src/data/features.ts`, `src/data/faqs.ts`, `src/data/images.ts`
+- `src/pages/Select.tsx`
 
-### 12. "Try Them For 60 Days" guarantee block
-Big, centered, badge graphic ("60-DAY MONEY-BACK GUARANTEE" seal). Verbatim copy:
-> "We're not asking you to trust us. We're asking you to test us."
-Risk-reversal text below.
+**Created**
+- `src/components/order/OrderPage.tsx` — orchestrator, holds all state
+- `src/components/order/TopBars.tsx` — delivery + countdown
+- `src/components/order/SiteHeader.tsx` — minimal logo header
+- `src/components/order/QuantityStep.tsx`
+- `src/components/order/ColorSizeStep.tsx`
+- `src/components/order/UpgradeStep.tsx`
+- `src/components/order/ProductPanel.tsx` — right column
+- `src/components/order/GuaranteeBlock.tsx`
+- `src/components/order/ReviewsBlock.tsx`
+- `src/components/order/StepHeader.tsx` — reusable blue bar
+- `src/components/order/YellowCta.tsx` — reusable pill button
+- `src/components/order/TrustRow.tsx`
+- `src/components/order/ColorSwatch.tsx`
+- `src/components/order/SizeSelect.tsx`
+- `src/data/reviews.ts` — 4 reviews from your spec
+- `src/lib/checkout.ts` — `createCheckoutForLines()` + variant matcher
 
-### 13. Trustpilot-style review wall (8 cards)
-"Excellent 4.9 / 5" header. 8 cards in a responsive grid pulling your real Trustpilot-style reviews: Barbara M., Dorothy W., Margaret R., Nancy S., Betty L., Karen K., Diane M., Joyce D., Mary B., Ruth T., Elizabeth C., Carol L., Janet R. Each card: 5 stars, headline, body, name. Subtle "verified purchase" badge.
+**Edited**
+- `src/pages/Index.tsx` → renders `<OrderPage />` only
+- `src/App.tsx` → remove `/select` route + import
+- `src/lib/shopify.ts` → add `CART_CREATE_MUTATION` + `formatCheckoutUrl`
+- `src/index.css` → strip Fraunces import (we're going system-ui), keep Tailwind tokens but add the WCS-spec hex values as semantic tokens (`--brand-yellow #F5C518`, `--brand-blue #3B5BDB`, `--save-red #CC0000`, `--verified-green #00B67A`, `--soft-blue #EBF4FF`)
+- `tailwind.config.ts` → drop Fraunces font family, expose new semantic tokens
 
-### 14. FAQ accordion
-8 questions verbatim from your existing page. Custom accordion (shadcn) with chevron, soft borders, generous padding.
+## Things I'm not doing (and why)
 
-### 15. Sticky bottom mobile CTA bar (mobile only)
-Appears after user scrolls past the hero. Compact strip: small product thumb · "$59.95 ~~$239.99~~" · **"Choose Size & Color →"** button. Hides when CTA in view.
+- **6 color swatches** — your Shopify product only carries 4 (Beige, Blue, Gray, Black). I'll render the 4 real ones rather than fake "All Black / Light Gray / Dark Gray" swatches that would 404 at checkout. If you want those colors, add the variants in Shopify and they'll auto-appear.
+- **Persistent 24h countdown across reloads** — keeping it as a 24h session timer per your "honest copy" preference established earlier in the project. Real persistent countdowns would need a per-visitor cookie; happy to add if you want.
+- **Real shipping-protection SKU at checkout** — the toggle is UI-only this session. Wiring a real Shopify "Shipping Protection $5.95" product is a 2-minute follow-up once you create that SKU.
+- **Header nav / footer links** — per your spec, just the logo up top; one-line footer.
+- **Long-scroll marketing sections** — explicitly killed per your spec. The page's only job is quantity → variant → checkout.
 
-### 16. Final conversion block
-Full-bleed background with hero image, dark gradient overlay, centered:
-- "Your Feet Don't Have to Hurt Tomorrow"
-- Price block again
-- Big amber CTA → `/select`
-- Tiny "Sale ends tonight" countdown text (static, no fake JS countdown — just honest copy)
+## What you'll see when this ships
 
-### 17. Minimal footer
-Slate background, light text. Three small columns: Contact / Shipping & Returns / Privacy. Copyright. Payment icons row.
-
-## Visual System
-
-**Typography**
-- Headings: **Fraunces** (Google Fonts) — variable serif, gives editorial NYT/Apothékary energy. Weights 400/500/600/700.
-- Body: **Inter** (Google Fonts) — 400/500/600.
-- Microcopy/labels: Inter, uppercase, tracked +0.08em.
-
-**Color tokens** (added to `index.css` + `tailwind.config.ts` as HSL semantic vars):
-- `--background`: warm cream `42 38% 96%` (matches your existing #fcfbf8 area)
-- `--foreground`: deep slate `222 25% 18%`
-- `--brand`: amber/orange `26 82% 56%` (CTA primary — close to WCS but slightly more sophisticated)
-- `--brand-foreground`: white
-- `--accent`: forest green `145 35% 32%` (savings badges, checkmarks)
-- `--muted`: warm gray `40 12% 90%`
-- `--card`: pure white
-- `--border`: warm gray `40 12% 88%`
-
-All components use semantic tokens — never hard-coded colors.
-
-**Spacing & rhythm**
-- Sections: `py-20 lg:py-28` desktop, `py-14` mobile
-- Container: `max-w-6xl mx-auto px-5 lg:px-8`
-- Generous gaps. Editorial breathing room.
-
-**Imagery treatment**
-- All product/lifestyle photos: rounded `rounded-2xl`, soft `shadow-[0_20px_60px_-20px_rgba(0,0,0,0.15)]`
-- Subtle `transition-transform hover:scale-[1.02]` on gallery items
-- Lazy-load everything below the fold
-
-**Motion** (Framer Motion, restrained — no theme-park animations)
-- Section fade-up on scroll (`whileInView`, opacity + 12px y), once-only
-- Hero gallery: smooth crossfade on thumbnail click
-- Sticky mobile CTA: slide-up appearance
-- Buttons: subtle scale on hover/active, no glows
-
-## Data Layer
-
-**Shopify integration** — uses Storefront API (token + permanent domain already wired) to pull live product data for The Original VitalWalk® Shoes (Copy):
-- `src/lib/shopify.ts` — typed `storefrontApiRequest` helper, `2025-07` API version
-- `src/hooks/useVitalWalkProduct.ts` — React Query hook, `productByHandle(handle: "the-original-vitalwalk-shoes-copy")` (we'll confirm exact handle on implementation)
-- Pulls live: `priceRange.minVariantPrice`, `compareAtPriceRange`, images, availability
-- Fallback static prices from product data so the page renders fast even before Shopify responds
-
-**No cart on this page**. The CTAs route to `/select` (placeholder route this session — full variant-picker step built next session). For now `/select` shows a clean stub: "Step 2: Pick your size & color" with a back link, so the funnel is end-to-end clickable.
-
-## File Plan
-
-**New files**
-- `src/lib/shopify.ts` — Storefront API client + types
-- `src/hooks/useVitalWalkProduct.ts` — product fetch hook
-- `src/components/site/AnnouncementBar.tsx`
-- `src/components/site/SiteHeader.tsx`
-- `src/components/site/SiteFooter.tsx`
-- `src/components/funnel/Hero.tsx` — gallery + buy box
-- `src/components/funnel/PressStrip.tsx`
-- `src/components/funnel/ProblemBlock.tsx`
-- `src/components/funnel/PivotBlock.tsx`
-- `src/components/funnel/FeatureRow.tsx` — reusable alternating image/text band
-- `src/components/funnel/FeatureRows.tsx` — composes the 6 features
-- `src/components/funnel/BenefitGifGrid.tsx`
-- `src/components/funnel/PodiatristBlock.tsx`
-- `src/components/funnel/SocialProofCards.tsx` — Reddit/FB-style cards
-- `src/components/funnel/ConditionsList.tsx`
-- `src/components/funnel/GuaranteeBlock.tsx`
-- `src/components/funnel/ReviewWall.tsx` — Trustpilot-style grid
-- `src/components/funnel/FaqSection.tsx`
-- `src/components/funnel/StickyMobileCta.tsx`
-- `src/components/funnel/FinalCta.tsx`
-- `src/data/testimonials.ts` — your real review copy as typed array
-- `src/data/features.ts` — feature rows config (image, headline, body)
-- `src/data/faqs.ts` — your real FAQ copy
-- `src/pages/Select.tsx` — minimal stub for next funnel step
-
-**Edited files**
-- `src/pages/Index.tsx` — fully replaces placeholder, composes funnel sections
-- `src/App.tsx` — adds `<Route path="/select" element={<Select />} />`
-- `src/index.css` — Fraunces + Inter Google Fonts import, semantic color tokens
-- `tailwind.config.ts` — Fraunces/Inter font families, brand color extensions
-- `index.html` — preconnect to Google Fonts, page `<title>` and meta description for ad-traffic SEO/share preview
-
-## Things I'm NOT Doing (and why)
-
-- **No Shopify reviews app integration** — per your ask. Testimonials are real customer text already on your live store, hardcoded into a typed data file. We can swap to a live source later if you ever want.
-- **No fake countdown timer JS** — "Sale ends tonight" stays as honest static copy. Live ticking timers that reset on refresh look cheap and erode trust on a $10K-feel page.
-- **No variant picker on this page** — hand-off to `/select` (matching the WCS pattern you referenced).
-- **No cart drawer / no checkout wiring this session** — keeps focus on nailing page quality first. Built next session as the variant step + checkout handoff.
-- **No fabricated press logos / "featured in Forbes"** — using your real `Group_100000300X.avif` strip from your store.
-
-## What You'll See When This Ships
-
-A page that, on first scroll, feels like a New York Times-grade editorial product story — Fraunces serif headlines, warm cream background, generous margins, real customer photos and testimonials, your existing branded GIFs and lifestyle imagery — but engineered as a tight conversion funnel with a single goal: get the user to tap "CHOOSE MY SIZE & COLOR." Mobile experience is first-class with a sticky bottom CTA. Every claim and every face on the page is real and traceable to your existing store.
+A `/` route that loads as a clean 2-column white page: WCS-style stepped order flow on the left, product + guarantee + 2 visible reviews on the right, dashed countdown banner up top, golden-yellow CTAs that progressively reveal Steps 2 then 3, and a Checkout button that fires a real Shopify Storefront `cartCreate` and opens the live checkout in a new tab — already wired to your "The Original VitalWalk® Shoes (Copy)" product with its 4 real colors and 20 real sizes.

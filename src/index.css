@@ -2,95 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ──────────────────────────────────────────────────────────
+   VitalWalk® Design System
+   Editorial / direct-response funnel for senior shoppers.
+   All colors HSL. All tokens semantic. No hard-coded colors.
+   ────────────────────────────────────────────────────────── */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Surfaces — warm cream stack */
+    --background: 42 38% 96%;        /* #FAF7F1 warm cream */
+    --foreground: 222 25% 18%;       /* deep slate ink */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 25% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 25% 18%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand — premium amber CTA */
+    --brand: 26 82% 56%;             /* #E8893A confident amber */
+    --brand-foreground: 0 0% 100%;
+    --brand-deep: 22 75% 42%;        /* hover */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Primary mirrors brand for shadcn primitives */
+    --primary: 222 30% 16%;
+    --primary-foreground: 42 38% 96%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --secondary: 40 18% 92%;
+    --secondary-foreground: 222 25% 18%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 40 12% 90%;
+    --muted-foreground: 222 12% 38%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 145 35% 32%;           /* forest green for "save" / verified */
+    --accent-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 145 45% 38%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 40 14% 86%;
+    --input: 40 14% 86%;
+    --ring: 26 82% 56%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --radius: 0.875rem;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Editorial extras */
+    --ink: 222 30% 12%;
+    --paper: 42 50% 98%;
+    --slate-band: 222 30% 14%;       /* announcement bar */
+    --rating-gold: 42 95% 52%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Shadows */
+    --shadow-soft: 0 8px 28px -12px hsl(222 25% 18% / 0.10);
+    --shadow-lift: 0 20px 60px -22px hsl(222 25% 18% / 0.18);
+    --shadow-card: 0 4px 16px -6px hsl(222 25% 18% / 0.08);
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Gradients */
+    --grad-cream: linear-gradient(180deg, hsl(42 50% 98%) 0%, hsl(42 38% 96%) 100%);
+    --grad-warm: linear-gradient(135deg, hsl(40 30% 94%) 0%, hsl(42 38% 96%) 50%, hsl(38 26% 92%) 100%);
+    --grad-overlay: linear-gradient(180deg, hsl(222 30% 12% / 0) 0%, hsl(222 30% 12% / 0.85) 100%);
   }
 
+  /* Dark mode mirrored for completeness; funnel is light-only by design */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 222 30% 8%;
+    --foreground: 42 38% 96%;
+    --card: 222 30% 12%;
+    --card-foreground: 42 38% 96%;
+    --popover: 222 30% 12%;
+    --popover-foreground: 42 38% 96%;
+    --primary: 42 38% 96%;
+    --primary-foreground: 222 30% 12%;
+    --secondary: 222 20% 18%;
+    --secondary-foreground: 42 38% 96%;
+    --muted: 222 20% 18%;
+    --muted-foreground: 42 14% 70%;
+    --accent: 145 35% 42%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 20% 22%;
+    --input: 222 20% 22%;
+    --ring: 26 82% 56%;
   }
 }
 
@@ -99,7 +96,76 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Fraunces', 'Times New Roman', serif;
+    font-feature-settings: 'ss01', 'ss02';
+    letter-spacing: -0.01em;
+  }
+
+  /* Senior-friendly: larger base sizing */
+  p, li {
+    @apply text-[17px] md:text-[18px];
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--brand) / 0.25);
+    color: hsl(var(--ink));
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 lg:px-8;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-3xl px-5 lg:px-8;
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-lift {
+    box-shadow: var(--shadow-lift);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .bg-grad-cream {
+    background: var(--grad-cream);
+  }
+
+  .bg-grad-warm {
+    background: var(--grad-warm);
+  }
+
+  .micro-label {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground;
   }
 }

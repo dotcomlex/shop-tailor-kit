@@ -7,13 +7,14 @@ import { StarRating } from "./StarRating";
 import { CtaButton } from "./CtaButton";
 import { cn } from "@/lib/utils";
 
+// Use clean single-product shots only — the "heroMain" PNG is a 4-up collage on the CDN, not usable as a hero.
 const galleryImages = [
-  { src: PRODUCT_IMAGES.heroMain, alt: "VitalWalk® Original Adjustable Comfort Shoes" },
-  { src: PRODUCT_IMAGES.hero2, alt: "VitalWalk shoes side profile" },
-  { src: PRODUCT_IMAGES.animatedDemo, alt: "Adjustable velcro demonstration" },
+  { src: PRODUCT_IMAGES.hero2, alt: "VitalWalk® Original Adjustable Comfort Shoes" },
+  { src: PRODUCT_IMAGES.colorBeige, alt: "VitalWalk Beige" },
+  { src: PRODUCT_IMAGES.colorBlack, alt: "VitalWalk Black" },
   { src: PRODUCT_IMAGES.adjust, alt: "Adjusting the velcro strap" },
-  { src: PRODUCT_IMAGES.doctor, alt: "Doctor holding VitalWalk shoes" },
   { src: PRODUCT_IMAGES.cushioning, alt: "Cushioned insole detail" },
+  { src: PRODUCT_IMAGES.sole, alt: "Non-slip outsole" },
 ];
 
 export function Hero() {

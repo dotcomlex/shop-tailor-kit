@@ -1,7 +1,7 @@
 // All product imagery — real assets from your existing vitalwalk.store CDN.
 // These render directly from Shopify's CDN so they always match your store.
 
-const CDN = "https://vitalwalk.store/cdn/shop/files";
+const CDN = "https://cdn.shopify.com/s/files/1/0843/7143/9902/files";
 
 export const PRODUCT_IMAGES = {
   heroMain: `${CDN}/23b406cd-224c-430b-8e83-8fcc7b918934.png?v=1767493057&width=1600`,

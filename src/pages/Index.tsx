@@ -1,7 +1,6 @@
 import { AnnouncementBar } from "@/components/funnel/AnnouncementBar";
 import { SiteHeader } from "@/components/funnel/SiteHeader";
 import { Hero } from "@/components/funnel/Hero";
-import { PressStrip } from "@/components/funnel/PressStrip";
 import { ProblemBlock } from "@/components/funnel/ProblemBlock";
 import { PivotBlock } from "@/components/funnel/PivotBlock";
 import { FeatureRows } from "@/components/funnel/FeatureRows";
@@ -23,7 +22,6 @@ const Index = () => {
       <SiteHeader />
       <main>
         <Hero />
-        <PressStrip />
         <ProblemBlock />
         <PivotBlock />
         <FeatureRows />

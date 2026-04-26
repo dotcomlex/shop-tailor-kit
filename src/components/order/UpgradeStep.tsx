@@ -67,14 +67,20 @@ export function UpgradeStep({
         <TrustRow />
 
         {/* Payment methods */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          {["VISA", "MasterCard", "AMEX", "Discover"].map((m) => (
-            <span
-              key={m}
-              className="rounded border border-border bg-card px-2.5 py-1 text-[10px] font-bold tracking-wider text-[hsl(var(--text-body))]"
-            >
-              {m}
-            </span>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          {[
+            { name: "Visa", src: "/payments/visa.svg" },
+            { name: "Mastercard", src: "/payments/mastercard.svg" },
+            { name: "American Express", src: "/payments/amex.svg" },
+            { name: "Discover", src: "/payments/discover.svg" },
+          ].map((m) => (
+            <img
+              key={m.name}
+              src={m.src}
+              alt={m.name}
+              className="h-7 w-auto rounded-[3px]"
+              loading="lazy"
+            />
           ))}
         </div>
       </div>

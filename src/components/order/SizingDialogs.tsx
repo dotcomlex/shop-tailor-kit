@@ -168,7 +168,8 @@ function SizeChartBody({
           ) : (
             <span>Size · Unisex</span>
           )}
-          <span>Match</span>
+          <span className="hidden sm:inline">Length / Width (mm)</span>
+          <span className="sm:hidden">Length · Width</span>
         </div>
 
         <ul className="space-y-1">

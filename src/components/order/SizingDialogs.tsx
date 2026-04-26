@@ -30,17 +30,21 @@ const REGIONS: { id: Region; label: string }[] = [
   { id: "AU", label: "AU/NZ" },
 ];
 
-// Returns the "primary" key for the active region row display.
-function primaryKeyFor(r: Region): { wKey: keyof SizeRow; mKey: keyof SizeRow; prefix: string } {
+// Region rendering config — defines columns per region.
+type RegionLayout =
+  | { kind: "split"; wKey: keyof SizeRow; mKey: keyof SizeRow; prefix: string; wLabel: string; mLabel: string }
+  | { kind: "unified"; key: keyof SizeRow; prefix: string; label: string };
+
+function layoutFor(r: Region): RegionLayout {
   switch (r) {
     case "UK":
-      return { wKey: "uk", mKey: "uk", prefix: "UK" };
+      return { kind: "unified", key: "uk", prefix: "UK", label: "Size (UK)" };
     case "EU":
-      return { wKey: "eu", mKey: "eu", prefix: "EU" };
+      return { kind: "unified", key: "eu", prefix: "EU", label: "Size (EU)" };
     case "AU":
-      return { wKey: "au", mKey: "au", prefix: "AU" };
+      return { kind: "split", wKey: "auW", mKey: "auM", prefix: "AU", wLabel: "Women", mLabel: "Men" };
     default:
-      return { wKey: "usW", mKey: "usM", prefix: "US" };
+      return { kind: "split", wKey: "usW", mKey: "usM", prefix: "US", wLabel: "Women", mLabel: "Men" };
   }
 }
 

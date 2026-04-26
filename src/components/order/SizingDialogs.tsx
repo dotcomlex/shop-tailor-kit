@@ -30,17 +30,21 @@ const REGIONS: { id: Region; label: string }[] = [
   { id: "AU", label: "AU/NZ" },
 ];
 
-// Returns the "primary" key for the active region row display.
-function primaryKeyFor(r: Region): { wKey: keyof SizeRow; mKey: keyof SizeRow; prefix: string } {
+// Region rendering config — defines columns per region.
+type RegionLayout =
+  | { kind: "split"; wKey: keyof SizeRow; mKey: keyof SizeRow; prefix: string; wLabel: string; mLabel: string }
+  | { kind: "unified"; key: keyof SizeRow; prefix: string; label: string };
+
+function layoutFor(r: Region): RegionLayout {
   switch (r) {
     case "UK":
-      return { wKey: "uk", mKey: "uk", prefix: "UK" };
+      return { kind: "unified", key: "uk", prefix: "UK", label: "Size (UK)" };
     case "EU":
-      return { wKey: "eu", mKey: "eu", prefix: "EU" };
+      return { kind: "unified", key: "eu", prefix: "EU", label: "Size (EU)" };
     case "AU":
-      return { wKey: "au", mKey: "au", prefix: "AU" };
+      return { kind: "split", wKey: "auW", mKey: "auM", prefix: "AU", wLabel: "Women", mLabel: "Men" };
     default:
-      return { wKey: "usW", mKey: "usM", prefix: "US" };
+      return { kind: "split", wKey: "usW", mKey: "usM", prefix: "US", wLabel: "Women", mLabel: "Men" };
   }
 }
 
@@ -65,7 +69,7 @@ function SizeChartBody({
   isMobile: boolean;
   onClose: () => void;
 }) {
-  const { wKey, mKey, prefix } = primaryKeyFor(region);
+  const layout = layoutFor(region);
   const rows = useMemo(
     () => sizes.map((s) => ({ raw: s, parsed: parseShopifySize(s) })),
     [sizes],
@@ -154,22 +158,28 @@ function SizeChartBody({
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:px-4"
       >
+        {/* Column header */}
         <div className="flex items-center justify-between px-3 pb-1.5 pt-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[hsl(var(--text-mute))]">
-          <div className="flex gap-8 sm:gap-10">
-            <span className="w-12">Women</span>
-            <span className="w-12">Men</span>
-          </div>
+          {layout.kind === "split" ? (
+            <div className="flex gap-8 sm:gap-10">
+              <span className="w-12">{layout.wLabel}</span>
+              <span className="w-12">{layout.mLabel}</span>
+            </div>
+          ) : (
+            <span>Size · Unisex</span>
+          )}
           <span>Match</span>
         </div>
 
         <ul className="space-y-1">
           {rows.map(({ raw, parsed }) => {
             const isMine = selectedSize === raw;
-            const wPrimary = parsed[wKey];
-            const mPrimary = parsed[mKey];
-            // Secondary line — show US numbering if active region isn't US, else show EU
+
+            // Secondary line — show the "other" reference for context.
             const secondary =
               region === "US"
+                ? `EU ${parsed.eu}`
+                : region === "AU"
                 ? `EU ${parsed.eu}`
                 : `US W ${parsed.usW} · US M ${parsed.usM}`;
 
@@ -190,41 +200,65 @@ function SizeChartBody({
                       className="absolute inset-y-2 left-0 w-1 rounded-full bg-[hsl(var(--order-blue))]"
                     />
                   )}
-                  <div className="flex min-w-0 items-baseline gap-8 sm:gap-10">
-                    <div className="w-12">
-                      <div
-                        className={cn(
-                          "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
-                          isMine
-                            ? "text-[hsl(var(--order-blue))]"
-                            : "text-[hsl(var(--text-strong))]",
-                        )}
-                      >
-                        {wPrimary}
+
+                  {layout.kind === "split" ? (
+                    <div className="flex min-w-0 items-baseline gap-8 sm:gap-10">
+                      <div className="w-12">
+                        <div
+                          className={cn(
+                            "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
+                            isMine
+                              ? "text-[hsl(var(--order-blue))]"
+                              : "text-[hsl(var(--text-strong))]",
+                          )}
+                        >
+                          {parsed[layout.wKey]}
+                        </div>
+                        <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                          {layout.prefix}
+                        </div>
                       </div>
-                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
-                        {prefix}
+                      <div className="w-12">
+                        <div
+                          className={cn(
+                            "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
+                            isMine
+                              ? "text-[hsl(var(--order-blue))]"
+                              : "text-[hsl(var(--text-strong))]",
+                          )}
+                        >
+                          {parsed[layout.mKey]}
+                        </div>
+                        <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                          {layout.prefix}
+                        </div>
+                      </div>
+                      <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
+                        {secondary}
                       </div>
                     </div>
-                    <div className="w-12">
-                      <div
-                        className={cn(
-                          "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
-                          isMine
-                            ? "text-[hsl(var(--order-blue))]"
-                            : "text-[hsl(var(--text-strong))]",
-                        )}
-                      >
-                        {mPrimary}
+                  ) : (
+                    <div className="flex min-w-0 items-baseline gap-4">
+                      <div className="min-w-[3.5rem]">
+                        <div
+                          className={cn(
+                            "text-[20px] font-extrabold tabular-nums leading-none sm:text-[22px]",
+                            isMine
+                              ? "text-[hsl(var(--order-blue))]"
+                              : "text-[hsl(var(--text-strong))]",
+                          )}
+                        >
+                          {parsed[layout.key]}
+                        </div>
+                        <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                          {layout.prefix} · Unisex
+                        </div>
                       </div>
-                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
-                        {prefix}
+                      <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
+                        {secondary}
                       </div>
                     </div>
-                    <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
-                      {secondary}
-                    </div>
-                  </div>
+                  )}
 
                   <div className="shrink-0 pl-2">
                     {isMine ? (
@@ -234,7 +268,7 @@ function SizeChartBody({
                       </span>
                     ) : (
                       <span className="text-[11px] tabular-nums text-[hsl(var(--text-mute))] sm:hidden">
-                        {region === "US" ? `EU ${parsed.eu}` : `US ${parsed.usW}`}
+                        {region === "US" || region === "AU" ? `EU ${parsed.eu}` : `US ${parsed.usW}`}
                       </span>
                     )}
                   </div>

@@ -52,7 +52,15 @@ export function UpgradeStep({
         {/* 2. Scarcity bar — softened */}
         <ScarcityBar />
 
-        {/* 3. Shipping protection */}
+        {/* 3. Order summary */}
+        <OrderSummary
+          subtotal={total}
+          protectionPrice={protectionPrice}
+          protectionEnabled={protectionEnabled}
+          saved={saved}
+        />
+
+        {/* 4. Shipping protection — sits directly above the CTA */}
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-order-blue-soft">
@@ -74,17 +82,9 @@ export function UpgradeStep({
             />
           </div>
         </div>
-
-        {/* 4. Order summary */}
-        <OrderSummary
-          subtotal={total}
-          protectionPrice={protectionPrice}
-          protectionEnabled={protectionEnabled}
-          saved={saved}
-        />
       </div>
 
-      <div className="mt-5">
+      <div className="mt-3">
         <YellowCta label="Complete My Order" onClick={onCheckout} loading={isCheckingOut} />
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">

@@ -1,9 +1,9 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseShopifySize, type SizeRow } from "@/data/sizeChart";
 import { useGeo } from "@/hooks/useGeo";
-import { regionFor, type Region } from "@/lib/geo";
+import { defaultSizeSystem, regionFor, type SizeSystem } from "@/lib/geo";
 
 interface SizeTileGridProps {
   sizes: string[];
@@ -12,46 +12,41 @@ interface SizeTileGridProps {
   disabledSizes?: Set<string>;
 }
 
-type TileMode =
-  | { kind: "dual"; left: { label: string; value: string }; right: { label: string; value: string } }
-  | { kind: "single"; label: string; value: string };
+const STORAGE_KEY = "vitalwalk_size_system";
 
-interface TileLabels {
-  mode: TileMode;
-  ariaLabel: string;
+const SYSTEM_OPTIONS: Array<{ id: SizeSystem; label: string; short: string }> = [
+  { id: "usW", label: "Women's US", short: "W US" },
+  { id: "usM", label: "Men's US", short: "M US" },
+  { id: "uk", label: "UK", short: "UK" },
+  { id: "eu", label: "EU", short: "EU" },
+];
+
+function valueFor(parsed: SizeRow, system: SizeSystem): string {
+  switch (system) {
+    case "usW": return parsed.usW;
+    case "usM": return parsed.usM;
+    case "uk": return parsed.uk;
+    case "eu": return parsed.eu;
+  }
 }
 
-function labelsFor(parsed: SizeRow, region: Region): TileLabels {
-  switch (region) {
-    case "UK":
-      // Unisex numbering — show one number, no duplication
-      return {
-        mode: { kind: "single", label: "UK", value: parsed.uk },
-        ariaLabel: `UK ${parsed.uk} (unisex) — EU ${parsed.eu}`,
-      };
-    case "EU":
-      return {
-        mode: { kind: "single", label: "EU", value: parsed.eu },
-        ariaLabel: `EU ${parsed.eu} (unisex) — UK ${parsed.uk}`,
-      };
-    case "AU":
-      return {
-        mode: {
-          kind: "dual",
-          left: { label: "W", value: parsed.auW },
-          right: { label: "M", value: parsed.auM },
-        },
-        ariaLabel: `Women's AU ${parsed.auW} or Men's AU ${parsed.auM}`,
-      };
-    default:
-      return {
-        mode: {
-          kind: "dual",
-          left: { label: "W", value: parsed.usW },
-          right: { label: "M", value: parsed.usM },
-        },
-        ariaLabel: `Women's US ${parsed.usW} or Men's US ${parsed.usM}`,
-      };
+function readStoredSystem(): SizeSystem | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.localStorage.getItem(STORAGE_KEY);
+    if (v === "usW" || v === "usM" || v === "uk" || v === "eu") return v;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredSystem(s: SizeSystem) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, s);
+  } catch {
+    /* noop */
   }
 }
 
@@ -64,6 +59,22 @@ export function SizeTileGrid({
   const { country } = useGeo();
   const region = regionFor(country?.code);
 
+  // System: stored choice wins, else geo default. Re-evaluate when geo arrives.
+  const [system, setSystem] = useState<SizeSystem>(() => readStoredSystem() ?? "usW");
+  const [userPicked, setUserPicked] = useState<boolean>(() => readStoredSystem() !== null);
+
+  useEffect(() => {
+    if (!userPicked && country?.code) {
+      setSystem(defaultSizeSystem(region));
+    }
+  }, [country?.code, region, userPicked]);
+
+  const handleSystemChange = (s: SizeSystem) => {
+    setSystem(s);
+    setUserPicked(true);
+    writeStoredSystem(s);
+  };
+
   const tiles = useMemo(
     () =>
       sizes.map((raw) => {
@@ -71,16 +82,17 @@ export function SizeTileGrid({
         return {
           raw,
           parsed,
-          labels: labelsFor(parsed, region),
+          display: valueFor(parsed, system),
           disabled: disabledSizes?.has(raw) ?? false,
         };
       }),
-    [sizes, region, disabledSizes],
+    [sizes, system, disabledSizes],
   );
 
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const segRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const onKeyDown = (e: React.KeyboardEvent, idx: number) => {
+  const onTileKeyDown = (e: React.KeyboardEvent, idx: number) => {
     const cols = window.matchMedia("(min-width: 640px)").matches ? 5 : 4;
     let next = idx;
     switch (e.key) {
@@ -96,6 +108,16 @@ export function SizeTileGrid({
     refs.current[next]?.focus();
   };
 
+  const onSegKeyDown = (e: React.KeyboardEvent, idx: number) => {
+    let next = idx;
+    if (e.key === "ArrowRight") next = (idx + 1) % SYSTEM_OPTIONS.length;
+    else if (e.key === "ArrowLeft") next = (idx - 1 + SYSTEM_OPTIONS.length) % SYSTEM_OPTIONS.length;
+    else return;
+    e.preventDefault();
+    segRefs.current[next]?.focus();
+    handleSystemChange(SYSTEM_OPTIONS[next].id);
+  };
+
   if (sizes.length === 0) {
     return (
       <p className="text-[13px] text-[hsl(var(--text-mute))]">Loading sizes…</p>
@@ -106,6 +128,45 @@ export function SizeTileGrid({
 
   return (
     <div>
+      {/* Region / system picker */}
+      <div className="mb-3">
+        <p className="mb-2 text-[12px] font-semibold text-[hsl(var(--text-mute))]">
+          Show sizes in
+        </p>
+        <div
+          role="radiogroup"
+          aria-label="Choose your sizing system"
+          className="grid grid-cols-4 gap-1 rounded-xl bg-secondary p-1"
+        >
+          {SYSTEM_OPTIONS.map((opt, i) => {
+            const active = system === opt.id;
+            return (
+              <button
+                key={opt.id}
+                ref={(el) => (segRefs.current[i] = el)}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                tabIndex={active ? 0 : -1}
+                onClick={() => handleSystemChange(opt.id)}
+                onKeyDown={(e) => onSegKeyDown(e, i)}
+                className={cn(
+                  "relative rounded-lg px-1 py-2 text-[12px] font-extrabold tracking-tight transition-all duration-150",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-1",
+                  active
+                    ? "bg-[hsl(var(--order-blue))] text-white shadow-sm"
+                    : "text-[hsl(var(--text-body))] hover:bg-background/70",
+                )}
+              >
+                <span className="hidden sm:inline">{opt.label}</span>
+                <span className="sm:hidden">{opt.short}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tile grid — one big number per tile */}
       <div
         role="radiogroup"
         aria-label="Select your size — fits both women and men"
@@ -113,19 +174,6 @@ export function SizeTileGrid({
       >
         {tiles.map((t, i) => {
           const selected = value === t.raw;
-          const labelClass = cn(
-            "text-[10px] font-bold uppercase leading-none tracking-[0.08em]",
-            selected
-              ? "text-[hsl(var(--order-blue))]/70"
-              : "text-[hsl(var(--text-mute))]",
-          );
-          const numberClass = cn(
-            "mt-1 text-[18px] font-extrabold leading-none tabular-nums tracking-tight sm:text-[19px]",
-            selected
-              ? "text-[hsl(var(--order-blue))]"
-              : "text-[hsl(var(--text-strong))]",
-          );
-
           return (
             <button
               key={t.raw}
@@ -134,13 +182,13 @@ export function SizeTileGrid({
               role="radio"
               aria-checked={selected}
               aria-disabled={t.disabled || undefined}
-              aria-label={`${t.labels.ariaLabel}${t.disabled ? " — out of stock" : ""}`}
+              aria-label={`Women's US ${t.parsed.usW}, also Men's US ${t.parsed.usM}, UK ${t.parsed.uk}, EU ${t.parsed.eu}${t.disabled ? " — out of stock" : ""}`}
               disabled={t.disabled}
               tabIndex={selected || (!value && i === 0) ? 0 : -1}
               onClick={() => !t.disabled && onChange(t.raw)}
-              onKeyDown={(e) => onKeyDown(e, i)}
+              onKeyDown={(e) => onTileKeyDown(e, i)}
               className={cn(
-                "group relative flex aspect-[1.35/1] items-center justify-center rounded-lg border-2 bg-background px-1 py-2 text-center transition-all duration-150",
+                "group relative flex aspect-square items-center justify-center rounded-lg border-2 bg-background text-center transition-all duration-150",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2",
                 t.disabled
                   ? "cursor-not-allowed border-border opacity-55"
@@ -171,29 +219,22 @@ export function SizeTileGrid({
                 </span>
               )}
 
-              {t.labels.mode.kind === "single" ? (
-                <div className="flex flex-col items-center justify-center">
-                  <span className={labelClass}>{t.labels.mode.label}</span>
-                  <span className={numberClass}>{t.labels.mode.value}</span>
-                </div>
-              ) : (
-                <div className="flex w-full items-center justify-around gap-1">
-                  <div className="flex flex-col items-center">
-                    <span className={labelClass}>{t.labels.mode.left.label}</span>
-                    <span className={numberClass}>{t.labels.mode.left.value}</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className={labelClass}>{t.labels.mode.right.label}</span>
-                    <span className={numberClass}>{t.labels.mode.right.value}</span>
-                  </div>
-                </div>
-              )}
+              <span
+                className={cn(
+                  "text-[22px] font-extrabold leading-none tabular-nums tracking-tight sm:text-[24px]",
+                  selected
+                    ? "text-[hsl(var(--order-blue))]"
+                    : "text-[hsl(var(--text-strong))]",
+                )}
+              >
+                {t.display}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Confirmation strip — shows BOTH women's and men's so every shopper sees their fit */}
+      {/* Confirmation strip — full mapping for confidence */}
       {selectedTile && (
         <div
           className="mt-3 flex items-center gap-2 rounded-md bg-[hsl(var(--order-blue-soft))] px-3 py-2 text-[12.5px] font-medium text-[hsl(var(--order-blue))] animate-fade-in"
@@ -202,14 +243,14 @@ export function SizeTileGrid({
           <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
           <span className="min-w-0 flex-1">
             <span className="font-extrabold">
-              Women's {selectedTile.parsed.usW}
+              Women's US {selectedTile.parsed.usW}
             </span>
             <span className="opacity-60"> = </span>
             <span className="font-extrabold">
-              Men's {selectedTile.parsed.usM}
+              Men's US {selectedTile.parsed.usM}
             </span>
             <span className="opacity-70">
-              {" · "}EU {selectedTile.parsed.eu} · UK {selectedTile.parsed.uk}
+              {" · "}UK {selectedTile.parsed.uk} · EU {selectedTile.parsed.eu}
             </span>
           </span>
         </div>

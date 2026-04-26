@@ -6,9 +6,6 @@ import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
-import { ProductPanel } from "./ProductPanel";
-import { GuaranteeBlock } from "./GuaranteeBlock";
-import { ReviewsBlock } from "./ReviewsBlock";
 
 const SHIPPING_PROTECTION_PRICE = 5.95;
 
@@ -109,51 +106,37 @@ export function OrderPage() {
       <SiteHeader />
 
       <main className="container-order pb-16 pt-3 sm:pt-5">
-        <div className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-10">
-          {/* LEFT — order flow */}
-          <div className="space-y-6 md:space-y-8">
-            <QuantityStep
-              quantity={quantity}
-              onQuantityChange={setQuantity}
-              onContinue={advanceToStep2}
-            />
+        <div className="mx-auto max-w-[640px] space-y-6 md:space-y-8">
+          <QuantityStep
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            onContinue={advanceToStep2}
+          />
 
-            <div ref={step2Ref}>
-              {currentStep >= 2 && (
-                <ColorSizeStep
-                  product={product ?? null}
-                  selections={selections}
-                  onUpdate={handleSelectionUpdate}
-                  onContinue={advanceToStep3}
-                />
-              )}
-            </div>
-
-            <div ref={step3Ref}>
-              {currentStep >= 3 && (
-                <UpgradeStep
-                  protectionEnabled={protectionEnabled}
-                  onToggleProtection={setProtectionEnabled}
-                  total={bundleTotal}
-                  comparePrice={bundleCompare}
-                  protectionPrice={SHIPPING_PROTECTION_PRICE}
-                  onCheckout={handleCheckout}
-                  isCheckingOut={isCheckingOut}
-                />
-              )}
-            </div>
+          <div ref={step2Ref}>
+            {currentStep >= 2 && (
+              <ColorSizeStep
+                product={product ?? null}
+                selections={selections}
+                onUpdate={handleSelectionUpdate}
+                onContinue={advanceToStep3}
+              />
+            )}
           </div>
 
-          {/* RIGHT — product info (sticky on desktop) */}
-          <aside className="md:sticky md:top-[88px] md:self-start">
-            <div className="space-y-6 rounded-xl border border-[hsl(var(--hairline))] bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <ProductPanel />
-              <hr className="border-t border-[hsl(var(--hairline))]" />
-              <GuaranteeBlock />
-              <hr className="border-t border-[hsl(var(--hairline))]" />
-              <ReviewsBlock />
-            </div>
-          </aside>
+          <div ref={step3Ref}>
+            {currentStep >= 3 && (
+              <UpgradeStep
+                protectionEnabled={protectionEnabled}
+                onToggleProtection={setProtectionEnabled}
+                total={bundleTotal}
+                comparePrice={bundleCompare}
+                protectionPrice={SHIPPING_PROTECTION_PRICE}
+                onCheckout={handleCheckout}
+                isCheckingOut={isCheckingOut}
+              />
+            )}
+          </div>
         </div>
       </main>
 

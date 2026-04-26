@@ -65,6 +65,15 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
+          <span aria-hidden>👟</span> Unisex — fits Men &amp; Women
+        </span>
+        <span className="text-[11.5px] text-[hsl(var(--text-mute))]">
+          Same shoe, full size range for everyone.
+        </span>
+      </div>
+
       <ul className="mt-5 space-y-4">
         {OPTIONS.map((opt) => {
           const selected = quantity === opt.qty;

@@ -107,11 +107,14 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                 <p className="text-[14px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[15px]">
                   Size
                 </p>
-                <p className="text-[11.5px] font-medium text-[hsl(var(--text-mute))]">
-                  Tap to choose
-                </p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
+                  <span aria-hidden>👟</span> Unisex Fit · Men &amp; Women
+                </span>
               </div>
-              <div className="mt-2.5">
+              <p className="mt-1.5 text-[12px] leading-snug text-[hsl(var(--text-mute))]">
+                Each tile shows <span className="font-semibold text-[hsl(var(--text-body))]">Women's</span> on top and <span className="font-semibold text-[hsl(var(--text-body))]">Men's</span> below. Men: order ~1.5 sizes down from your usual men's size.
+              </p>
+              <div className="mt-3">
                 <SizeTileGrid
                   sizes={sizes}
                   value={sel.size}

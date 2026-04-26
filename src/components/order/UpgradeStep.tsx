@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ShieldCheck, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { StepHeader } from "./StepHeader";
@@ -8,6 +9,7 @@ import { OrderSummary } from "./OrderSummary";
 import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
 import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
 import { FaqBlock } from "./FaqBlock";
+import { StickyCheckoutBar } from "./StickyCheckoutBar";
 import { useCurrency } from "@/hooks/useCurrency";
 import paymentBadges from "@/assets/payment-badges.png";
 

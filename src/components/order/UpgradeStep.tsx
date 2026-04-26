@@ -6,6 +6,7 @@ import { ScarcityBar } from "./ScarcityBar";
 import { SavingsHero } from "./SavingsHero";
 import { OrderSummary } from "./OrderSummary";
 import { useCurrency } from "@/hooks/useCurrency";
+import paymentBadges from "@/assets/payment-badges.png";
 
 interface UpgradeStepProps {
   protectionEnabled: boolean;
@@ -16,17 +17,6 @@ interface UpgradeStepProps {
   onCheckout: () => void;
   isCheckingOut: boolean;
 }
-
-const PAYMENTS = [
-  { name: "Visa", src: "/payments/visa.svg" },
-  { name: "Mastercard", src: "/payments/mastercard.svg" },
-  { name: "American Express", src: "/payments/amex.svg" },
-  { name: "Discover", src: "/payments/discover.svg" },
-  { name: "PayPal", src: "/payments/paypal.svg" },
-  { name: "Apple Pay", src: "/payments/apple-pay.svg" },
-  { name: "Google Pay", src: "/payments/google-pay.svg" },
-  { name: "Shop Pay", src: "/payments/shop-pay.svg" },
-];
 
 export function UpgradeStep({
   protectionEnabled,
@@ -101,17 +91,14 @@ export function UpgradeStep({
           <span>60-day money-back guarantee</span>
         </div>
 
-        {/* Payment badges — clean borderless row, badges form their own visual unit */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-          {PAYMENTS.map((m) => (
-            <img
-              key={m.name}
-              src={m.src}
-              alt={m.name}
-              className="h-7 w-auto sm:h-8"
-              loading="lazy"
-            />
-          ))}
+        {/* Payment / trust badges — single image as provided */}
+        <div className="mt-4 flex justify-center">
+          <img
+            src={paymentBadges}
+            alt="Accepted payments: Visa, Mastercard, American Express, Discover, PayPal, Apple Pay. SSL secured. Secured by Stripe."
+            className="h-auto w-full max-w-[340px] sm:max-w-[380px]"
+            loading="lazy"
+          />
         </div>
       </div>
     </section>

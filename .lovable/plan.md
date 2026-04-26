@@ -1,97 +1,95 @@
-## Goals
+# Add Length & Width (mm) to the Size Chart
 
-1. **Size chart accuracy & clarity** — eliminate redundant Women/Men columns where the region uses a single unified number, and fix AU/NZ data.
-2. **Shipping line copy** — flag must come after the country name.
-3. **Step 3 layout** — surface "Add Shipping Protection — $5.95" directly above the "Complete My Order" button so the upsell is the very last decision before checkout.
+The Shopify product page includes **Length (mm)** and **Width (mm)** for every row — these are the most reliable way for international buyers to confirm fit (especially when their region uses different numbering). Our current chart omits them. I'll add them as first-class data, surface them inline in every row, and keep the layout clean on mobile.
 
 ---
 
-## 1. Correct international sizing rules
+## 1. `src/data/sizeChart.ts` — extend the master table with mm
 
-Based on industry-standard conversions:
+Add `lengthMm` and `widthMm` to every row in the `TABLE` constant, sourced directly from the Shopify chart screenshot:
 
-| Region | Women | Men |
+| US W | Length (mm) | Width (mm) |
 |---|---|---|
-| **US** | US W (e.g., 8) | US M (≈ US W − 1.5) |
-| **UK** | Single UK number (W = M physically) |
-| **EU** | Single EU number (W = M physically) |
-| **AU/NZ** | = US Women number | = UK number |
+| 5 | 235 | 87.1 |
+| 5.5 | 240 | 88.2 |
+| 6 | 245 | 89.4 |
+| 6.5 | 250 | 90.6 |
+| 7 | 255 | 91.7 |
+| 7.5 | 260 | 92.85 |
+| 8 | 265 | 94 |
+| 8.5 | 270 | 95.15 |
+| 9 | 275 | 96.3 |
+| 9.5 | 280 | 97.4 |
+| 10 | 285 | 98.6 |
+| 10.5 | 290 | 99.75 |
+| 11 | 295 | 100.9 |
+| 11.5 | 300 | 102.05 |
+| 12 | 305 | 103.2 |
+| 12.5 | 309 | 104 |
+| 13 | 313 | 106 |
+| 13.5 | 318 | 112 |
 
-So the W vs M split only matters for **US** and **AU/NZ**. UK and EU should each render as a **single column** per row.
+For the two extrapolated rows our table has beyond the Shopify chart (US W 14 and 14.5), I'll continue the linear trend (~+5mm length, ~+1.15mm width per half size) so nothing displays as `—`.
 
-### Edits to `src/data/sizeChart.ts`
-- Update the `SizeRow.au` field (and computed values) so that:
-  - `auW` = `usW` (numerically identical to US Women)
-  - `auM` = `uk` (numerically identical to UK)
-- Replace the single `au` field with `auW` and `auM` to remove the false "AU = UK for women" assumption currently in the code's comment.
-- Keep `parseShopifySize` working — it returns the full row; consumers will pick the right column.
-
-### Edits to `src/components/order/SizingDialogs.tsx` — `SizeChartBody`
-Replace the always-two-column (Women / Men) layout with a region-aware renderer:
-
-- **US tab** → two columns: "Women" and "Men" (current behavior, kept).
-- **AU/NZ tab** → two columns: "Women" (= US W) and "Men" (= UK).
-- **UK tab** → **one column**: "Size (UK)" — single bold number per row, with subtitle "Unisex sizing".
-- **EU tab** → **one column**: "Size (EU)" — single bold number per row, with subtitle "Unisex sizing".
-
-Other adjustments inside the body:
-- Column header row: dynamically render `Women / Men` (US, AU) OR a single `Size` header (UK, EU).
-- Secondary line under each row: stays useful — show US W/M when on UK/EU/AU tabs; show EU when on US.
-- "Yours" pill: highlight the row that matches the user's selected size in the active region's primary value (computed from `parseShopifySize`).
-- Footer tip: keep as-is.
-
-Result: UK and EU tabs become clean, scannable single-number lists (no duplicated identical numbers), and AU/NZ correctly reflects that women = US numbers, men = UK numbers.
-
----
-
-## 2. Fix shipping line — flag last
-
-### Edit `src/components/order/SavingsHero.tsx`
-Change:
+Update `SizeRow` interface:
+```ts
+export interface SizeRow {
+  usW: string;
+  usM: string;
+  uk: string;
+  eu: string;
+  auW: string;
+  auM: string;
+  lengthMm: string;   // NEW — e.g. "265"
+  widthMm: string;    // NEW — e.g. "94"
+}
 ```
-`FREE & fast shipping to ${country.flag} ${country.name}`
+
+Update `parseShopifySize` to return `lengthMm` and `widthMm` from the matched row (formatted with `fmt`). Falls back to `"—"` if no row matches.
+
+## 2. `src/components/order/SizingDialogs.tsx` — surface mm in every row
+
+The chart is region-tabbed (US, UK, EU, AU/NZ) with one row per available size. Length/Width are universal across regions, so they belong inline on every row regardless of the active tab.
+
+**Row layout (mobile-first):**
+
 ```
-to:
+┌───────────────────────────────────────────────────┐
+│  8        7              ← primary region values  │
+│  US       US                                       │
+│  ─────────────────────────────────────             │
+│  📏 265 mm  •  ↔ 94 mm     [ Yours ✓ ]             │
+└───────────────────────────────────────────────────┘
 ```
-`FREE & fast shipping to ${country.name} ${country.flag}`
-```
-Result on US: **"FREE & fast shipping to United States 🇺🇸"**.
 
-Fallback (no geo) stays: "FREE worldwide shipping included".
+Specifically:
+- Keep the existing top row (region-specific size numbers + "Yours" pill on the right).
+- Add a thin secondary row underneath inside the same card, separated by `border-t border-border/60 pt-2 mt-2`, showing:
+  - `<Ruler className="h-3 w-3" />` `Length` `265 mm`
+  - `<MoveHorizontal className="h-3 w-3" />` `Width` `94 mm`
+- Use `text-[11px] sm:text-[12px] tabular-nums text-[hsl(var(--text-mute))]`, with the numeric values bumped to `font-semibold text-[hsl(var(--text-body))]` for scannability.
+- On the selected ("Yours") row, tint the mm numbers `text-[hsl(var(--order-blue))]` to keep the visual emphasis consistent.
 
----
+**Column header update:**
+- Change the right-side header label from "Match" to read just the secondary EU/US conversion on `sm+` (already happening), and add a small inline legend on `sm+`: `· Length / Width (mm)` next to the size header so the row's bottom strip is self-explanatory.
 
-## 3. Reorder Step 3 — protection upsell directly above CTA
+**Footer tip update:**
+Replace the current EU-based tip with a stronger, mm-based instruction that matches the Shopify page:
+> "Measure your foot heel-to-toe in **mm** with no shoes on. Match the **Length** column for the most accurate fit."
 
-Currently the order in `UpgradeStep.tsx` is:
-1. SavingsHero
-2. ScarcityBar
-3. **Shipping Protection card**
-4. OrderSummary
-5. (gap) → Complete My Order CTA
+This makes mm the primary fitting signal — exactly how the source chart works.
 
-### Edit `src/components/order/UpgradeStep.tsx`
-Reorder the stack to:
-1. SavingsHero (savings + localized shipping)
-2. ScarcityBar (soft urgency)
-3. **OrderSummary** (subtotal, shipping FREE, total, you saved)
-4. **Shipping Protection toggle card** ← moved down, now sits immediately above CTA
-5. **Complete My Order** CTA
-6. Secure-checkout micro line + payments pill
+## 3. No other files need changes
 
-This makes the protection toggle the final micro-decision before checkout (a proven pattern), while the order summary stays anchored above it so the user sees the total they're committing to.
-
-Minor visual tightening:
-- Reduce the vertical gap between the protection card and the CTA (e.g., `mt-3` instead of `mt-5`) so they read as a connected unit.
-- When protection is enabled, the OrderSummary already shows the +$5.95 line and updated total — that linkage is now visually adjacent (summary → toggle → CTA).
+- `ColorSizeStep.tsx` continues passing `sizes` and `selectedSize` unchanged.
+- The `parseShopifySize` API stays backward-compatible (only adds two fields).
+- Region tabs, geo-detection, auto-scroll-to-selected-row, sheet/dialog responsive shell, and Sizing Tips body are all preserved.
 
 ---
 
 ## Files touched
 
-- `src/data/sizeChart.ts` — split `au` → `auW` / `auM`, update interface and parser output.
-- `src/components/order/SizingDialogs.tsx` — region-aware column rendering (1 col for UK/EU, 2 col for US & AU/NZ), updated header labels and secondary line logic.
-- `src/components/order/SavingsHero.tsx` — flag after country name.
-- `src/components/order/UpgradeStep.tsx` — reorder children so the protection card sits directly above the CTA.
+- `src/data/sizeChart.ts` — add `lengthMm` / `widthMm` to every row, extend interface, update parser output.
+- `src/components/order/SizingDialogs.tsx` — render a secondary mm strip inside each size card; tweak header legend and footer tip.
 
-No other components need changes; `ColorSizeStep` still passes `sizes` and `selectedSize` to `SizingDialogs` unchanged.
+After this, every row in every region tab clearly shows: **your region's number → exact foot length & width in mm**, matching the Shopify reference 1:1 while staying mobile-friendly.

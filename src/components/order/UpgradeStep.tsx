@@ -5,6 +5,9 @@ import { YellowCta } from "./YellowCta";
 import { ScarcityBar } from "./ScarcityBar";
 import { SavingsHero } from "./SavingsHero";
 import { OrderSummary } from "./OrderSummary";
+import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
+import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
+import { FaqBlock } from "./FaqBlock";
 import { useCurrency } from "@/hooks/useCurrency";
 import paymentBadges from "@/assets/payment-badges.png";
 
@@ -38,13 +41,8 @@ export function UpgradeStep({
       <StepHeader number={3} title="Almost There — Review &amp; Checkout" />
 
       <div className="mt-4 space-y-3.5">
-        {/* 1. Combined savings + shipping (auto-detected country) */}
         <SavingsHero saved={saved} comparePrice={comparePrice} />
-
-        {/* 2. Scarcity bar — softened */}
         <ScarcityBar />
-
-        {/* 3. Order summary */}
         <OrderSummary
           subtotal={total}
           protectionPrice={protectionPrice}
@@ -52,7 +50,7 @@ export function UpgradeStep({
           saved={saved}
         />
 
-        {/* 4. Shipping protection — sits directly above the CTA */}
+        {/* Shipping protection — sits directly above the CTA */}
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-order-blue-soft">
@@ -74,6 +72,9 @@ export function UpgradeStep({
             />
           </div>
         </div>
+
+        {/* 60-day risk-free guarantee — final reassurance right before CTA */}
+        <RiskFreeGuarantee />
       </div>
 
       <div className="mt-3">
@@ -91,7 +92,7 @@ export function UpgradeStep({
           <span>60-day money-back guarantee</span>
         </div>
 
-        {/* Payment / trust badges — single image as provided */}
+        {/* Payment / trust badges */}
         <div className="mt-4 flex justify-center">
           <img
             src={paymentBadges}
@@ -100,6 +101,12 @@ export function UpgradeStep({
             loading="lazy"
           />
         </div>
+      </div>
+
+      {/* Below-the-fold trust blocks — only mounted on Step 3, fade in beautifully */}
+      <div className="mt-10 space-y-6 animate-fade-in">
+        <VerifiedReviewsBlock />
+        <FaqBlock />
       </div>
     </section>
   );

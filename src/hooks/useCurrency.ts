@@ -1,35 +1,42 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useGeo } from "./useGeo";
-import { currencyForCountry, fetchRates, formatPrice } from "@/lib/currency";
+import { useVitalWalkProduct } from "./useVitalWalkProduct";
+import { formatMoney } from "@/lib/money";
 
+/**
+ * Compatibility hook used by the order-page UI. Currency is now sourced
+ * directly from Shopify (via @inContext) — no client-side FX math.
+ *
+ * `format()` takes a USD amount (the page's source-of-truth bundle prices
+ * are still authored in USD) and converts it to the localized currency
+ * using the ratio between Shopify's localized base price and the USD
+ * fallback. This keeps every on-page price in sync with checkout to the
+ * cent within rounding (Shopify Markets uses the same rate at checkout).
+ */
 export function useCurrency() {
   const { country, loading: geoLoading } = useGeo();
-  const [rates, setRates] = useState<Record<string, number> | null>(null);
+  const { data: product, isLoading: productLoading } = useVitalWalkProduct();
 
-  useEffect(() => {
-    let mounted = true;
-    fetchRates().then((r) => {
-      if (mounted) setRates(r);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const localizedBase = product
+    ? parseFloat(product.priceRange.minVariantPrice.amount)
+    : null;
+  const currency = product?.priceRange.minVariantPrice.currencyCode ?? "USD";
 
-  const currency = currencyForCountry(country?.code);
-  const rate = rates?.[currency] ?? 1;
-  const isConverted = currency !== "USD" && !!rates;
+  // USD reference price (matches Shopify product's USD price). Used to
+  // derive the FX rate from any USD amount we display.
+  const USD_BASE = 69.95;
+  const rate = localizedBase && localizedBase > 0 ? localizedBase / USD_BASE : 1;
+  const isConverted = currency !== "USD" && !!localizedBase;
 
   const format = useCallback(
     (amountUsd: number) => {
-      // While rates load, show USD to avoid flicker between $ and local currency
-      if (!rates) return formatPrice(amountUsd, "USD", 1);
-      return formatPrice(amountUsd, currency, rate);
+      if (!product) return formatMoney(amountUsd, "USD");
+      return formatMoney(amountUsd * rate, currency);
     },
-    [rates, currency, rate],
+    [product, rate, currency],
   );
 
-  const formatUsd = useCallback((amountUsd: number) => formatPrice(amountUsd, "USD", 1), []);
+  const formatUsd = useCallback((amountUsd: number) => formatMoney(amountUsd, "USD"), []);
 
   return {
     currency,
@@ -37,7 +44,7 @@ export function useCurrency() {
     format,
     formatUsd,
     isConverted,
-    loading: geoLoading || !rates,
+    loading: geoLoading || productLoading,
     countryFlag: country?.flag ?? "🌍",
   };
 }

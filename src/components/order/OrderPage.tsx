@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
+import { useGeo } from "@/hooks/useGeo";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
 import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
@@ -9,6 +10,7 @@ import { UpgradeStep } from "./UpgradeStep";
 
 export function OrderPage() {
   const { data: product } = useVitalWalkProduct();
+  const { country } = useGeo();
 
   const [quantity, setQuantity] = useState<Quantity>(1);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -90,7 +92,11 @@ export function OrderPage() {
 
     setIsCheckingOut(true);
     try {
-      const { checkoutUrl, error } = await createCheckoutForLines(lines, discountCodes);
+      const { checkoutUrl, error } = await createCheckoutForLines(
+        lines,
+        discountCodes,
+        country?.code ?? "US",
+      );
       if (!checkoutUrl) {
         toast.error(error ?? "Could not create checkout. Please try again.");
         setIsCheckingOut(false);

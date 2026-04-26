@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchVitalWalkProduct } from "@/lib/shopify";
+import { useGeo } from "@/hooks/useGeo";
+import { formatMoney } from "@/lib/money";
 
-// Static fallback data so the page renders instantly even before the API responds.
-// These match the live Shopify product (verified via shopify--get_product).
+// Static fallback so the page renders instantly even before the API responds.
+// USD-based — only used until Shopify's localized response arrives.
 export const STATIC_FALLBACK = {
   price: "69.95",
   compareAtPrice: "233.17",
@@ -10,35 +12,39 @@ export const STATIC_FALLBACK = {
 };
 
 export function useVitalWalkProduct() {
+  const { country } = useGeo();
+  const code = (country?.code ?? "US").toUpperCase();
   return useQuery({
-    queryKey: ["vitalwalk-product"],
-    queryFn: fetchVitalWalkProduct,
-    staleTime: 1000 * 60 * 5, // 5 min
+    queryKey: ["vitalwalk-product", code],
+    queryFn: () => fetchVitalWalkProduct(code),
+    staleTime: 1000 * 60 * 5,
     retry: 1,
   });
 }
 
 /**
- * Returns the live price + compare-at-price formatted as $XX.XX,
- * with a static fallback so the page never shows a blank price.
+ * Returns the live (localized) price + compare-at-price formatted in the
+ * customer's currency, with a USD fallback so the page never shows blank.
  */
 export function useDisplayPrice() {
   const { data } = useVitalWalkProduct();
-  const price = data?.priceRange.minVariantPrice.amount ?? STATIC_FALLBACK.price;
-  const compareAt =
-    data?.compareAtPriceRange.minVariantPrice.amount ?? STATIC_FALLBACK.compareAtPrice;
+  const priceMoney = data?.priceRange.minVariantPrice;
+  const compareMoney = data?.compareAtPriceRange.minVariantPrice;
 
-  const priceNum = parseFloat(price);
-  const compareNum = parseFloat(compareAt);
+  const priceNum = parseFloat(priceMoney?.amount ?? STATIC_FALLBACK.price);
+  const compareNum = parseFloat(compareMoney?.amount ?? STATIC_FALLBACK.compareAtPrice);
+  const currency = priceMoney?.currencyCode ?? STATIC_FALLBACK.currency;
+
   const savePct =
     compareNum > 0 ? Math.round(((compareNum - priceNum) / compareNum) * 100) : 0;
-  const installment = (priceNum / 4).toFixed(2);
+  const installmentNum = priceNum / 4;
 
   return {
-    price: `$${priceNum.toFixed(2)}`,
-    compareAt: `$${compareNum.toFixed(2)}`,
+    price: formatMoney(priceNum, currency),
+    compareAt: formatMoney(compareNum, currency),
     savePct,
-    installment: `$${installment}`,
+    installment: formatMoney(installmentNum, currency),
+    currency,
     raw: { price: priceNum, compareAt: compareNum },
   };
 }

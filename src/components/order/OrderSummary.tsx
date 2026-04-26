@@ -7,7 +7,7 @@ interface OrderSummaryProps {
 
 export function OrderSummary({ subtotal, saved }: OrderSummaryProps) {
   const total = subtotal;
-  const { format, formatUsd, isConverted, currency } = useCurrency();
+  const { format } = useCurrency();
 
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3.5 sm:px-5 sm:py-4">
@@ -27,11 +27,6 @@ export function OrderSummary({ subtotal, saved }: OrderSummaryProps) {
           <span className="font-semibold text-[hsl(var(--text-mute))]">You saved</span>
           <span className="font-extrabold tabular-nums text-verified">{format(saved)}</span>
         </div>
-        {isConverted && (
-          <p className="mt-2 text-[10.5px] leading-snug text-[hsl(var(--text-mute))]">
-            Prices shown in {currency} (≈ {formatUsd(total)} USD). Final amount is processed by Shopify in your local currency at checkout.
-          </p>
-        )}
       </div>
     </div>
   );

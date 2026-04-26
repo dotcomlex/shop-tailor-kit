@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
 import { SiteHeader } from "./SiteHeader";
-import { TopBars } from "./TopBars";
 import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
@@ -54,9 +53,9 @@ export function OrderPage() {
     });
   };
 
-  const bundleTotal = useMemo(() => {
+  const { bundleTotal, bundleCompare } = useMemo(() => {
     const opt = BUNDLE_OPTIONS.find((o) => o.qty === quantity);
-    return opt?.total ?? 0;
+    return { bundleTotal: opt?.total ?? 0, bundleCompare: opt?.compare ?? 0 };
   }, [quantity]);
 
   const handleCheckout = async () => {
@@ -108,9 +107,8 @@ export function OrderPage() {
   return (
     <div className="min-h-screen bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
-      <TopBars />
 
-      <main className="container-order pb-16 pt-6 sm:pt-10">
+      <main className="container-order pb-16 pt-4 sm:pt-6">
         <div className="grid gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-10">
           {/* LEFT — order flow */}
           <div className="space-y-8">
@@ -137,6 +135,7 @@ export function OrderPage() {
                   protectionEnabled={protectionEnabled}
                   onToggleProtection={setProtectionEnabled}
                   total={bundleTotal}
+                  comparePrice={bundleCompare}
                   protectionPrice={SHIPPING_PROTECTION_PRICE}
                   onCheckout={handleCheckout}
                   isCheckingOut={isCheckingOut}
@@ -146,7 +145,7 @@ export function OrderPage() {
           </div>
 
           {/* RIGHT — product info (sticky on desktop) */}
-          <aside className="md:sticky md:top-[120px] md:self-start">
+          <aside className="md:sticky md:top-[88px] md:self-start">
             <div className="space-y-6 rounded-xl border border-[hsl(var(--hairline))] bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
               <ProductPanel />
               <hr className="border-t border-[hsl(var(--hairline))]" />

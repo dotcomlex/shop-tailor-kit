@@ -36,13 +36,13 @@
 
     --border: 0 0% 88%;              /* #E0E0E0 */
     --input: 0 0% 88%;
-    --ring: 226 67% 54%;
+    --ring: 165 66% 17%;
 
     --radius: 0.5rem;
 
-    /* WCS-spec semantic tokens */
-    --order-blue: 226 67% 54%;       /* #3B5BDB step bars + selected card */
-    --order-blue-soft: 215 100% 96%; /* #EBF4FF substrip + countdown bg */
+    /* VitalWalk brand tokens (kept name `order-blue` for backwards-compat; value is brand green #0F483A) */
+    --order-blue: 165 66% 17%;       /* #0F483A — brand green: step bars + selected card */
+    --order-blue-soft: 165 40% 95%;  /* pale green tint: substrips + countdown bg */
     --order-yellow: 47 91% 53%;      /* #F5C518 CTA */
     --order-yellow-deep: 42 90% 45%; /* hover */
     --save-red: 0 100% 40%;          /* #CC0000 */

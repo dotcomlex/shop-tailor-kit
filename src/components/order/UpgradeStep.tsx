@@ -5,6 +5,8 @@ import { YellowCta } from "./YellowCta";
 import { ScarcityBar } from "./ScarcityBar";
 import { SavingsHero } from "./SavingsHero";
 import { OrderSummary } from "./OrderSummary";
+import { TrustRow } from "./TrustRow";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface UpgradeStepProps {
   protectionEnabled: boolean;
@@ -36,6 +38,7 @@ export function UpgradeStep({
   onCheckout,
   isCheckingOut,
 }: UpgradeStepProps) {
+  const { format } = useCurrency();
   const saved = Math.max(0, comparePrice - total);
 
   return (
@@ -68,7 +71,7 @@ export function UpgradeStep({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[14px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[15px]">
-                Add Shipping Protection — ${protectionPrice.toFixed(2)}
+                Add Shipping Protection — {format(protectionPrice)}
               </p>
               <p className="mt-1 text-[12.5px] leading-relaxed text-[hsl(var(--text-body))]">
                 Free returns + lost/damaged package replacement.
@@ -97,6 +100,8 @@ export function UpgradeStep({
           <span aria-hidden>·</span>
           <span>60-day money-back</span>
         </div>
+
+        <TrustRow />
 
         {/* Payment methods — unified pill */}
         <div className="mt-3 rounded-xl border border-border bg-secondary/40 px-3 py-2.5">

@@ -1,149 +1,158 @@
 
 # Goal
-Push the order page from "close" to "indistinguishable in feel from WCS" — without copying their brand. Real Shopify variant imagery, premium typography, sharper hierarchy, and the small details that make it feel like a $10k checkout.
+This is the bottom of the funnel — the user already read the advertorial and product page. So the order page must be **fast, focused, and high-conversion**: see price → pick variants → checkout. No fluff, no marketing.
+
+I'll strip distractions, sharpen visuals, make Step 2 dramatically clearer, and turn Step 3 into a high-energy "close the deal" panel with savings, free shipping, and a real scarcity timer.
 
 ---
 
-## 1. Site Header — premium + minimal (matches WCS bar)
+## 1. REMOVE — clear the visual noise
 
-Currently: tiny logo on a thin white bar, no anchor elements.
+- **Delete `TopBars.tsx` entirely** from `OrderPage.tsx` (estimated delivery strip + countdown box). The countdown moves into Step 3 where it has more conversion impact.
+- **Tighten `SiteHeader.tsx`**: drop the dark trust strip (already covered by Step 3). Keep only one clean white bar with the VitalWalk logo + a small "Need help?" link. Add a subtle 1px shadow underneath. Result: ~60px tall, premium, minimal — more Apple, less Shopify.
+- **Reduce top padding** on `OrderPage.tsx` so Step 1 is visible above the fold immediately.
 
-Change `SiteHeader.tsx` to:
-- Two-row layout:
-  - **Top row** (very thin, dark gray bg `#111`): centered marquee-style trust strip — `★★★★★ 21,734+ Happy Customers · Free US Shipping · 100-Day Money-Back Guarantee` (static, no animation).
-  - **Main row** (white): logo left at `h-10 md:h-11`, right side shows a small phone/help link and a subtle cart-style icon (decorative — the page itself IS the cart).
-- Add a soft 1px shadow under the header (`shadow-[0_1px_0_rgba(0,0,0,0.04)]`) instead of a hairline border, so it floats more like WCS.
-- Sticky on scroll (`sticky top-0 z-30 bg-background/95 backdrop-blur`).
+---
 
-## 2. Typography upgrade — heavier, more confident
+## 2. STEP 1 — Quantity (small polish only, it's already solid)
 
-Currently: `system-ui` 15px body, generic. WCS reads heavier and more "DR-funnel".
+- Slightly larger bundle thumbnails (`92×92` desktop) so customers can recognize the product without squinting.
+- Move the "MOST POPULAR" badge to a thin ribbon on the **right edge** of the card (less intrusive than the floating top-left badge, won't overflow on mobile).
+- Add a tiny `"In stock — ready to ship"` line in green under the bundle name to subconsciously reduce hesitation.
 
-In `index.css` + `tailwind.config.ts`:
-- Add Inter (via a single `<link>` in `index.html`, already-loaded weights 400/600/700/800) as the default sans, with the system stack as fallback. Inter is fast, free, and gives the WCS "modern checkout" feel without a Google Fonts cost spike.
-- Bump base body to `16px / 1.55`.
-- Step header titles → `font-extrabold` `tracking-tight` 18px desktop / 17px mobile.
-- Bundle name → `font-extrabold` 18px (not just bold).
-- Price → `font-extrabold` `tabular-nums`, the strikethrough comparison price gets `font-semibold` with reduced opacity for cleaner visual weight.
+---
 
-## 3. Real per-bundle thumbnails (currently 1 image x 3)
+## 3. STEP 2 — Color & size (the big upgrade)
 
-In `QuantityStep.tsx`, each bundle card currently uses the same `vitalwalk_color_2_compressed.jpg`. WCS shows distinct stacked product imagery per option to imply "you're getting more".
+### 3a. Massively bigger color swatches
 
-- **1 Pair** → single shoe image
-- **2 Pairs** → two shoes overlapped (use a CSS stack: two `<img>` with negative margin + slight rotation/shadow)
-- **3 Pairs** → three shoes stacked
+- Bump `ColorSwatch.tsx` from `52px` → **`72px`** (desktop) / `64px` (mobile) circular photo swatches.
+- Add the color name **directly below each swatch** (small bold label) so the user doesn't have to mentally map "the beige circle = Beige". This is exactly how Nike, Allbirds, and Hoka do it.
+- Selected state: thicker `ring-[3px]` in order-blue + a subtle white inner ring + checkmark badge in the bottom-right corner of the swatch (the WCS visual language).
+- Layout becomes a responsive grid (`grid-cols-4 sm:grid-cols-4 md:grid-cols-4`) so all 4 colors are always on one row, evenly spaced.
 
-Source images from your live VitalWalk site (already proven good):
-- `vitalwalk.store/cdn/shop/files/vitalwalk_color_2_compressed.jpg` (beige)
-- `vitalwalk.store/cdn/shop/files/vitalwalk_color_3_compressed.jpg` (black)
-- `vitalwalk.store/cdn/shop/files/vitalwalk_color_4_compressed.jpg` (gray) — fallback
+### 3b. "How do they fit?" — true-to-size meter (matches the screenshot you uploaded)
 
-Add a small `BundleThumb` component that renders 1, 2, or 3 stacked images with a soft drop shadow.
+New component `src/components/order/TrueToSizeMeter.tsx`:
+- Light gray rounded card (`bg-secondary`, `rounded-xl`, padding 16-20px).
+- Top row: bold "How do they fit?" left, "ⓘ Learn more" right.
+- Horizontal track with 3 labels: **RUNS SMALL · TRUE TO SIZE · RUNS LONG**.
+- Filled black dot centered on "TRUE TO SIZE" with a black ring around it (exactly like the screenshot).
+- Pure CSS, no interaction — purely informational, builds confidence.
+- Placed **right above the size selector** (not below) so users see "true to size" *before* they commit to a size.
 
-## 4. Color swatches → real variant photos (not hex squares)
+### 3c. Size chart + tips — much more visible
 
-Currently `ColorSwatch.tsx` renders solid hex squares. Your live VitalWalk uses circular **photo** swatches with a thin border (the screenshot confirms this: 4 circular product-photo swatches).
+Currently the chart and tips are collapsibles that look like buttons (easy to miss).
 
-- Refactor `ColorSwatch.tsx` to accept an `imageUrl` and render a circular `42×42` photo swatch. Fallback to hex if no image.
-- Map the live Shopify variant images to color names:
-  - Beige → `https://vitalwalk.store/cdn/shop/files/vitalwalk_color_2_compressed.jpg`
-  - Blue → `https://vitalwalk.store/cdn/shop/files/vitalwalk_color_5_compressed.jpg` (from your live site)
-  - Gray → `https://vitalwalk.store/cdn/shop/files/vitalwalk_color_4_compressed.jpg`
-  - Black → `https://vitalwalk.store/cdn/shop/files/vitalwalk_color_3_compressed.jpg`
-- Selected state: `ring-2 ring-order-blue ring-offset-2` (clean, modern), not a thick border that crops the photo.
-- Print the color label below or to the right ("Color: **Beige**") — already done, just upgrade the visual.
+- Replace with **two visible inline links** styled as `font-bold text-order-blue underline-offset-4 hover:underline` next to a 📏 / 💡 icon, in a single horizontal row right below the size selector. Example:
+  - 📏 **View Size Chart**   |   💡 **Sizing Tips**
+- Clicking opens a clean **shadcn Dialog** (modal) instead of inline expansion. Modals are easier to scan than inline collapsibles and don't push the rest of the form down.
+- Inside the size chart modal: same US Women / US Men / UK table, but with a sticky header and zebra rows.
+- Inside the tips modal: the same two ✅ tips, plus the shoe icon + "Sizing is currently displayed in US sizes" note.
 
-I'll source the exact CDN URLs by scraping `vitalwalk.store/products/the-original-vitalwalk®-shoes-copy` once we're in default mode (already verified the swatches exist on your site).
+### 3d. Per-pair card polish
 
-## 5. Right-column hero image → use the actual product hero
+- When `selections.length > 1` (2 or 3 pairs), each pair card gets a subtle numbered avatar in the top-left (`1`, `2`, `3`) inside a circle, instead of the small uppercase "PAIR 1" label. More scannable.
+- Add a subtle green check next to the pair number once both color + size are selected for that pair — gives users a sense of progress.
 
-`ProductPanel.tsx` currently uses a generic Shopify CDN URL. Swap to your live site's clean hero crop (the one shown in your VitalWalk screenshot — beige shoe, transparent/white background).
+---
 
-Also tighten the panel:
-- Product name in `font-extrabold text-[24px] leading-[1.15]`
-- Add a small green "✓ In stock — ships within 24h" line under the title (real fulfillment promise, not a fake badge)
-- Image gets `rounded-xl` and a subtle `ring-1 ring-border/60` instead of a hard square crop.
+## 4. STEP 3 — "Almost there" (the big upgrade)
 
-## 6. Top bars — visually closer to WCS
+This step currently shows just shipping protection + a checkout button. It's flat. We make it the most exciting part of the page.
 
-`TopBars.tsx`:
-- Delivery strip → keep, but center the text on mobile and use a small shield icon in `text-verified` green (right now it's gray, blends in).
-- Countdown box → match WCS exactly: `border-dashed border-[hsl(var(--order-blue))]`, `bg-order-blue-soft`, **bold black** label, **bold red** timer, all on **one line** (`whitespace-nowrap` with `text-[13px] sm:text-[14px]`). Currently the label is semibold gray-ish.
+### 4a. New top: "You're saving $X" hero strip
 
-## 7. Step header bars — sharper
+Inside Step 3, before the protection card, add a green strip:
+- Background: `bg-verified/10`, border `border-verified/30`, rounded.
+- Large bold text: `🎉 You're saving $XX.XX today` (calculated from `bundle.compare - bundle.total`).
+- Sub-line: `vs ${compare} retail price`.
+- Visual cue: small confetti icon or a sparkle, no animation (clean, no gimmicks).
 
-`StepHeader.tsx`:
-- Bump padding to `py-3.5 px-5`.
-- Title: `font-extrabold text-[17px] tracking-tight`.
-- Right label: `font-semibold text-white/85` (currently `opacity-90` italic feel).
-- Replace `rounded-md` with `rounded-lg` to match the rest of the cards.
+### 4b. Free shipping confirmation
 
-## 8. Yellow CTA — match WCS button language
+Below the savings strip, a thin row:
+- ✅ **FREE US shipping** included
+- ✅ Ships within 24 hours
+- Two-column on desktop, stacked on mobile.
 
-`YellowCta.tsx` is already strong. Two refinements:
-- Drop the dark circular arrow puck from `right-3` → make it slightly smaller (`h-9 w-9`) and `right-2.5`, so the label isn't pushed off-center on narrow widths.
-- Add a soft inner highlight via `before:` pseudo to give the button a hint of dimension (1px white inset), exactly like WCS's button.
-- Text: keep `font-extrabold` 18px black.
+### 4c. Scarcity / countdown timer (now lives in Step 3 only)
 
-## 9. Real payment logos (currently styled text badges)
+Move the 24-hour countdown from `TopBars` into a new component `src/components/order/ScarcityBar.tsx`, placed inside Step 3 right above the Checkout CTA:
+- Compact pill: `🔥 First-time buyer offer expires in **HH:MM:SS**`
+- Red background tint, dark border, bold black timer in monospace.
+- Behavior: 24h countdown using `localStorage` so it persists per-session (won't reset on every reload — feels real, not fake).
 
-Replace the 4 text spans in `UpgradeStep.tsx` with actual logo SVGs/PNGs:
-- Use the universal payment-icons set from `/public/payments/visa.svg`, `mastercard.svg`, `amex.svg`, `discover.svg` — I'll add 4 small inline SVGs (~700 bytes each, no external requests) so they render instantly and look identical to WCS.
-- Render them at `h-6 w-auto` in a centered row with `gap-3`.
+### 4d. Shipping protection card
 
-## 10. Reviews block — heavier social proof, no fake content
+Keep the current card but tighten the copy and add visual polish:
+- Bold heading: `Add Shipping Protection — $5.95`
+- One concise line: "Free returns + replacement coverage. Cancel anytime."
+- Toggle on the right (already in place).
+- When toggled on, the protection price quietly appears under the Order Total.
 
-The 4 reviews are already stubbed in `src/data/reviews.ts`. Two visual fixes:
-- Trustpilot-style: replace the 5 lucide stars with **5 green-square Trustpilot-style boxes** containing a white star (matches WCS exactly — `bg-verified` square with white star inside).
-- Add a small Trustpilot-style header: `★★★★★  4.8 / 5  ·  99 verified reviews` — purely visual, the count text comes from the `ORDER_REVIEWS` length so it never lies.
-- Verified Purchaser badge: keep green checkmark, but underline-on-hover removed and font-weight bumped to 600.
+### 4e. Order summary block
 
-Per the strict reviews policy: I am **not** generating new fake reviews, just restyling the ones already present in your repo. If you want me to remove them and show "No reviews yet" instead, say the word.
+Replace the current single-line "Order Total" with a real summary:
+```
+Subtotal           $107.90
+Shipping             FREE
+Protection          +$5.95   (only if enabled)
+─────────────────────────────
+Total              $113.85
+You saved          $131.90   ← in green
+```
+Pure HTML, all values from existing state.
 
-## 11. Guarantee badge — replace CSS circle with proper red shield-style badge
+### 4f. Checkout CTA — sharper
 
-Current: a flat red circle with text. WCS uses a starburst/coin badge.
+- Keep yellow `YellowCta` styling.
+- Change label to `Complete My Order →` (more committal than just "Checkout").
+- Below it, one small line of micro-trust: `🔒 Secure checkout · Powered by Shopify · 100-day money-back`.
+- Payment logos row stays — already clean.
 
-- Build a proper SVG starburst medallion (CSS gradients for depth, white inner ring, "100 DAY · MONEY BACK" curved text rendered as plain stacked text inside an SVG `<circle>`). All in-component, no external image — keeps load fast and design-token controlled.
-- Sized at `78×78` with a subtle `drop-shadow-md`.
+---
 
-## 12. Spacing + grid polish
+## 5. RIGHT COLUMN — minor cleanup
 
-In `OrderPage.tsx`:
-- Tighten the column gap on desktop (`md:gap-12` → `md:gap-10`).
-- Right column gets `md:sticky md:top-[120px]` so the product panel stays visible while users scroll the 3 steps (huge conversion lift; WCS does this implicitly because the page is short).
-- Add a faint background tint to the page (`bg-[hsl(0_0%_99%)]`) so the white cards visually pop.
+- Remove the redundant `21,734+ Happy Customers` from the right-column header (now lives nowhere → cleaner). Replace with a clean `In stock · Ships in 24h` row in green.
+- Keep `ProductPanel`, `GuaranteeBlock`, `ReviewsBlock` as-is (they already look right).
+- Tighten the right-column gap so the sticky panel sits closer to the top of the viewport.
 
-## 13. Files touched
+---
 
-- **edit** `src/components/order/SiteHeader.tsx` — sticky two-row premium header
-- **edit** `src/components/order/TopBars.tsx` — typographic + color polish
-- **edit** `src/components/order/StepHeader.tsx` — heavier titles, lg radius
-- **edit** `src/components/order/QuantityStep.tsx` — use new `BundleThumb` component
-- **new** `src/components/order/BundleThumb.tsx` — 1/2/3 stacked shoe imagery
-- **edit** `src/components/order/ColorSwatch.tsx` — circular photo swatches
-- **edit** `src/components/order/ColorSizeStep.tsx` — pass image URLs to swatches
-- **new** `src/data/swatchImages.ts` — color → CDN URL map (sourced from live VitalWalk site)
-- **edit** `src/components/order/ProductPanel.tsx` — premium hero, in-stock line
-- **edit** `src/components/order/GuaranteeBlock.tsx` — SVG starburst badge
-- **edit** `src/components/order/ReviewsBlock.tsx` — Trustpilot-style stars + header
-- **edit** `src/components/order/UpgradeStep.tsx` — real payment logo SVGs
-- **edit** `src/components/order/YellowCta.tsx` — inner highlight, sized arrow puck
-- **new** `public/payments/visa.svg`, `mastercard.svg`, `amex.svg`, `discover.svg`
-- **edit** `src/index.css` — Inter font import, base 16/1.55, tabular-nums utility
-- **edit** `tailwind.config.ts` — Inter in font stack
-- **edit** `index.html` — preconnect + Inter `<link rel="stylesheet">`
-- **edit** `src/components/order/OrderPage.tsx` — sticky right column, page tint, gap
+## 6. Files
 
-## 14. What I'm NOT changing
+**New**
+- `src/components/order/TrueToSizeMeter.tsx` — the "How do they fit?" gauge.
+- `src/components/order/ScarcityBar.tsx` — Step-3 countdown pill (uses `localStorage` for real persistence).
+- `src/components/order/SizingDialogs.tsx` — Size Chart + Sizing Tips as shadcn Dialogs.
+- `src/components/order/SavingsHero.tsx` — Step-3 "You're saving $X" strip.
+- `src/components/order/OrderSummary.tsx` — Subtotal / shipping / protection / total / savings block.
+
+**Edited**
+- `src/components/order/OrderPage.tsx` — remove `TopBars`, pass bundle compare price into Step 3, tighter top padding.
+- `src/components/order/SiteHeader.tsx` — strip the dark top bar, single clean header.
+- `src/components/order/QuantityStep.tsx` — bigger thumb, ribbon-style "MOST POPULAR" badge, in-stock line.
+- `src/components/order/ColorSwatch.tsx` — `72px`, label below, checkmark on selected.
+- `src/components/order/ColorSizeStep.tsx` — bigger grid, true-to-size meter above size selector, dialog triggers instead of inline collapsibles.
+- `src/components/order/UpgradeStep.tsx` — savings hero, free-shipping row, scarcity bar, order summary, sharper CTA copy.
+- `src/components/order/ProductPanel.tsx` — replace top stats line with the in-stock row.
+
+**Deleted**
+- `src/components/order/TopBars.tsx` — fully removed.
+
+---
+
+## 7. What I'm NOT touching
 
 - Cart/checkout logic (`shopify.ts`, `findVariant`, `createCheckoutForLines`) — already correct.
-- Step 1 → 2 → 3 flow logic (already matches WCS).
-- Bundle pricing math.
-- The 24-hour countdown behavior.
-- Reviews content (per policy, won't fabricate more).
+- Quantity → variant resolution flow.
+- Bundle pricing math (numbers stay identical).
+- Reviews block content (per the strict reviews policy).
+- Footer.
 
 ---
 
-Approving this plan flips me to default mode and I'll ship every item above in one pass, then verify visually and confirm.
+Approving this plan flips me to default mode. I'll ship every item above in one pass and visually verify before confirming.

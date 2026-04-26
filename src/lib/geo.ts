@@ -57,6 +57,14 @@ export function regionFor(code: string | undefined | null): Region {
   return "US"; // US, CA, fallback
 }
 
+export type SizeSystem = "usW" | "usM" | "uk" | "eu";
+
+export function defaultSizeSystem(region: Region): SizeSystem {
+  if (region === "UK") return "uk";
+  if (region === "EU") return "eu";
+  return "usW"; // US/AU/CA/fallback default to Women's US
+}
+
 interface CachedGeo {
   ts: number;
   country: DetectedCountry | null;

@@ -82,9 +82,15 @@ export function OrderPage() {
     for (const id of variantIds) counts.set(id, (counts.get(id) ?? 0) + 1);
     const lines = Array.from(counts.entries()).map(([variantId, quantity]) => ({ variantId, quantity }));
 
+    // Auto-apply the matching bundle discount so cart total = advertised total.
+    const discountCodes =
+      quantity === 3 ? ["VITALWALK-3PACK"] :
+      quantity === 2 ? ["VITALWALK-2PACK"] :
+      [];
+
     setIsCheckingOut(true);
     try {
-      const { checkoutUrl, error } = await createCheckoutForLines(lines);
+      const { checkoutUrl, error } = await createCheckoutForLines(lines, discountCodes);
       if (!checkoutUrl) {
         toast.error(error ?? "Could not create checkout. Please try again.");
         setIsCheckingOut(false);

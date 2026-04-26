@@ -38,7 +38,7 @@ export function UpgradeStep({
   const totalWithProtection = total + (protectionEnabled ? protectionPrice : 0);
 
   return (
-    <section aria-labelledby="step-3-heading" className="animate-fade-in">
+    <section aria-labelledby="step-3-heading" className="animate-fade-in pb-28 md:pb-0">
       <h2 id="step-3-heading" className="sr-only">
         Step 3: Review and checkout
       </h2>

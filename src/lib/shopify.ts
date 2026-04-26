@@ -185,21 +185,29 @@ export function formatCheckoutUrl(checkoutUrl: string): string {
 
 /**
  * Create a Shopify cart with the provided lines and return the
- * channel-formatted checkout URL.
+ * channel-formatted checkout URL. Optionally applies discount codes
+ * (used for our 2-pack / 3-pack bundle pricing so the cart total
+ * matches what the order page advertises).
  */
-export async function createCheckoutForLines(lines: CartLineInput[]): Promise<{
+export async function createCheckoutForLines(
+  lines: CartLineInput[],
+  discountCodes: string[] = [],
+): Promise<{
   checkoutUrl: string | null;
   error?: string;
 }> {
   if (!lines.length) return { checkoutUrl: null, error: "No items selected." };
 
+  const input: Record<string, unknown> = {
+    lines: lines.map((l) => ({
+      merchandiseId: l.variantId,
+      quantity: l.quantity,
+    })),
+  };
+  if (discountCodes.length) input.discountCodes = discountCodes;
+
   const result = await storefrontApiRequest<CartCreateResponse>(CART_CREATE_MUTATION, {
-    input: {
-      lines: lines.map((l) => ({
-        merchandiseId: l.variantId,
-        quantity: l.quantity,
-      })),
-    },
+    input,
   });
 
   const userErrors = result?.data?.cartCreate?.userErrors ?? [];

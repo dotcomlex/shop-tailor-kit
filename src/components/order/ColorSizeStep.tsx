@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import type { ShopifyProductData } from "@/lib/shopify";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
-import { TrustRow } from "./TrustRow";
 import { ColorSwatch } from "./ColorSwatch";
 import { SizeSelect } from "./SizeSelect";
 import { TrueToSizeMeter } from "./TrueToSizeMeter";
@@ -126,7 +125,6 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
 
       <div className="mt-5">
         <YellowCta label="Next" onClick={onContinue} disabled={!allComplete} />
-        <TrustRow />
       </div>
     </section>
   );

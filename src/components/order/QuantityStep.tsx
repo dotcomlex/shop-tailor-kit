@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
-import { TrustRow } from "./TrustRow";
 import { BundleThumb } from "./BundleThumb";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export type Quantity = 1 | 2 | 3;
 
@@ -52,6 +52,7 @@ interface QuantityStepProps {
 }
 
 export function QuantityStep({ quantity, onQuantityChange, onContinue }: QuantityStepProps) {
+  const { format } = useCurrency();
   return (
     <section aria-labelledby="step-1-heading">
       <h2 id="step-1-heading" className="sr-only">
@@ -121,10 +122,10 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 {/* price — clean stack: struck → big price → /ea */}
                 <div className="shrink-0 text-right">
                   <p className="text-[12px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through sm:text-[13px]">
-                    ${opt.compare.toFixed(2)}
+                    {format(opt.compare)}
                   </p>
                   <p className="mt-0.5 text-[18px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                    ${opt.perPair.toFixed(2)}
+                    {format(opt.perPair)}
                     <span className="ml-0.5 text-[11px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
                   </p>
                 </div>
@@ -136,7 +137,6 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
 
       <div className="mt-5">
         <YellowCta label="Select Your Color and Size" onClick={onContinue} />
-        <TrustRow />
       </div>
     </section>
   );

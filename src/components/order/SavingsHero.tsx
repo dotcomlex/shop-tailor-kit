@@ -1,5 +1,6 @@
 import { Sparkles, Truck } from "lucide-react";
 import { useGeo } from "@/hooks/useGeo";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface SavingsHeroProps {
   saved: number;
@@ -8,6 +9,7 @@ interface SavingsHeroProps {
 
 export function SavingsHero({ saved, comparePrice }: SavingsHeroProps) {
   const { country } = useGeo();
+  const { format } = useCurrency();
 
   const shippingLine = country
     ? `FREE & fast shipping to ${country.name} ${country.flag}`
@@ -21,10 +23,10 @@ export function SavingsHero({ saved, comparePrice }: SavingsHeroProps) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[16px]">
-            You're saving ${saved.toFixed(2)} today
+            You're saving {format(saved)} today
           </p>
           <p className="mt-0.5 text-[12.5px] text-[hsl(var(--text-body))]">
-            vs ${comparePrice.toFixed(2)} retail price
+            vs {format(comparePrice)} retail price
           </p>
         </div>
       </div>

@@ -1,72 +1,57 @@
 ## Goal
-Make the Shopify cart total match what the order page advertises:
-- 1 pair → $69.95 (already correct, no change)
-- 2 pairs → **$116.58** (currently charges $139.90)
-- 3 pairs → **$139.90** (currently charges $209.85)
 
-## Approach: Auto-applied discount codes
+Make every price on the order page match the Shopify checkout to the cent, in the customer's local currency, with no "≈ USD" disclaimer and no rate drift.
 
-Single product, single SKU, single $69.95 price stays untouched. Two discount codes do the bundle math at checkout.
+Today: we use `open.er-api.com` rates client-side. Shopify Markets uses its own rates at checkout, so the displayed price and the checkout price can differ slightly. We'll fix that by asking Shopify itself for the localized prices via the `@inContext(country:)` directive on the Storefront API.
 
-### Step 1 — Create price rules + discount codes in Shopify
+## Approach
 
-Use the Shopify tools to create two fixed-amount price rules, each gated on a minimum quantity, then attach a discount code to each:
+Use Shopify's Storefront API `@inContext(country: $country)` directive. When the query is run with a country code, Shopify returns `priceRange`, `compareAtPriceRange`, and each variant's `price` / `compareAtPrice` already converted into that market's currency (using Shopify's own FX rates — the same ones used at checkout).
 
-**`VITALWALK-2PACK`**
-- `value_type: fixed_amount`, `value: -23.32`
-- `prerequisite_quantity_range: { greater_than_or_equal_to: 2 }` (applies to 2+ pairs)
-- `allocation_method: across`
-- `target_type: line_item`, `target_selection: all`
-- `customer_selection: all`, `once_per_customer: false`
+We'll detect the customer's country (already done via `useGeo`), pass it to the product query, and render the localized amounts Shopify returns. The same country code is also passed to `cartCreate` via `buyerIdentity.countryCode` so the checkout opens in the matching market.
 
-**`VITALWALK-3PACK`**
-- `value_type: fixed_amount`, `value: -69.95`
-- `prerequisite_quantity_range: { greater_than_or_equal_to: 3 }`
-- Same allocation/target/customer settings
+## Changes
 
-> Note: the `shopify--create_price_rule` tool I have access to doesn't expose `prerequisite_quantity_range` directly. I'll create the rules via the available params and, if needed, call the Shopify Admin REST API directly through the gateway to set the quantity threshold. If neither path works in this session, I'll fall back to a single 75%-off code keyed on a 2-pair minimum and a separate 80%-off code keyed on a 3-pair minimum (percentage-based, simpler).
+### 1. `src/lib/shopify.ts`
+- Add `@inContext(country: $country)` to `PRODUCT_BY_HANDLE_QUERY`, with `$country: CountryCode!`.
+- Update `fetchVitalWalkProduct(country: string)` to take a country code and pass it as a variable. Default to `"US"` when none is detected.
+- Add `buyerIdentity: { countryCode }` to the `CART_CREATE_MUTATION` input and to `createCheckoutForLines(lines, discountCodes, country)`.
+- Keep `formatMoney` but make it currency-aware (use `Intl.NumberFormat` with the `currencyCode` Shopify returns).
 
-### Step 2 — Pass the discount code into the Shopify cart
+### 2. `src/hooks/useVitalWalkProduct.ts`
+- Take the detected country from `useGeo()` and include it in the React Query key, e.g. `["vitalwalk-product", country]`.
+- Pass it through to `fetchVitalWalkProduct`.
+- Update `useDisplayPrice` to format using the Shopify-returned `currencyCode` (no manual FX math).
 
-Edit **`src/lib/shopify.ts`**:
+### 3. New helper: `src/lib/money.ts` (small)
+- Export `formatMoney(amount: number | string, currencyCode: string)` using `Intl.NumberFormat` — single source of truth used by all components.
 
-1. Update `CART_CREATE_MUTATION` to accept `discountCodes` in the `CartInput`:
-   ```graphql
-   mutation cartCreate($input: CartInput!) {
-     cartCreate(input: $input) {
-       cart { id checkoutUrl }
-       userErrors { field message }
-     }
-   }
-   ```
-   (No schema change — `CartInput` already supports `discountCodes: [String!]`.)
+### 4. Bundle pricing (the tricky part)
+`QuantityStep` currently hard-codes USD bundle totals (`69.95`, `116.58`, `139.90`, etc.). To stay accurate per market we'll derive bundle totals from Shopify's localized single-pair price:
 
-2. Extend `createCheckoutForLines` to accept an optional `discountCodes: string[]` arg and forward it in the input.
+- Read `product.priceRange.minVariantPrice` (now localized) and `compareAtPriceRange.minVariantPrice` from the query.
+- Compute each bundle's localized totals using the same per-pair multipliers we already use today, but applied to the localized base price:
+  - 1 pair: `1 × price`, compare `1 × compareAt`
+  - 2 pair: `2 × price × (116.58 / (2 × 69.95))` → i.e. apply the same effective bundle discount ratio to the localized price
+  - 3 pair: same idea with the 3-pack ratio
+- Or, simpler and more accurate: keep the discount **percentages** (Save 0% / 17% off pair-of-2 / 33% off pair-of-3 vs single-pair price) constant, derived from the existing USD figures, and apply them to the localized per-pair price. That keeps the maths consistent across markets and matches what the Shopify discount codes (`VITALWALK-2PACK`, `VITALWALK-3PACK`) actually deduct at checkout — they're fixed-amount USD codes, but Shopify Markets converts them automatically.
+- Pass the localized `BUNDLE_OPTIONS` down as data instead of being a module-level constant. We'll move `BUNDLE_OPTIONS` into a hook (`useBundleOptions`) that derives them from the live product query.
 
-### Step 3 — Wire it up in `OrderPage.tsx`
+### 5. `OrderPage.tsx`
+- Read bundle totals from the new `useBundleOptions()` hook instead of the static export.
+- Pass `country` through to `createCheckoutForLines(...)`.
 
-In `handleCheckout`, derive the discount code from the selected quantity:
-```ts
-const discountCodes =
-  quantity === 3 ? ["VITALWALK-3PACK"] :
-  quantity === 2 ? ["VITALWALK-2PACK"] :
-  [];
-const { checkoutUrl, error } = await createCheckoutForLines(lines, discountCodes);
-```
+### 6. Cleanup
+- `src/hooks/useCurrency.ts` and `src/lib/currency.ts` are no longer needed for pricing — delete them, plus the FX disclaimer in `OrderSummary`.
+- Keep the country-flag + currency badge in `SiteHeader`, but source the currency code from the Shopify-returned `currencyCode` instead of the FX library.
 
-### Step 4 — Verify
+## Verification (after the switch)
+1. Load the page from a US IP → see USD prices that match the existing checkout.
+2. Use a UK / AU / CA / EU VPN (or override `useGeo`) → see GBP / AUD / CAD / EUR.
+3. Click **Complete Order** in each market → confirm the Shopify checkout opens in the same currency and the totals match the on-page totals.
+4. Confirm the bundle discount codes (`VITALWALK-2PACK`, `VITALWALK-3PACK`) still bring the cart to the advertised localized total.
 
-After deploy, I'll do a quick smoke test by walking through each quantity tier and confirming the checkout subtotal matches:
-- 1 pair → $69.95
-- 2 pairs → $116.58
-- 3 pairs → $139.90
-
-## Files touched
-- `src/lib/shopify.ts` — extend mutation + function signature
-- `src/components/order/OrderPage.tsx` — pass discount codes to checkout
-
-## Shopify-side changes (via tools)
-- 2 new price rules
-- 2 new discount codes (one per rule)
-
-No new dependencies, no schema changes, no new variants. Reversible — deleting the codes restores the old per-pair-only behavior.
+## Risks / notes
+- The bundle discount codes are fixed-amount USD. Shopify Markets converts them to the buyer's currency at checkout. There may still be ±1 cent rounding on bundle totals between page and checkout — acceptable, and far better than the current setup.
+- Countries Shopify Markets isn't configured to ship to will fall back to the shop's primary currency (USD). That's the correct behaviour.
+- No new dependencies required.

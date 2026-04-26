@@ -1,5 +1,6 @@
 // Shopify Storefront API client — VitalWalk order page
-// Includes product fetch + cart create for direct checkout handoff.
+// Uses @inContext(country:) so prices come back already converted into the
+// buyer's local currency by Shopify itself (same FX rates as checkout).
 
 export const SHOPIFY_API_VERSION = "2025-07";
 export const SHOPIFY_STORE_PERMANENT_DOMAIN = "6cefa8-2.myshopify.com";
@@ -70,7 +71,8 @@ export async function storefrontApiRequest<T = unknown>(
 }
 
 const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
-  query ProductByHandle($handle: String!) {
+  query ProductByHandle($handle: String!, $country: CountryCode!)
+  @inContext(country: $country) {
     product(handle: $handle) {
       id
       handle
@@ -116,9 +118,16 @@ interface RawProductResponse {
   } | null;
 }
 
-export async function fetchVitalWalkProduct(): Promise<ShopifyProductData | null> {
+/**
+ * Fetch the VitalWalk product with prices localized for the given country.
+ * Pass an ISO-3166 alpha-2 country code (e.g. "US", "GB", "CA"). Falls back
+ * to "US" when none is supplied. Shopify converts prices to that market's
+ * currency using the same FX rates checkout uses.
+ */
+export async function fetchVitalWalkProduct(country: string = "US"): Promise<ShopifyProductData | null> {
   const result = await storefrontApiRequest<RawProductResponse>(PRODUCT_BY_HANDLE_QUERY, {
     handle: VITALWALK_PRODUCT_HANDLE,
+    country: (country || "US").toUpperCase(),
   });
 
   if (!result?.data?.product) return null;
@@ -134,13 +143,6 @@ export async function fetchVitalWalkProduct(): Promise<ShopifyProductData | null
     variants: p.variants.edges.map((e) => e.node),
     options: p.options,
   };
-}
-
-export function formatMoney(money: ShopifyMoney | null | undefined): string {
-  if (!money) return "";
-  const amount = parseFloat(money.amount);
-  if (Number.isNaN(amount)) return "";
-  return `$${amount.toFixed(2)}`;
 }
 
 // ─── Cart / Checkout ────────────────────────────────────────────────
@@ -184,14 +186,14 @@ export function formatCheckoutUrl(checkoutUrl: string): string {
 }
 
 /**
- * Create a Shopify cart with the provided lines and return the
- * channel-formatted checkout URL. Optionally applies discount codes
- * (used for our 2-pack / 3-pack bundle pricing so the cart total
- * matches what the order page advertises).
+ * Create a Shopify cart and return the channel-formatted checkout URL.
+ * Passing `country` sets `buyerIdentity.countryCode` so checkout opens in
+ * the matching Shopify Market and currency.
  */
 export async function createCheckoutForLines(
   lines: CartLineInput[],
   discountCodes: string[] = [],
+  country: string = "US",
 ): Promise<{
   checkoutUrl: string | null;
   error?: string;
@@ -203,6 +205,9 @@ export async function createCheckoutForLines(
       merchandiseId: l.variantId,
       quantity: l.quantity,
     })),
+    buyerIdentity: {
+      countryCode: (country || "US").toUpperCase(),
+    },
   };
   if (discountCodes.length) input.discountCodes = discountCodes;
 

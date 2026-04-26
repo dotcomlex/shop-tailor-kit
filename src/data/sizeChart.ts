@@ -1,16 +1,22 @@
 // Standard women's / men's footwear size conversions.
-// Source: industry-standard conversion (US ↔ UK ↔ EU ↔ AU).
+// Source: industry-standard conversion (US ↔ UK ↔ EU ↔ AU/NZ).
+//
+// Region rules:
+// - US: Women and Men differ (Men ≈ Women − 1.5)
+// - UK: Same numeric size for Women and Men (unisex numbering)
+// - EU: Same numeric size for Women and Men (unisex numbering)
+// - AU/NZ: Women = US Women number; Men = UK number
 
 export interface SizeRow {
   usW: string;
   usM: string;
-  uk: string;
-  eu: string;
-  au: string; // AU/NZ uses UK numbering for women, AU men is also UK-based
+  uk: string;   // single unisex UK number
+  eu: string;   // single unisex EU number
+  auW: string;  // AU/NZ Women = US Women
+  auM: string;  // AU/NZ Men = UK
 }
 
-// Master conversion table indexed by (usW, usM) pair.
-// Covers US Women 5-12 / US Men 4-13 — wide enough for VitalWalk's range.
+// Master conversion table — source of truth.
 const TABLE: Array<{ usW: number; usM: number; uk: number; eu: number }> = [
   { usW: 5, usM: 3.5, uk: 2.5, eu: 35 },
   { usW: 5.5, usM: 4, uk: 3, eu: 35.5 },
@@ -61,19 +67,23 @@ export function parseShopifySize(raw: string): SizeRow {
 
   const wNum = parseFloat(wRaw);
   const mNum = parseFloat(mRaw);
-  const ukNum = parseFloat(ukRaw);
 
-  // Find the matching row using whichever number we have.
   const row =
     (Number.isFinite(wNum) && nearest(wNum, "usW")) ||
     (Number.isFinite(mNum) && nearest(mNum, "usM")) ||
     undefined;
 
+  const usW = wRaw || (row ? fmt(row.usW) : "—");
+  const usM = mRaw || (row ? fmt(row.usM) : "—");
+  const uk = ukRaw || (row ? fmt(row.uk) : "—");
+  const eu = row ? fmt(row.eu) : "—";
+
   return {
-    usW: wRaw || (row ? fmt(row.usW) : "—"),
-    usM: mRaw || (row ? fmt(row.usM) : "—"),
-    uk: ukRaw || (row ? fmt(row.uk) : "—"),
-    eu: row ? fmt(row.eu) : "—",
-    au: ukRaw || (row ? fmt(row.uk) : "—"), // AU = UK numerically
+    usW,
+    usM,
+    uk,
+    eu,
+    auW: usW,  // AU/NZ Women = US Women
+    auM: uk,   // AU/NZ Men = UK
   };
 }

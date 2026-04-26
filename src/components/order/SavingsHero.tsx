@@ -10,7 +10,7 @@ export function SavingsHero({ saved, comparePrice }: SavingsHeroProps) {
   const { country } = useGeo();
 
   const shippingLine = country
-    ? `FREE & fast shipping to ${country.flag} ${country.name}`
+    ? `FREE & fast shipping to ${country.name} ${country.flag}`
     : "FREE worldwide shipping included";
 
   return (

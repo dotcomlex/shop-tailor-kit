@@ -1,80 +1,97 @@
-## Problem
+## Goals
 
-On mobile (390px), the Size Chart modal:
-- Stretches nearly full-screen with no max-height or scrollable body
-- Renders ~20 rows of a 4-column table that's cramped and visually noisy
-- Uses a center-positioned dialog that feels heavy on phones
-- Region tabs + 2 columns + dense rows = overwhelming
-
-## Goal
-
-A premium, compact size chart that:
-- Slides up as a **bottom sheet on mobile** (native-feeling, easy to dismiss)
-- Stays as a centered dialog on desktop
-- Has a **scrollable body** with sticky header + footer so it never overflows the viewport
-- Shows a **cleaner row layout** that's wider per cell and easier to scan
-- Highlights the user's selected size prominently
+1. **Size chart accuracy & clarity** — eliminate redundant Women/Men columns where the region uses a single unified number, and fix AU/NZ data.
+2. **Shipping line copy** — flag must come after the country name.
+3. **Step 3 layout** — surface "Add Shipping Protection — $5.95" directly above the "Complete My Order" button so the upsell is the very last decision before checkout.
 
 ---
 
-## Implementation
+## 1. Correct international sizing rules
 
-### 1. `src/components/order/SizingDialogs.tsx` — full rewrite of Size Chart
+Based on industry-standard conversions:
 
-**Responsive shell**: Use `useIsMobile()` hook (already present at `src/hooks/use-mobile.tsx`) to conditionally render either `Sheet` (mobile, side="bottom") or `Dialog` (desktop). Both wrap the same shared body component to avoid duplication.
+| Region | Women | Men |
+|---|---|---|
+| **US** | US W (e.g., 8) | US M (≈ US W − 1.5) |
+| **UK** | Single UK number (W = M physically) |
+| **EU** | Single EU number (W = M physically) |
+| **AU/NZ** | = US Women number | = UK number |
 
-**Layout structure** (shared body):
-```
-┌─────────────────────────────────┐
-│ Drag handle (mobile only)       │
-│ Title + close                   │  ← sticky top
-│ Region tabs (4 pills)           │
-├─────────────────────────────────┤
-│ Scrollable size rows            │  ← max-h: 60vh on mobile,
-│   ┌──────────────────────────┐  │     auto on desktop
-│   │ Women  │ Men   │ ← my size│  │
-│   │  US 8  │ US 6.5│  ✓       │  │
-│   └──────────────────────────┘  │
-│   ...                           │
-├─────────────────────────────────┤
-│ Tip footer (cm → EU)            │  ← sticky bottom
-└─────────────────────────────────┘
-```
+So the W vs M split only matters for **US** and **AU/NZ**. UK and EU should each render as a **single column** per row.
 
-**New row design** (replaces the cramped table):
-- Each size = a **card row**, not a table cell — `flex items-center justify-between` with comfortable padding (`py-3 px-4`)
-- Left: two stacked labels — "Women" small caps + big number, "Men" small caps + big number (side-by-side `flex gap-6`)
-- Right: when this row matches `selectedSize`, show a blue pill `Your size ✓`
-- Selected row: blue tinted background + left border accent (`border-l-4 border-[hsl(var(--order-blue))]`)
-- Other rows: alternating subtle stripe, hairline divider between
-- Numbers use `tabular-nums` and `font-extrabold` for the active region, `font-semibold text-mute` for the secondary
+### Edits to `src/data/sizeChart.ts`
+- Update the `SizeRow.au` field (and computed values) so that:
+  - `auW` = `usW` (numerically identical to US Women)
+  - `auM` = `uk` (numerically identical to UK)
+- Replace the single `au` field with `auW` and `auM` to remove the false "AU = UK for women" assumption currently in the code's comment.
+- Keep `parseShopifySize` working — it returns the full row; consumers will pick the right column.
 
-**Region tabs**: Keep the current 4-pill segmented control but make it sticky directly under the title. Active region drives which two numbers appear large; the other region's number shows as muted secondary below (e.g., active=UK shows "UK 5.5" big, "EU 38.5 · US W 8" small underneath). This collapses the 4-column table into a single readable column.
+### Edits to `src/components/order/SizingDialogs.tsx` — `SizeChartBody`
+Replace the always-two-column (Women / Men) layout with a region-aware renderer:
 
-**Auto-scroll to selected**: On open, `scrollIntoView({ block: "center" })` the row matching `selectedSize` so the user instantly sees their size.
+- **US tab** → two columns: "Women" and "Men" (current behavior, kept).
+- **AU/NZ tab** → two columns: "Women" (= US W) and "Men" (= UK).
+- **UK tab** → **one column**: "Size (UK)" — single bold number per row, with subtitle "Unisex sizing".
+- **EU tab** → **one column**: "Size (EU)" — single bold number per row, with subtitle "Unisex sizing".
 
-### 2. Sheet component reuse
+Other adjustments inside the body:
+- Column header row: dynamically render `Women / Men` (US, AU) OR a single `Size` header (UK, EU).
+- Secondary line under each row: stays useful — show US W/M when on UK/EU/AU tabs; show EU when on US.
+- "Yours" pill: highlight the row that matches the user's selected size in the active region's primary value (computed from `parseShopifySize`).
+- Footer tip: keep as-is.
 
-Use existing `src/components/ui/sheet.tsx` with `side="bottom"`. Add classes:
-- `rounded-t-2xl`
-- `max-h-[85vh]`
-- `flex flex-col` so the inner scroll area can flex-grow
-- Drag handle bar at top (`h-1.5 w-10 rounded-full bg-muted mx-auto mt-2`)
-
-### 3. Sizing Tips dialog
-
-Apply the same mobile sheet / desktop dialog pattern for consistency. Keep the 3 bullet tips but wrap them in the same shell so both modals feel like a matched pair.
-
-### 4. Small polish
-
-- Title size: `text-[17px]` mobile / `text-[19px]` desktop (current 18px is awkward)
-- Add a subtle "Recommended for you" note above the auto-detected region tab when geo detection succeeded (uses existing `useGeo` data already wired in)
-- Footer tip card: lighter background, smaller icon, single-line on mobile
+Result: UK and EU tabs become clean, scannable single-number lists (no duplicated identical numbers), and AU/NZ correctly reflects that women = US numbers, men = UK numbers.
 
 ---
 
-## Files
+## 2. Fix shipping line — flag last
 
-- **Edit** `src/components/order/SizingDialogs.tsx` — responsive Sheet/Dialog shell, redesigned row layout, scroll-to-selected, sticky header/footer
+### Edit `src/components/order/SavingsHero.tsx`
+Change:
+```
+`FREE & fast shipping to ${country.flag} ${country.name}`
+```
+to:
+```
+`FREE & fast shipping to ${country.name} ${country.flag}`
+```
+Result on US: **"FREE & fast shipping to United States 🇺🇸"**.
 
-No new files, no data changes. Pure UI refinement of one component.
+Fallback (no geo) stays: "FREE worldwide shipping included".
+
+---
+
+## 3. Reorder Step 3 — protection upsell directly above CTA
+
+Currently the order in `UpgradeStep.tsx` is:
+1. SavingsHero
+2. ScarcityBar
+3. **Shipping Protection card**
+4. OrderSummary
+5. (gap) → Complete My Order CTA
+
+### Edit `src/components/order/UpgradeStep.tsx`
+Reorder the stack to:
+1. SavingsHero (savings + localized shipping)
+2. ScarcityBar (soft urgency)
+3. **OrderSummary** (subtotal, shipping FREE, total, you saved)
+4. **Shipping Protection toggle card** ← moved down, now sits immediately above CTA
+5. **Complete My Order** CTA
+6. Secure-checkout micro line + payments pill
+
+This makes the protection toggle the final micro-decision before checkout (a proven pattern), while the order summary stays anchored above it so the user sees the total they're committing to.
+
+Minor visual tightening:
+- Reduce the vertical gap between the protection card and the CTA (e.g., `mt-3` instead of `mt-5`) so they read as a connected unit.
+- When protection is enabled, the OrderSummary already shows the +$5.95 line and updated total — that linkage is now visually adjacent (summary → toggle → CTA).
+
+---
+
+## Files touched
+
+- `src/data/sizeChart.ts` — split `au` → `auW` / `auM`, update interface and parser output.
+- `src/components/order/SizingDialogs.tsx` — region-aware column rendering (1 col for UK/EU, 2 col for US & AU/NZ), updated header labels and secondary line logic.
+- `src/components/order/SavingsHero.tsx` — flag after country name.
+- `src/components/order/UpgradeStep.tsx` — reorder children so the protection card sits directly above the CTA.
+
+No other components need changes; `ColorSizeStep` still passes `sizes` and `selectedSize` to `SizingDialogs` unchanged.

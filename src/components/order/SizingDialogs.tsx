@@ -188,7 +188,7 @@ function SizeChartBody({
                 <div
                   ref={isMine ? selectedRowRef : undefined}
                   className={cn(
-                    "relative flex items-center justify-between rounded-xl border px-3 py-2.5 transition-colors sm:px-4",
+                    "relative rounded-xl border px-3 py-2.5 transition-colors sm:px-4",
                     isMine
                       ? "border-[hsl(var(--order-blue)/0.35)] bg-[hsl(var(--order-blue)/0.08)]"
                       : "border-transparent bg-secondary/40 hover:bg-secondary/70",
@@ -201,76 +201,116 @@ function SizeChartBody({
                     />
                   )}
 
-                  {layout.kind === "split" ? (
-                    <div className="flex min-w-0 items-baseline gap-8 sm:gap-10">
-                      <div className="w-12">
-                        <div
-                          className={cn(
-                            "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
-                            isMine
-                              ? "text-[hsl(var(--order-blue))]"
-                              : "text-[hsl(var(--text-strong))]",
-                          )}
-                        >
-                          {parsed[layout.wKey]}
+                  {/* Top: region size numbers + Yours pill */}
+                  <div className="flex items-center justify-between">
+                    {layout.kind === "split" ? (
+                      <div className="flex min-w-0 items-baseline gap-8 sm:gap-10">
+                        <div className="w-12">
+                          <div
+                            className={cn(
+                              "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
+                              isMine
+                                ? "text-[hsl(var(--order-blue))]"
+                                : "text-[hsl(var(--text-strong))]",
+                            )}
+                          >
+                            {parsed[layout.wKey]}
+                          </div>
+                          <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                            {layout.prefix}
+                          </div>
                         </div>
-                        <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
-                          {layout.prefix}
+                        <div className="w-12">
+                          <div
+                            className={cn(
+                              "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
+                              isMine
+                                ? "text-[hsl(var(--order-blue))]"
+                                : "text-[hsl(var(--text-strong))]",
+                            )}
+                          >
+                            {parsed[layout.mKey]}
+                          </div>
+                          <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                            {layout.prefix}
+                          </div>
                         </div>
-                      </div>
-                      <div className="w-12">
-                        <div
-                          className={cn(
-                            "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
-                            isMine
-                              ? "text-[hsl(var(--order-blue))]"
-                              : "text-[hsl(var(--text-strong))]",
-                          )}
-                        >
-                          {parsed[layout.mKey]}
-                        </div>
-                        <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
-                          {layout.prefix}
-                        </div>
-                      </div>
-                      <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
-                        {secondary}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex min-w-0 items-baseline gap-4">
-                      <div className="min-w-[3.5rem]">
-                        <div
-                          className={cn(
-                            "text-[20px] font-extrabold tabular-nums leading-none sm:text-[22px]",
-                            isMine
-                              ? "text-[hsl(var(--order-blue))]"
-                              : "text-[hsl(var(--text-strong))]",
-                          )}
-                        >
-                          {parsed[layout.key]}
-                        </div>
-                        <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
-                          {layout.prefix} · Unisex
+                        <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
+                          {secondary}
                         </div>
                       </div>
-                      <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
-                        {secondary}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="shrink-0 pl-2">
-                    {isMine ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue))] px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white">
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                        Yours
-                      </span>
                     ) : (
-                      <span className="text-[11px] tabular-nums text-[hsl(var(--text-mute))] sm:hidden">
-                        {region === "US" || region === "AU" ? `EU ${parsed.eu}` : `US ${parsed.usW}`}
-                      </span>
+                      <div className="flex min-w-0 items-baseline gap-4">
+                        <div className="min-w-[3.5rem]">
+                          <div
+                            className={cn(
+                              "text-[20px] font-extrabold tabular-nums leading-none sm:text-[22px]",
+                              isMine
+                                ? "text-[hsl(var(--order-blue))]"
+                                : "text-[hsl(var(--text-strong))]",
+                            )}
+                          >
+                            {parsed[layout.key]}
+                          </div>
+                          <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                            {layout.prefix} · Unisex
+                          </div>
+                        </div>
+                        <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
+                          {secondary}
+                        </div>
+                      </div>
                     )}
+
+                    <div className="shrink-0 pl-2">
+                      {isMine ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue))] px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white">
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                          Yours
+                        </span>
+                      ) : (
+                        <span className="text-[11px] tabular-nums text-[hsl(var(--text-mute))] sm:hidden">
+                          {region === "US" || region === "AU" ? `EU ${parsed.eu}` : `US ${parsed.usW}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom: foot length & width in mm */}
+                  <div
+                    className={cn(
+                      "mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-2 text-[11px] tabular-nums sm:text-[12px]",
+                      isMine ? "border-[hsl(var(--order-blue)/0.25)]" : "border-border/60",
+                    )}
+                  >
+                    <span className="inline-flex items-center gap-1 text-[hsl(var(--text-mute))]">
+                      <Ruler className="h-3 w-3" strokeWidth={2.5} />
+                      <span className="uppercase tracking-wide">Length</span>
+                      <span
+                        className={cn(
+                          "ml-0.5 font-bold",
+                          isMine
+                            ? "text-[hsl(var(--order-blue))]"
+                            : "text-[hsl(var(--text-body))]",
+                        )}
+                      >
+                        {parsed.lengthMm} mm
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[hsl(var(--text-mute))]">
+                      <MoveHorizontal className="h-3 w-3" strokeWidth={2.5} />
+                      <span className="uppercase tracking-wide">Width</span>
+                      <span
+                        className={cn(
+                          "ml-0.5 font-bold",
+                          isMine
+                            ? "text-[hsl(var(--order-blue))]"
+                            : "text-[hsl(var(--text-body))]",
+                        )}
+                      >
+                        {parsed.widthMm} mm
+                      </span>
+                    </span>
                   </div>
                 </div>
               </li>
@@ -278,6 +318,7 @@ function SizeChartBody({
           })}
         </ul>
       </div>
+
 
       {/* Footer tip */}
       <div className="shrink-0 border-t border-border bg-secondary/40 px-4 py-3 sm:px-6">

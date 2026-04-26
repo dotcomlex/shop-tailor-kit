@@ -111,9 +111,6 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                   <span aria-hidden>👟</span> Unisex Fit · Men &amp; Women
                 </span>
               </div>
-              <p className="mt-1.5 text-[12px] leading-snug text-[hsl(var(--text-mute))]">
-                Each tile shows <span className="font-semibold text-[hsl(var(--text-body))]">Women's</span> on top and <span className="font-semibold text-[hsl(var(--text-body))]">Men's</span> below. Men: order ~1.5 sizes down from your usual men's size.
-              </p>
               <div className="mt-3">
                 <SizeTileGrid
                   sizes={sizes}

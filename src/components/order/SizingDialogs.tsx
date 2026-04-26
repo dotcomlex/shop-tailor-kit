@@ -329,8 +329,8 @@ function SizeChartBody({
             strokeWidth={2.5}
           />
           <span>
-            Not sure? Measure your foot in <strong>cm</strong> and match it to the EU column for the
-            most accurate fit.
+            Measure your foot heel-to-toe in <strong>mm</strong> with no shoes on. Match the{" "}
+            <strong>Length</strong> column for the most accurate fit.
           </span>
         </div>
       </div>

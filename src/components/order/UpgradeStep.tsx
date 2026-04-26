@@ -1,4 +1,4 @@
-import { ShieldCheck, Truck, Clock, Lock } from "lucide-react";
+import { ShieldCheck, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
@@ -15,6 +15,17 @@ interface UpgradeStepProps {
   onCheckout: () => void;
   isCheckingOut: boolean;
 }
+
+const PAYMENTS = [
+  { name: "Visa", src: "/payments/visa.svg" },
+  { name: "Mastercard", src: "/payments/mastercard.svg" },
+  { name: "American Express", src: "/payments/amex.svg" },
+  { name: "Discover", src: "/payments/discover.svg" },
+  { name: "PayPal", src: "/payments/paypal.svg" },
+  { name: "Apple Pay", src: "/payments/apple-pay.svg" },
+  { name: "Google Pay", src: "/payments/google-pay.svg" },
+  { name: "Shop Pay", src: "/payments/shop-pay.svg" },
+];
 
 export function UpgradeStep({
   protectionEnabled,
@@ -34,37 +45,15 @@ export function UpgradeStep({
       </h2>
       <StepHeader number={3} title="Almost There — Review &amp; Checkout" />
 
-      <div className="mt-4 space-y-4">
-        {/* Savings hero */}
+      <div className="mt-4 space-y-3.5">
+        {/* 1. Combined savings + shipping (auto-detected country) */}
         <SavingsHero saved={saved} comparePrice={comparePrice} />
 
-        {/* Free shipping + 24h ship row */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <div className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3">
-            <Truck className="h-5 w-5 shrink-0 text-verified" strokeWidth={2.5} />
-            <div className="min-w-0">
-              <p className="text-[13px] font-extrabold tracking-tight text-[hsl(var(--text-strong))]">
-                FREE US Shipping
-              </p>
-              <p className="text-[11.5px] text-[hsl(var(--text-mute))]">Included on this order</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3.5 py-3">
-            <Clock className="h-5 w-5 shrink-0 text-[hsl(var(--order-blue))]" strokeWidth={2.5} />
-            <div className="min-w-0">
-              <p className="text-[13px] font-extrabold tracking-tight text-[hsl(var(--text-strong))]">
-                Ships within 24 hours
-              </p>
-              <p className="text-[11.5px] text-[hsl(var(--text-mute))]">From our US warehouse</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Scarcity bar */}
+        {/* 2. Scarcity bar — softened */}
         <ScarcityBar />
 
-        {/* Shipping protection */}
-        <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+        {/* 3. Shipping protection */}
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-order-blue-soft">
               <ShieldCheck className="h-5 w-5 text-[hsl(var(--order-blue))]" strokeWidth={2} />
@@ -74,7 +63,7 @@ export function UpgradeStep({
                 Add Shipping Protection — ${protectionPrice.toFixed(2)}
               </p>
               <p className="mt-1 text-[12.5px] leading-relaxed text-[hsl(var(--text-body))]">
-                Free returns + lost/damaged package replacement. Cancel anytime.
+                Free returns + lost/damaged package replacement.
               </p>
             </div>
             <Switch
@@ -86,7 +75,7 @@ export function UpgradeStep({
           </div>
         </div>
 
-        {/* Order summary */}
+        {/* 4. Order summary */}
         <OrderSummary
           subtotal={total}
           protectionPrice={protectionPrice}
@@ -106,25 +95,25 @@ export function UpgradeStep({
           <span aria-hidden>·</span>
           <span>Powered by Shopify</span>
           <span aria-hidden>·</span>
-          <span>100-day money-back</span>
+          <span>60-day money-back</span>
         </div>
 
-        {/* Payment methods */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-          {[
-            { name: "Visa", src: "/payments/visa.svg" },
-            { name: "Mastercard", src: "/payments/mastercard.svg" },
-            { name: "American Express", src: "/payments/amex.svg" },
-            { name: "Discover", src: "/payments/discover.svg" },
-          ].map((m) => (
-            <img
-              key={m.name}
-              src={m.src}
-              alt={m.name}
-              className="h-7 w-auto rounded-[3px]"
-              loading="lazy"
-            />
-          ))}
+        {/* Payment methods — unified pill */}
+        <div className="mt-3 rounded-xl border border-border bg-secondary/40 px-3 py-2.5">
+          <p className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--text-mute))]">
+            We accept
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+            {PAYMENTS.map((m) => (
+              <img
+                key={m.name}
+                src={m.src}
+                alt={m.name}
+                className="h-6 w-auto rounded-[3px] sm:h-7"
+                loading="lazy"
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

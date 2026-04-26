@@ -1,4 +1,3 @@
-import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
@@ -14,8 +13,7 @@ interface BundleOption {
   total: number;
   compare: number;
   savePct: number;
-  badgeAbove?: string;
-  badgeRight?: { label: string; tone: "popular" | "best" };
+  ribbon?: { label: string; tone: "popular" | "best" };
 }
 
 const OPTIONS: BundleOption[] = [
@@ -34,8 +32,7 @@ const OPTIONS: BundleOption[] = [
     total: 107.9,
     compare: 239.8,
     savePct: 55,
-    badgeAbove: "MOST POPULAR",
-    badgeRight: { label: "Most Popular", tone: "popular" },
+    ribbon: { label: "MOST POPULAR", tone: "popular" },
   },
   {
     qty: 3,
@@ -44,7 +41,7 @@ const OPTIONS: BundleOption[] = [
     total: 143.88,
     compare: 359.7,
     savePct: 60,
-    badgeRight: { label: "Best Deal", tone: "best" },
+    ribbon: { label: "BEST DEAL", tone: "best" },
   },
 ];
 
@@ -67,14 +64,23 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-5 space-y-4">
         {OPTIONS.map((opt) => {
           const selected = quantity === opt.qty;
+          const ribbonClass =
+            opt.ribbon?.tone === "best"
+              ? "bg-[hsl(var(--order-blue))] text-white"
+              : "bg-[hsl(var(--order-blue))] text-white";
           return (
-            <li key={opt.qty} className="relative">
-              {opt.badgeAbove && (
-                <span className="absolute right-3 top-3 z-10 rounded-sm bg-order-blue px-2.5 py-0.5 text-[10.5px] font-extrabold tracking-wider text-white shadow-sm sm:text-[11px]">
-                  {opt.badgeAbove}
+            <li key={opt.qty} className="relative pt-2.5">
+              {opt.ribbon && (
+                <span
+                  className={cn(
+                    "absolute right-3 top-0 z-10 rounded-md px-2 py-[3px] text-[10px] font-extrabold tracking-wider shadow-sm",
+                    ribbonClass,
+                  )}
+                >
+                  {opt.ribbon.label}
                 </span>
               )}
               <button
@@ -82,9 +88,9 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 onClick={() => onQuantityChange(opt.qty)}
                 aria-pressed={selected}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border-2 bg-card p-3 text-left transition-all sm:gap-4 sm:p-4",
+                  "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left transition-all sm:gap-4 sm:p-4",
                   selected
-                    ? "border-order-blue shadow-[0_0_0_3px_hsl(var(--order-blue)/0.08)]"
+                    ? "border-order-blue"
                     : "border-border hover:border-[hsl(var(--text-mute))]",
                 )}
               >
@@ -99,7 +105,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   {selected && <span className="h-2 w-2 rounded-full bg-white" />}
                 </span>
 
-                {/* thumb (stacked pairs) */}
+                {/* thumb */}
                 <BundleThumb count={opt.qty} />
 
                 {/* name + save */}
@@ -112,25 +118,14 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   </p>
                 </div>
 
-                {/* price */}
+                {/* price — clean stack: struck → big price → /ea */}
                 <div className="shrink-0 text-right">
-                  <p className="text-[16px] font-extrabold tabular-nums text-[hsl(var(--text-strong))] sm:text-[18px]">
-                    ${opt.perPair.toFixed(2)}
-                    <span className="text-[12px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
-                  </p>
-                  {opt.badgeRight && (
-                    <p
-                      className={cn(
-                        "mt-0.5 inline-flex items-center gap-1 text-[11px] font-extrabold sm:text-[12px]",
-                        opt.badgeRight.tone === "popular" ? "text-verified" : "text-[hsl(var(--order-blue))]",
-                      )}
-                    >
-                      <Star className="h-3 w-3 fill-current" strokeWidth={0} />
-                      {opt.badgeRight.label}
-                    </p>
-                  )}
-                  <p className="mt-0.5 text-[12px] font-semibold tabular-nums text-save line-through opacity-80 sm:text-[13px]">
+                  <p className="text-[12px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through sm:text-[13px]">
                     ${opt.compare.toFixed(2)}
+                  </p>
+                  <p className="mt-0.5 text-[18px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
+                    ${opt.perPair.toFixed(2)}
+                    <span className="ml-0.5 text-[11px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
                   </p>
                 </div>
               </button>

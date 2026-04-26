@@ -10,7 +10,7 @@ interface SizeSelectProps {
 export function SizeSelect({ sizes, value, onChange, disabledSizes }: SizeSelectProps) {
   return (
     <Select value={value ?? undefined} onValueChange={onChange}>
-      <SelectTrigger className="h-11 w-full border-2 border-border bg-background text-[14px] font-medium">
+      <SelectTrigger className="h-12 w-full border-2 border-border bg-background text-[14px] font-medium sm:h-11">
         <SelectValue placeholder="Select Your Size" />
       </SelectTrigger>
       <SelectContent className="max-h-72">

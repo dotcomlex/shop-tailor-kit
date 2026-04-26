@@ -20,8 +20,8 @@ export function OrderSummary({ subtotal, protectionPrice, protectionEnabled, sav
 
       <div className="mt-3 border-t border-[hsl(var(--hairline))] pt-3">
         <div className="flex items-baseline justify-between">
-          <span className="text-[15px] font-extrabold text-[hsl(var(--text-strong))]">Total</span>
-          <span className="text-[22px] font-extrabold tabular-nums text-[hsl(var(--text-strong))]">
+          <span className="text-[16px] font-extrabold text-[hsl(var(--text-strong))]">Total</span>
+          <span className="text-[24px] font-extrabold tabular-nums text-[hsl(var(--text-strong))] sm:text-[22px]">
             ${total.toFixed(2)}
           </span>
         </div>

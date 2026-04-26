@@ -1,11 +1,5 @@
 import { cn } from "@/lib/utils";
-
-const COLOR_SWATCHES: Record<string, string> = {
-  Beige: "#C8A882",
-  Black: "#1C1C1C",
-  Gray: "#7B7B7B",
-  Blue: "#3F5E91",
-};
+import { COLOR_FALLBACK_HEX, imageForColor } from "@/data/swatchImages";
 
 interface ColorSwatchProps {
   color: string;
@@ -14,21 +8,37 @@ interface ColorSwatchProps {
 }
 
 export function ColorSwatch({ color, selected, onSelect }: ColorSwatchProps) {
-  const fill = COLOR_SWATCHES[color] ?? "#999999";
+  const imgUrl = imageForColor(color, 120);
+  const fallback = COLOR_FALLBACK_HEX[color] ?? "#999";
+
   return (
     <button
       type="button"
       onClick={onSelect}
       aria-label={color}
       aria-pressed={selected}
+      title={color}
       className={cn(
-        "relative h-10 w-10 rounded-md border-2 transition-all",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--order-blue))] focus-visible:ring-offset-2",
+        "group relative flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white p-[3px]",
+        "transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--order-blue))] focus-visible:ring-offset-2",
         selected
-          ? "border-order-blue scale-105"
-          : "border-transparent ring-1 ring-border hover:ring-[hsl(var(--text-mute))]",
+          ? "ring-2 ring-[hsl(var(--order-blue))] ring-offset-2"
+          : "ring-1 ring-[hsl(var(--hairline))] hover:ring-[hsl(var(--text-mute))]",
       )}
-      style={{ backgroundColor: fill }}
-    />
+    >
+      <span
+        className="block h-full w-full overflow-hidden rounded-full"
+        style={{ backgroundColor: fallback }}
+      >
+        {imgUrl && (
+          <img
+            src={imgUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        )}
+      </span>
+    </button>
   );
 }

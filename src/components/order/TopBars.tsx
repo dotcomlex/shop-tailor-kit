@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { Truck } from "lucide-react";
 
 const FULL_DAY = 24 * 60 * 60;
 
@@ -36,31 +36,38 @@ export function TopBars() {
   }, []);
 
   return (
-    <div className="border-b border-border bg-[hsl(var(--soft-gray-bar))]">
+    <div className="border-b border-[hsl(var(--hairline))] bg-[hsl(var(--soft-gray-bar))]">
       {/* Delivery estimate strip */}
-      <div className="container-order flex flex-col gap-1 py-2 text-[12px] text-[hsl(var(--text-mute))] sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
-          <span className="font-medium">Estimated Delivery</span>
+      <div className="container-order flex flex-col items-center gap-1 py-2 text-center text-[12px] text-[hsl(var(--text-body))] sm:flex-row sm:justify-between sm:text-left">
+        <div className="inline-flex items-center gap-1.5">
+          <Truck className="h-3.5 w-3.5 text-verified" strokeWidth={2.5} />
+          <span className="font-semibold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+            Estimated Delivery
+          </span>
         </div>
         <div>
           Order Today{" "}
-          <span className="font-semibold text-[hsl(var(--text-strong))]">{todayLabel}</span>
+          <span className="font-bold text-[hsl(var(--text-strong))]">{todayLabel}</span>
           {" — "}
-          Get It By{" "}
-          <span className="font-semibold text-[hsl(var(--text-strong))]">{deliveryRange}</span>
+          Get it by{" "}
+          <span className="font-bold text-[hsl(var(--text-strong))]">{deliveryRange}</span>
         </div>
       </div>
 
       {/* Countdown box */}
-      <div className="container-order pb-3 pt-2">
+      <div className="container-order pb-3 pt-1">
         <div
-          className="rounded-md border border-dashed bg-order-blue-soft px-4 py-2.5 text-center text-[14px] text-[hsl(var(--text-strong))]"
+          className="rounded-md border border-dashed bg-order-blue-soft px-4 py-2.5 text-center text-[13px] sm:text-[14px]"
           style={{ borderColor: "hsl(var(--order-blue))" }}
         >
-          <span className="font-semibold">First-time Buyer Offer Ends in 24 hours!</span>{" "}
-          Time left:{" "}
-          <span className="font-bold text-save" aria-live="polite">
+          <span className="font-bold text-[hsl(var(--text-strong))]">
+            First-time Buyer Offer Ends in 24 hours!
+          </span>{" "}
+          <span className="text-[hsl(var(--text-body))]">Time left:</span>{" "}
+          <span
+            className="font-extrabold tabular-nums text-save"
+            aria-live="polite"
+          >
             {formatHMS(seconds)}
           </span>
           .

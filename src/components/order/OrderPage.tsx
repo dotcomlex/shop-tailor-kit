@@ -61,7 +61,7 @@ export function OrderPage() {
       return;
     }
 
-    // Resolve each selection into a variant id
+    // Resolve each selection into a variant id (synchronous — must run before window.open)
     const variantIds: string[] = [];
     for (const sel of selections) {
       if (!sel.color || !sel.size) {
@@ -85,15 +85,28 @@ export function OrderPage() {
     for (const id of variantIds) counts.set(id, (counts.get(id) ?? 0) + 1);
     const lines = Array.from(counts.entries()).map(([variantId, quantity]) => ({ variantId, quantity }));
 
+    // CRITICAL: open the tab SYNCHRONOUSLY while the click gesture is still trusted.
+    // iOS Safari/Chrome revoke popup permission once we hit `await`, so we open a
+    // blank tab now and navigate it after the API resolves. This eliminates the
+    // "Allow popups?" prompt that was blocking mobile checkouts.
+    const checkoutWindow = window.open("about:blank", "_blank");
+
     setIsCheckingOut(true);
     try {
       const { checkoutUrl, error } = await createCheckoutForLines(lines);
       if (!checkoutUrl) {
+        checkoutWindow?.close();
         toast.error(error ?? "Could not create checkout. Please try again.");
         return;
       }
-      window.open(checkoutUrl, "_blank");
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.location.href = checkoutUrl;
+      } else {
+        // Rare fallback: browser blocked even the blank open. Navigate in-place.
+        window.location.href = checkoutUrl;
+      }
     } catch (err) {
+      checkoutWindow?.close();
       console.error("Checkout failed:", err);
       toast.error("Something went wrong starting checkout. Please try again.");
     } finally {

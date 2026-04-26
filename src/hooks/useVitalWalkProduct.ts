@@ -4,8 +4,8 @@ import { fetchVitalWalkProduct } from "@/lib/shopify";
 // Static fallback data so the page renders instantly even before the API responds.
 // These match the live Shopify product (verified via shopify--get_product).
 export const STATIC_FALLBACK = {
-  price: "59.95",
-  compareAtPrice: "239.99",
+  price: "69.95",
+  compareAtPrice: "233.17",
   currency: "USD",
 };
 

@@ -3,9 +3,7 @@ import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { TrustRow } from "./TrustRow";
-
-const PAIR_THUMB =
-  "https://cdn.shopify.com/s/files/1/0843/7143/9902/files/vitalwalk_color_2_compressed.jpg?v=1767493057&width=200";
+import { BundleThumb } from "./BundleThumb";
 
 export type Quantity = 1 | 2 | 3;
 
@@ -101,34 +99,29 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   {selected && <span className="h-2 w-2 rounded-full bg-white" />}
                 </span>
 
-                {/* thumb */}
-                <img
-                  src={PAIR_THUMB}
-                  alt=""
-                  className="h-16 w-16 shrink-0 rounded-md border border-border object-cover sm:h-20 sm:w-20"
-                  loading="lazy"
-                />
+                {/* thumb (stacked pairs) */}
+                <BundleThumb count={opt.qty} />
 
                 {/* name + save */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-bold leading-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
+                  <p className="text-[15px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
                     {opt.name}
                   </p>
-                  <p className="mt-1 text-[13px] font-bold text-save sm:text-[14px]">
+                  <p className="mt-1 text-[13px] font-extrabold text-save sm:text-[14px]">
                     Save {opt.savePct}%
                   </p>
                 </div>
 
                 {/* price */}
                 <div className="shrink-0 text-right">
-                  <p className="text-[16px] font-bold text-[hsl(var(--text-strong))] sm:text-[18px]">
+                  <p className="text-[16px] font-extrabold tabular-nums text-[hsl(var(--text-strong))] sm:text-[18px]">
                     ${opt.perPair.toFixed(2)}
-                    <span className="text-[12px] font-normal text-[hsl(var(--text-mute))]">/ea</span>
+                    <span className="text-[12px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
                   </p>
                   {opt.badgeRight && (
                     <p
                       className={cn(
-                        "mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold sm:text-[12px]",
+                        "mt-0.5 inline-flex items-center gap-1 text-[11px] font-extrabold sm:text-[12px]",
                         opt.badgeRight.tone === "popular" ? "text-verified" : "text-[hsl(var(--order-blue))]",
                       )}
                     >
@@ -136,7 +129,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                       {opt.badgeRight.label}
                     </p>
                   )}
-                  <p className="mt-0.5 text-[12px] text-save line-through sm:text-[13px]">
+                  <p className="mt-0.5 text-[12px] font-semibold tabular-nums text-save line-through opacity-80 sm:text-[13px]">
                     ${opt.compare.toFixed(2)}
                   </p>
                 </div>

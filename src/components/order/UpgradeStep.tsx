@@ -34,6 +34,8 @@ export function UpgradeStep({
 }: UpgradeStepProps) {
   const { format } = useCurrency();
   const saved = Math.max(0, comparePrice - total);
+  const ctaWrapperRef = useRef<HTMLDivElement | null>(null);
+  const totalWithProtection = total + (protectionEnabled ? protectionPrice : 0);
 
   return (
     <section aria-labelledby="step-3-heading" className="animate-fade-in">
@@ -79,7 +81,7 @@ export function UpgradeStep({
         <RiskFreeGuarantee />
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3" ref={ctaWrapperRef}>
         <YellowCta label="Complete My Order" onClick={onCheckout} loading={isCheckingOut} />
 
         {/* Single consolidated trust microline */}

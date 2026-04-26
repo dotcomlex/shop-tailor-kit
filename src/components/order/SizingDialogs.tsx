@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Ruler, Lightbulb, Footprints } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Ruler, Lightbulb, Footprints, Check, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,10 +7,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { parseShopifySize, type SizeRow } from "@/data/sizeChart";
 import { useGeo } from "@/hooks/useGeo";
 import { regionFor, type Region } from "@/lib/geo";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SizingDialogsProps {
   sizes: string[];
@@ -24,182 +30,401 @@ const REGIONS: { id: Region; label: string }[] = [
   { id: "AU", label: "AU/NZ" },
 ];
 
-function columnsFor(r: Region): { key: keyof SizeRow; label: string }[] {
+// Returns the "primary" key for the active region row display.
+function primaryKeyFor(r: Region): { wKey: keyof SizeRow; mKey: keyof SizeRow; prefix: string } {
   switch (r) {
     case "UK":
-      return [
-        { key: "uk", label: "UK Women" },
-        { key: "uk", label: "UK Men" },
-      ];
+      return { wKey: "uk", mKey: "uk", prefix: "UK" };
     case "EU":
-      return [
-        { key: "eu", label: "EU Women" },
-        { key: "eu", label: "EU Men" },
-      ];
+      return { wKey: "eu", mKey: "eu", prefix: "EU" };
     case "AU":
-      return [
-        { key: "au", label: "AU Women" },
-        { key: "au", label: "AU Men" },
-      ];
+      return { wKey: "au", mKey: "au", prefix: "AU" };
     default:
-      return [
-        { key: "usW", label: "US Women" },
-        { key: "usM", label: "US Men" },
-      ];
+      return { wKey: "usW", mKey: "usM", prefix: "US" };
   }
 }
 
-export function SizingDialogs({ sizes, selectedSize }: SizingDialogsProps) {
-  const [chartOpen, setChartOpen] = useState(false);
-  const [tipsOpen, setTipsOpen] = useState(false);
-  const { country } = useGeo();
-  const [region, setRegion] = useState<Region>("US");
+/* -------------------------------------------------------------------------- */
+/* Shared body — used inside both Sheet (mobile) and Dialog (desktop)         */
+/* -------------------------------------------------------------------------- */
 
+function SizeChartBody({
+  sizes,
+  selectedSize,
+  region,
+  setRegion,
+  detectedRegion,
+  isMobile,
+  onClose,
+}: {
+  sizes: string[];
+  selectedSize?: string | null;
+  region: Region;
+  setRegion: (r: Region) => void;
+  detectedRegion: Region | null;
+  isMobile: boolean;
+  onClose: () => void;
+}) {
+  const { wKey, mKey, prefix } = primaryKeyFor(region);
+  const rows = useMemo(
+    () => sizes.map((s) => ({ raw: s, parsed: parseShopifySize(s) })),
+    [sizes],
+  );
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const selectedRowRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll to user's size on open / when region/list changes
   useEffect(() => {
-    setRegion(regionFor(country?.code));
-  }, [country]);
-
-  const cols = columnsFor(region);
-  const rows = sizes.map((s) => ({ raw: s, parsed: parseShopifySize(s) }));
+    const t = setTimeout(() => {
+      selectedRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [region, sizes]);
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[14px] sm:text-[15px]">
-      <Dialog open={chartOpen} onOpenChange={setChartOpen}>
-        <DialogTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 font-bold text-[hsl(var(--order-blue))] underline underline-offset-4 decoration-2 hover:opacity-80"
-          >
-            <Ruler className="h-4 w-4" strokeWidth={2.5} />
-            View Size Chart
-          </button>
-        </DialogTrigger>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-left text-[18px] font-extrabold tracking-tight">
-              Size Chart
-            </DialogTitle>
-          </DialogHeader>
+    <div className="flex h-full max-h-[85vh] flex-col">
+      {/* Header */}
+      <div className="shrink-0 border-b border-border bg-background px-5 pb-3 pt-4 sm:px-6 sm:pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[19px]">
+              Find Your Size
+            </h2>
+            <p className="mt-1 text-[12.5px] text-[hsl(var(--text-mute))] sm:text-[13px]">
+              All pairs are <span className="font-semibold text-[hsl(var(--text-body))]">true to size</span>.
+              Pick your usual fit.
+            </p>
+          </div>
+          {!isMobile && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded-full p-1.5 text-[hsl(var(--text-mute))] transition-colors hover:bg-secondary hover:text-[hsl(var(--text-strong))]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
 
-          <p className="text-[13px] text-[hsl(var(--text-body))]">
-            <span className="font-bold text-[hsl(var(--text-strong))]">Find your size below.</span>{" "}
-            All pairs are true to size.
-          </p>
-
-          {/* Region tabs */}
-          <div
-            role="tablist"
-            aria-label="Sizing region"
-            className="grid grid-cols-4 gap-1 rounded-lg bg-secondary p-1"
-          >
-            {REGIONS.map((r) => (
+        {/* Region tabs */}
+        <div
+          role="tablist"
+          aria-label="Sizing region"
+          className="mt-3 grid grid-cols-4 gap-1 rounded-xl bg-secondary p-1"
+        >
+          {REGIONS.map((r) => {
+            const isActive = region === r.id;
+            const isDetected = detectedRegion === r.id;
+            return (
               <button
                 key={r.id}
                 role="tab"
-                aria-selected={region === r.id}
+                aria-selected={isActive}
                 onClick={() => setRegion(r.id)}
                 className={cn(
-                  "rounded-md px-2 py-1.5 text-[12.5px] font-bold tracking-tight transition-colors",
-                  region === r.id
+                  "relative rounded-lg px-2 py-2 text-[12.5px] font-bold tracking-tight transition-all",
+                  isActive
                     ? "bg-card text-[hsl(var(--text-strong))] shadow-sm"
                     : "text-[hsl(var(--text-mute))] hover:text-[hsl(var(--text-strong))]",
                 )}
               >
                 {r.label}
+                {isDetected && !isActive && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[hsl(var(--order-blue))] ring-2 ring-secondary" />
+                )}
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Chart */}
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
-            <table className="w-full text-left text-[14px]">
-              <thead className="sticky top-0 bg-secondary text-[11.5px] uppercase tracking-wide text-[hsl(var(--text-mute))]">
-                <tr>
-                  {cols.map((c) => (
-                    <th key={c.label} className="px-3 py-2.5 font-bold">{c.label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map(({ raw, parsed }, idx) => {
-                  const isMine = selectedSize === raw;
-                  return (
-                    <tr
-                      key={raw}
-                      className={cn(
-                        "h-11",
-                        isMine
-                          ? "bg-[hsl(var(--order-blue)/0.08)]"
-                          : idx % 2 === 1
-                            ? "bg-secondary/40"
-                            : "",
-                      )}
-                    >
-                      {cols.map((c, i) => (
-                        <td
-                          key={i}
-                          className={cn(
-                            "px-3 py-2 tabular-nums",
-                            isMine
-                              ? "font-extrabold text-[hsl(var(--order-blue))]"
-                              : "font-semibold text-[hsl(var(--text-strong))]",
-                          )}
-                        >
-                          {parsed[c.key] || "—"}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-[12.5px] text-[hsl(var(--text-body))]">
-            <Footprints className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--order-blue))]" strokeWidth={2.5} />
-            <span>
-              Not sure? Measure your foot in <strong>cm</strong> and match it to the EU column for the most
-              accurate fit.
+        {detectedRegion && (
+          <p className="mt-2 text-[11.5px] text-[hsl(var(--text-mute))]">
+            Recommended for you:{" "}
+            <span className="font-bold text-[hsl(var(--order-blue))]">
+              {REGIONS.find((r) => r.id === detectedRegion)?.label}
             </span>
+          </p>
+        )}
+      </div>
+
+      {/* Scrollable size rows */}
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 sm:px-4"
+      >
+        <div className="flex items-center justify-between px-3 pb-1.5 pt-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[hsl(var(--text-mute))]">
+          <div className="flex gap-8 sm:gap-10">
+            <span className="w-12">Women</span>
+            <span className="w-12">Men</span>
           </div>
-        </DialogContent>
-      </Dialog>
+          <span>Match</span>
+        </div>
+
+        <ul className="space-y-1">
+          {rows.map(({ raw, parsed }) => {
+            const isMine = selectedSize === raw;
+            const wPrimary = parsed[wKey];
+            const mPrimary = parsed[mKey];
+            // Secondary line — show US numbering if active region isn't US, else show EU
+            const secondary =
+              region === "US"
+                ? `EU ${parsed.eu}`
+                : `US W ${parsed.usW} · US M ${parsed.usM}`;
+
+            return (
+              <li key={raw}>
+                <div
+                  ref={isMine ? selectedRowRef : undefined}
+                  className={cn(
+                    "relative flex items-center justify-between rounded-xl border px-3 py-2.5 transition-colors sm:px-4",
+                    isMine
+                      ? "border-[hsl(var(--order-blue)/0.35)] bg-[hsl(var(--order-blue)/0.08)]"
+                      : "border-transparent bg-secondary/40 hover:bg-secondary/70",
+                  )}
+                >
+                  {isMine && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-2 left-0 w-1 rounded-full bg-[hsl(var(--order-blue))]"
+                    />
+                  )}
+                  <div className="flex min-w-0 items-baseline gap-8 sm:gap-10">
+                    <div className="w-12">
+                      <div
+                        className={cn(
+                          "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
+                          isMine
+                            ? "text-[hsl(var(--order-blue))]"
+                            : "text-[hsl(var(--text-strong))]",
+                        )}
+                      >
+                        {wPrimary}
+                      </div>
+                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                        {prefix}
+                      </div>
+                    </div>
+                    <div className="w-12">
+                      <div
+                        className={cn(
+                          "text-[17px] font-extrabold tabular-nums leading-none sm:text-[18px]",
+                          isMine
+                            ? "text-[hsl(var(--order-blue))]"
+                            : "text-[hsl(var(--text-strong))]",
+                        )}
+                      >
+                        {mPrimary}
+                      </div>
+                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[hsl(var(--text-mute))]">
+                        {prefix}
+                      </div>
+                    </div>
+                    <div className="hidden text-[11.5px] tabular-nums text-[hsl(var(--text-mute))] sm:block">
+                      {secondary}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 pl-2">
+                    {isMine ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue))] px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white">
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                        Yours
+                      </span>
+                    ) : (
+                      <span className="text-[11px] tabular-nums text-[hsl(var(--text-mute))] sm:hidden">
+                        {region === "US" ? `EU ${parsed.eu}` : `US ${parsed.usW}`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Footer tip */}
+      <div className="shrink-0 border-t border-border bg-secondary/40 px-4 py-3 sm:px-6">
+        <div className="flex items-start gap-2 text-[12px] text-[hsl(var(--text-body))] sm:text-[12.5px]">
+          <Footprints
+            className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--order-blue))]"
+            strokeWidth={2.5}
+          />
+          <span>
+            Not sure? Measure your foot in <strong>cm</strong> and match it to the EU column for the
+            most accurate fit.
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sizing Tips body                                                           */
+/* -------------------------------------------------------------------------- */
+
+function SizingTipsBody({ isMobile, onClose }: { isMobile: boolean; onClose: () => void }) {
+  const tips = [
+    "Pick the shoe size you most commonly wear.",
+    "If you are between sizes, choose the size up.",
+    "Wide feet? Our adjustable strap accommodates wider widths comfortably.",
+  ];
+  return (
+    <div className="flex flex-col">
+      <div className="border-b border-border px-5 pb-3 pt-4 sm:px-6 sm:pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[19px]">
+              Expert Sizing Tips
+            </h2>
+            <p className="mt-1 text-[12.5px] text-[hsl(var(--text-mute))] sm:text-[13px]">
+              Trusted by thousands to find the perfect fit.
+            </p>
+          </div>
+          {!isMobile && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded-full p-1.5 text-[hsl(var(--text-mute))] transition-colors hover:bg-secondary hover:text-[hsl(var(--text-strong))]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+      <ul className="space-y-2 px-5 py-4 sm:px-6">
+        {tips.map((t, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-3"
+          >
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--order-blue))] text-white">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            </span>
+            <span className="text-[13.5px] leading-snug text-[hsl(var(--text-body))]">{t}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Main component                                                             */
+/* -------------------------------------------------------------------------- */
+
+export function SizingDialogs({ sizes, selectedSize }: SizingDialogsProps) {
+  const [chartOpen, setChartOpen] = useState(false);
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const { country } = useGeo();
+  const isMobile = useIsMobile();
+
+  const detectedRegion = useMemo<Region | null>(
+    () => (country?.code ? regionFor(country.code) : null),
+    [country],
+  );
+  const [region, setRegion] = useState<Region>("US");
+
+  useEffect(() => {
+    if (detectedRegion) setRegion(detectedRegion);
+  }, [detectedRegion]);
+
+  const triggers = (
+    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[14px] sm:text-[15px]">
+      {/* Size chart trigger */}
+      {isMobile ? (
+        <Sheet open={chartOpen} onOpenChange={setChartOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 font-bold text-[hsl(var(--order-blue))] underline underline-offset-4 decoration-2 hover:opacity-80"
+            >
+              <Ruler className="h-4 w-4" strokeWidth={2.5} />
+              View Size Chart
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            className="flex max-h-[88vh] flex-col rounded-t-2xl p-0"
+          >
+            <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted" aria-hidden />
+            <SizeChartBody
+              sizes={sizes}
+              selectedSize={selectedSize}
+              region={region}
+              setRegion={setRegion}
+              detectedRegion={detectedRegion}
+              isMobile
+              onClose={() => setChartOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={chartOpen} onOpenChange={setChartOpen}>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 font-bold text-[hsl(var(--order-blue))] underline underline-offset-4 decoration-2 hover:opacity-80"
+            >
+              <Ruler className="h-4 w-4" strokeWidth={2.5} />
+              View Size Chart
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
+            <SizeChartBody
+              sizes={sizes}
+              selectedSize={selectedSize}
+              region={region}
+              setRegion={setRegion}
+              detectedRegion={detectedRegion}
+              isMobile={false}
+              onClose={() => setChartOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <span className="hidden h-4 w-px bg-[hsl(var(--hairline))] sm:block" aria-hidden />
 
-      <Dialog open={tipsOpen} onOpenChange={setTipsOpen}>
-        <DialogTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 font-bold text-[hsl(var(--order-blue))] underline underline-offset-4 decoration-2 hover:opacity-80"
-          >
-            <Lightbulb className="h-4 w-4" strokeWidth={2.5} />
-            Sizing Tips
-          </button>
-        </DialogTrigger>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-left text-[18px] font-extrabold tracking-tight">
-              Expert Sizing Tips
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-[14px] text-[hsl(var(--text-body))]">
-            <p>These tips have helped thousands of our customers find the perfect fit:</p>
-            <p className="flex items-start gap-2">
-              <span className="text-verified">✅</span>
-              <span>Pick the shoe size you most commonly wear.</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <span className="text-verified">✅</span>
-              <span>If you are between sizes, choose the size up.</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <span className="text-verified">✅</span>
-              <span>Wide feet? Our adjustable strap accommodates wider widths comfortably.</span>
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Sizing tips trigger */}
+      {isMobile ? (
+        <Sheet open={tipsOpen} onOpenChange={setTipsOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 font-bold text-[hsl(var(--order-blue))] underline underline-offset-4 decoration-2 hover:opacity-80"
+            >
+              <Lightbulb className="h-4 w-4" strokeWidth={2.5} />
+              Sizing Tips
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="rounded-t-2xl p-0">
+            <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted" aria-hidden />
+            <SizingTipsBody isMobile onClose={() => setTipsOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={tipsOpen} onOpenChange={setTipsOpen}>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 font-bold text-[hsl(var(--order-blue))] underline underline-offset-4 decoration-2 hover:opacity-80"
+            >
+              <Lightbulb className="h-4 w-4" strokeWidth={2.5} />
+              Sizing Tips
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
+            <SizingTipsBody isMobile={false} onClose={() => setTipsOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
+
+  return triggers;
 }

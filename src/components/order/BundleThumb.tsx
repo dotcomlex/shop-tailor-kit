@@ -14,12 +14,12 @@ export function BundleThumb({ count, className }: BundleThumbProps) {
   return (
     <div
       className={cn(
-        "relative h-[68px] w-[78px] shrink-0 sm:h-[80px] sm:w-[92px]",
+        "relative h-[56px] w-[64px] shrink-0 sm:h-[80px] sm:w-[92px]",
         className,
       )}
     >
       {Array.from({ length: count }).map((_, i) => {
-        const offset = i * 6;
+        const offset = i * 5;
         const z = count - i;
         return (
           <img

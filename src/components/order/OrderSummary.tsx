@@ -2,13 +2,11 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 interface OrderSummaryProps {
   subtotal: number;
-  protectionPrice: number;
-  protectionEnabled: boolean;
   saved: number;
 }
 
-export function OrderSummary({ subtotal, protectionPrice, protectionEnabled, saved }: OrderSummaryProps) {
-  const total = subtotal + (protectionEnabled ? protectionPrice : 0);
+export function OrderSummary({ subtotal, saved }: OrderSummaryProps) {
+  const total = subtotal;
   const { format, formatUsd, isConverted, currency } = useCurrency();
 
   return (
@@ -16,9 +14,6 @@ export function OrderSummary({ subtotal, protectionPrice, protectionEnabled, sav
       <div className="space-y-2 text-[14px]">
         <Row label="Subtotal" value={format(subtotal)} />
         <Row label="Shipping" value="FREE" valueClass="text-verified font-bold" />
-        {protectionEnabled && (
-          <Row label="Shipping Protection" value={`+${format(protectionPrice)}`} />
-        )}
       </div>
 
       <div className="mt-3 border-t border-[hsl(var(--hairline))] pt-3">

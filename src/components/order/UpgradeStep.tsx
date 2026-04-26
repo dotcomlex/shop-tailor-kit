@@ -6,6 +6,7 @@ import { ScarcityBar } from "./ScarcityBar";
 import { SavingsHero } from "./SavingsHero";
 import { OrderSummary } from "./OrderSummary";
 import { useCurrency } from "@/hooks/useCurrency";
+import paymentBadges from "@/assets/payment-badges.png";
 
 interface UpgradeStepProps {
   protectionEnabled: boolean;
@@ -16,17 +17,6 @@ interface UpgradeStepProps {
   onCheckout: () => void;
   isCheckingOut: boolean;
 }
-
-const PAYMENTS = [
-  { name: "Visa", src: "/payments/visa.svg" },
-  { name: "Mastercard", src: "/payments/mastercard.svg" },
-  { name: "American Express", src: "/payments/amex.svg" },
-  { name: "Discover", src: "/payments/discover.svg" },
-  { name: "PayPal", src: "/payments/paypal.svg" },
-  { name: "Apple Pay", src: "/payments/apple-pay.svg" },
-  { name: "Google Pay", src: "/payments/google-pay.svg" },
-  { name: "Shop Pay", src: "/payments/shop-pay.svg" },
-];
 
 export function UpgradeStep({
   protectionEnabled,

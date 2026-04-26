@@ -7,15 +7,12 @@ import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 
-const SHIPPING_PROTECTION_PRICE = 5.95;
-
 export function OrderPage() {
   const { data: product } = useVitalWalkProduct();
 
   const [quantity, setQuantity] = useState<Quantity>(1);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
-  const [protectionEnabled, setProtectionEnabled] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const step2Ref = useRef<HTMLDivElement | null>(null);
@@ -61,7 +58,7 @@ export function OrderPage() {
       return;
     }
 
-    // Resolve each selection into a variant id (synchronous — must run before window.open)
+    // Resolve each selection into a variant id
     const variantIds: string[] = [];
     for (const sel of selections) {
       if (!sel.color || !sel.size) {
@@ -85,31 +82,20 @@ export function OrderPage() {
     for (const id of variantIds) counts.set(id, (counts.get(id) ?? 0) + 1);
     const lines = Array.from(counts.entries()).map(([variantId, quantity]) => ({ variantId, quantity }));
 
-    // CRITICAL: open the tab SYNCHRONOUSLY while the click gesture is still trusted.
-    // iOS Safari/Chrome revoke popup permission once we hit `await`, so we open a
-    // blank tab now and navigate it after the API resolves. This eliminates the
-    // "Allow popups?" prompt that was blocking mobile checkouts.
-    const checkoutWindow = window.open("about:blank", "_blank");
-
     setIsCheckingOut(true);
     try {
       const { checkoutUrl, error } = await createCheckoutForLines(lines);
       if (!checkoutUrl) {
-        checkoutWindow?.close();
         toast.error(error ?? "Could not create checkout. Please try again.");
+        setIsCheckingOut(false);
         return;
       }
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.location.href = checkoutUrl;
-      } else {
-        // Rare fallback: browser blocked even the blank open. Navigate in-place.
-        window.location.href = checkoutUrl;
-      }
+      // Same-tab navigation — avoids the iOS "Allow popups?" prompt entirely.
+      // Leave the spinner on while the browser navigates away.
+      window.location.href = checkoutUrl;
     } catch (err) {
-      checkoutWindow?.close();
       console.error("Checkout failed:", err);
       toast.error("Something went wrong starting checkout. Please try again.");
-    } finally {
       setIsCheckingOut(false);
     }
   };
@@ -118,8 +104,8 @@ export function OrderPage() {
     <div className="min-h-screen bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
 
-      <main className={`container-order pt-3 sm:pt-5 ${currentStep >= 3 ? "pb-32 md:pb-16" : "pb-16"}`}>
-        <div className="mx-auto max-w-[640px] space-y-6 md:space-y-8">
+      <main className={`container-order pt-2 sm:pt-4 ${currentStep >= 3 ? "pb-32 md:pb-16" : "pb-16"}`}>
+        <div className="mx-auto max-w-[640px] space-y-4 md:space-y-8">
           <QuantityStep
             quantity={quantity}
             onQuantityChange={setQuantity}
@@ -140,11 +126,8 @@ export function OrderPage() {
           <div ref={step3Ref}>
             {currentStep >= 3 && (
               <UpgradeStep
-                protectionEnabled={protectionEnabled}
-                onToggleProtection={setProtectionEnabled}
                 total={bundleTotal}
                 comparePrice={bundleCompare}
-                protectionPrice={SHIPPING_PROTECTION_PRICE}
                 onCheckout={handleCheckout}
                 isCheckingOut={isCheckingOut}
               />

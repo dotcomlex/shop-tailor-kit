@@ -1,6 +1,5 @@
 import { useRef } from "react";
-import { ShieldCheck, Lock } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Lock } from "lucide-react";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { ScarcityBar } from "./ScarcityBar";
@@ -10,32 +9,23 @@ import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
 import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
 import { FaqBlock } from "./FaqBlock";
 import { StickyCheckoutBar } from "./StickyCheckoutBar";
-import { useCurrency } from "@/hooks/useCurrency";
 import paymentBadges from "@/assets/payment-badges.png";
 
 interface UpgradeStepProps {
-  protectionEnabled: boolean;
-  onToggleProtection: (v: boolean) => void;
   total: number;
   comparePrice: number;
-  protectionPrice: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
 }
 
 export function UpgradeStep({
-  protectionEnabled,
-  onToggleProtection,
   total,
   comparePrice,
-  protectionPrice,
   onCheckout,
   isCheckingOut,
 }: UpgradeStepProps) {
-  const { format } = useCurrency();
   const saved = Math.max(0, comparePrice - total);
   const ctaWrapperRef = useRef<HTMLDivElement | null>(null);
-  const totalWithProtection = total + (protectionEnabled ? protectionPrice : 0);
 
   return (
     <section aria-labelledby="step-3-heading" className="animate-fade-in pb-28 md:pb-0">
@@ -47,42 +37,19 @@ export function UpgradeStep({
       <div className="mt-4 space-y-3.5">
         <SavingsHero saved={saved} comparePrice={comparePrice} />
         <ScarcityBar />
-        <OrderSummary
-          subtotal={total}
-          protectionPrice={protectionPrice}
-          protectionEnabled={protectionEnabled}
-          saved={saved}
-        />
-
-        {/* Shipping protection — sits directly above the CTA */}
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-order-blue-soft">
-              <ShieldCheck className="h-5 w-5 text-[hsl(var(--order-blue))]" strokeWidth={2} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[15px]">
-                Add Shipping Protection — {format(protectionPrice)}
-              </p>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-[hsl(var(--text-body))]">
-                Free returns + lost/damaged package replacement.
-              </p>
-            </div>
-            <Switch
-              checked={protectionEnabled}
-              onCheckedChange={onToggleProtection}
-              className="data-[state=checked]:bg-verified"
-              aria-label="Enable shipping protection"
-            />
-          </div>
-        </div>
+        <OrderSummary subtotal={total} saved={saved} />
 
         {/* 60-day risk-free guarantee — final reassurance right before CTA */}
         <RiskFreeGuarantee />
       </div>
 
-      <div className="mt-3" ref={ctaWrapperRef}>
-        <YellowCta label="Complete My Order" onClick={onCheckout} loading={isCheckingOut} />
+      <div className="mt-4" ref={ctaWrapperRef}>
+        <YellowCta
+          label="Complete My Order"
+          onClick={onCheckout}
+          loading={isCheckingOut}
+          leadingLock
+        />
 
         {/* Single consolidated trust microline */}
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
@@ -115,7 +82,7 @@ export function UpgradeStep({
 
       {/* Sticky mobile checkout bar — appears only when the main CTA scrolls out of view */}
       <StickyCheckoutBar
-        total={totalWithProtection}
+        total={total}
         comparePrice={comparePrice}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}

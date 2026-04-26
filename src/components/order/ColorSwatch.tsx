@@ -9,7 +9,7 @@ interface ColorSwatchProps {
 }
 
 export function ColorSwatch({ color, selected, onSelect }: ColorSwatchProps) {
-  const imgUrl = imageForColor(color, 160);
+  const imgUrl = imageForColor(color, 200);
   const fallback = COLOR_FALLBACK_HEX[color] ?? "#999";
 
   return (
@@ -23,10 +23,10 @@ export function ColorSwatch({ color, selected, onSelect }: ColorSwatchProps) {
     >
       <span
         className={cn(
-          "relative flex h-[64px] w-[64px] items-center justify-center rounded-full bg-white p-[3px] transition-all duration-150 sm:h-[72px] sm:w-[72px]",
+          "relative flex h-[78px] w-[78px] items-center justify-center rounded-full bg-white p-[2px] transition-all duration-150 sm:h-[88px] sm:w-[88px]",
           selected
             ? "ring-[3px] ring-[hsl(var(--order-blue))] ring-offset-2"
-            : "ring-1 ring-[hsl(var(--hairline))] group-hover:ring-[hsl(var(--text-mute))] group-focus-visible:ring-2 group-focus-visible:ring-[hsl(var(--order-blue))]",
+            : "ring-1 ring-black/5 group-hover:ring-2 group-hover:ring-[hsl(var(--text-mute))]/40 group-focus-visible:ring-2 group-focus-visible:ring-[hsl(var(--order-blue))]",
         )}
       >
         <span
@@ -53,7 +53,7 @@ export function ColorSwatch({ color, selected, onSelect }: ColorSwatchProps) {
       </span>
       <span
         className={cn(
-          "text-[12px] font-bold tracking-tight transition-colors sm:text-[13px]",
+          "text-[13px] font-bold tracking-tight transition-colors sm:text-[14px]",
           selected ? "text-[hsl(var(--text-strong))]" : "text-[hsl(var(--text-mute))]",
         )}
       >

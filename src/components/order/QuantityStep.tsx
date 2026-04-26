@@ -65,16 +65,13 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
           <span aria-hidden>👟</span> Unisex — fits Men &amp; Women
         </span>
-        <span className="text-[11.5px] text-[hsl(var(--text-mute))]">
-          Same shoe, full size range for everyone.
-        </span>
       </div>
 
-      <ul className="mt-5 space-y-4">
+      <ul className="mt-3 space-y-2.5">
         {OPTIONS.map((opt) => {
           const selected = quantity === opt.qty;
           const ribbonClass =
@@ -98,7 +95,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 onClick={() => onQuantityChange(opt.qty)}
                 aria-pressed={selected}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left transition-all sm:gap-4 sm:p-4",
+                  "flex w-full items-center gap-2.5 rounded-xl border-2 bg-card p-2.5 text-left transition-all sm:gap-4 sm:p-4",
                   selected
                     ? "border-order-blue"
                     : "border-border hover:border-[hsl(var(--text-mute))]",
@@ -144,7 +141,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         })}
       </ul>
 
-      <div className="mt-5">
+      <div className="mt-4">
         <YellowCta label="Select Your Color and Size" onClick={onContinue} />
       </div>
     </section>

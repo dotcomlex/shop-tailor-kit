@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Ruler, Lightbulb, Footprints, Check, X } from "lucide-react";
+import { Ruler, Lightbulb, Footprints, Check, X, MoveHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,

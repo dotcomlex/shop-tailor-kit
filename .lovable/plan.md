@@ -1,81 +1,68 @@
-# Brand Color, Trust Placement & Live Currency Conversion
+# Clean up the checkout footer & fix payment badges
 
-## 1. Replace blue accent with brand green `#0F483A`
+The screenshot shows the section under "Complete My Order" is doing too much: **three stacked trust rows** ("Secure checkout · Powered by Shopify · 60-day money-back" → "SECURE SSL ENCRYPTION" → "GUARANTEED SAFE CHECKOUT") plus a payment pill with **broken SVGs** (PayPal renders as "PirayPa", Discover as "DISC ●", Mastercard has no wordmark, Shop Pay as "SPdy", Amex stacked weirdly). It looks amateur and crowded — the opposite of what a checkout footer should feel like.
 
-The `--order-blue` token is used everywhere as the primary accent (step headers, selected cards, size-chart highlights, links, swatch rings, ShieldCheck icons, etc.). I'll repoint the token instead of hunting every component — one change cascades cleanly.
+Two things to fix in one pass: **declutter the trust copy** and **rebuild the payment badges** to match the clean white-card style from your reference image.
 
-**File: `src/index.css`**
-- `--order-blue: 226 67% 54%` → `--order-blue: 165 66% 17%` *(this is `#0F483A` in HSL)*
-- `--order-blue-soft: 215 100% 96%` → `--order-blue-soft: 165 40% 95%` *(matching very-pale green tint for substrips, Shipping Protection icon bg, countdown bg)*
-- `--ring: 226 67% 54%` → `--ring: 165 66% 17%` *(focus rings stay on-brand)*
+---
 
-Because every component already references `hsl(var(--order-blue))` / `bg-order-blue` / `bg-order-blue-soft`, no component edits are needed for the recolor. The result: step headers, selected quantity card, size-chart highlights, swatch rings, "View size chart" links, and the ShieldCheck pill all turn forest green.
+## 1. Declutter the trust footer
 
-I'll also rename the comment in `index.css` from "step bars + selected card" to reflect brand green so future devs know it's the brand color, not just "blue."
+Right now there are three separate text rows. Consolidate to **one** clean line + the payment row. Cut the redundancy: "Secure checkout" + "SECURE SSL ENCRYPTION" + "GUARANTEED SAFE CHECKOUT" all say the same thing.
 
-## 2. Move "SECURE SSL · GUARANTEED SAFE CHECKOUT" to Step 3 only
+**File: `src/components/order/UpgradeStep.tsx`**
 
-Currently `<TrustRow />` is rendered at the bottom of **both** Step 1 (`QuantityStep.tsx`) and Step 2 (`ColorSizeStep.tsx`), so it appears under each step. It should live only under the final checkout button in Step 3.
+Replace the entire block below the CTA (lines ~93–122) with a single tight composition:
 
-**Files:**
-- `src/components/order/QuantityStep.tsx` — remove `<TrustRow />` render (line ~139) and the import (line ~4).
-- `src/components/order/ColorSizeStep.tsx` — remove `<TrustRow />` render (line ~129) and the import (line ~6).
-- `src/components/order/UpgradeStep.tsx` — add `<TrustRow />` directly **below** the "Secure checkout · Powered by Shopify · 60-day money-back" microline, above the payment-methods pill. Import `TrustRow` at the top.
+- **Row 1 (immediately below CTA, ~12px muted):** `🔒 Secure SSL checkout · Powered by Shopify · 60-day money-back guarantee`
+  - One row, dot separators, lock icon at the start. No uppercase shouty text.
+- **Row 2:** the payment badges in a clean borderless row (no surrounding pill, no "WE ACCEPT" label — the badges speak for themselves and the pill background was adding visual weight).
 
-This consolidates all trust signals at the moment of conversion (right under the "Complete My Order" CTA) instead of sprinkling them after every step.
+**Delete `<TrustRow />` rendering** from `UpgradeStep.tsx` entirely (the SSL/SAFE CHECKOUT lines). That component can stay in the codebase unused, or I can delete the file — I'll delete it since nothing else uses it after the earlier cleanup.
 
-## 3. Automatic currency converter
+Result: instead of 4 stacked elements, the footer becomes **CTA → 1 microline → payment badges**. Clean, scannable, professional.
 
-**Approach:** Use Shopify's native multi-currency at checkout (already happens — Shopify auto-converts based on shopper IP at the checkout page) **plus** an on-page live preview so users see prices in their local currency *before* clicking checkout.
+## 2. Rebuild payment badges (brand-accurate, white card style)
 
-### 3a. Currency utility — new file `src/lib/currency.ts`
-- `SUPPORTED_CURRENCIES`: map of `{ US: 'USD', GB: 'GBP', CA: 'CAD', AU: 'AUD', NZ: 'NZD', DE/FR/IT/ES/NL/...: 'EUR', SE: 'SEK', NO: 'NOK', DK: 'DKK', CH: 'CHF', PL: 'PLN' }` keyed by ISO-2 country code (reusing the same country list already in `src/lib/geo.ts`).
-- `currencyForCountry(code)`: returns the currency code, defaulting to `USD`.
-- `fetchRates()`: fetches USD-base rates from `https://open.er-api.com/v6/latest/USD` (free, no key, CORS-enabled). Caches result in `localStorage` with a 6-hour TTL under key `vitalwalk_fx`. Falls back to a hardcoded snapshot of common rates if the API fails (so the page never breaks).
-- `formatPrice(amountUsd, currency, rate)`: uses `Intl.NumberFormat(locale, { style: 'currency', currency })` to render correctly localized output (e.g., `£59.95`, `€56,40`, `A$92.50`, `C$84.20`).
+The current SVGs use hand-drawn `<path>` data and mangled `<text>` that renders garbage at small sizes. I'll replace all 8 with clean, brand-consistent SVGs in a unified **white card** style matching your reference image:
 
-### 3b. Hook — new file `src/hooks/useCurrency.ts`
-- Combines `useGeo()` + `fetchRates()`.
-- Returns `{ currency, rate, format(amountUsd), loading, isConverted }`.
-- `isConverted` = `true` when currency ≠ `USD` (so we can show a "Charged in USD at checkout · ~£X.XX shown" disclaimer).
+- **Uniform format:** `viewBox="0 0 60 24"`, white background, 1px `#E5E7EB` border, 4px radius. Renders crisply at the `h-7 sm:h-8` size used in the row.
+- **Wordmarks:** use proper inline SVG paths (not `<text>` — fonts don't render reliably in inline SVG across browsers and that's why "PayPal" became "PirayPa").
 
-### 3c. Wire into price displays
+Specifically:
 
-**`src/components/order/OrderSummary.tsx`** — primary surface:
-- Read `useCurrency()`.
-- Show subtotal, protection, total in **localized currency** as the headline.
-- Below the total, show muted line: `≈ $XX.XX USD · charged at checkout` when `isConverted` is true. This is honest (Shopify charges in store currency) and reassuring.
+| Badge | Style | Source |
+|---|---|---|
+| **Visa** | White card, navy "VISA" wordmark in italic bold | Path-based wordmark |
+| **Mastercard** | White card, two overlapping circles (red #EB001B + yellow #F79E1B) — no text needed, the circles are the recognized mark | Already mostly correct, just remove the broken text attempt |
+| **Amex** | White card, blue "AMEX" wordmark (single line, not stacked) | Path-based, matches your reference where it's a single clean word |
+| **Discover** | White card, black "DISCOVER" wordmark + small orange dot over the "v" | Path-based wordmark |
+| **PayPal** | White card, "PayPal" wordmark (navy "Pay" + blue "Pal") | Clean path data, replacing the broken "PirayPa" |
+| **Apple Pay** | White card, black ` Pay` (apple logo + "Pay") | Path-based |
+| **Google Pay** | White card, "G Pay" (multicolor G + grey "Pay") | Path-based |
+| **Shop Pay** | White card, purple "shop" + black "Pay" | Path-based, replacing broken "SPdy" |
 
-**`src/components/order/QuantityStep.tsx`** — bundle option prices (`opt.perPair`, `opt.compare`):
-- Use `format()` so the three quantity cards show prices in the shopper's currency.
+**Important style change:** moving Apple Pay and Shop Pay from solid-color cards to **white cards** so all 8 badges share one visual language (matches your reference screenshot exactly). Solid colored badges next to white badges look mismatched.
 
-**`src/components/order/SavingsHero.tsx`** — "You're saving $X today" and "vs $Y retail":
-- Use `format()` for both numbers.
+**Files rewritten (8 SVGs in `public/payments/`):**
+- `visa.svg`, `mastercard.svg`, `amex.svg`, `discover.svg`, `paypal.svg`, `apple-pay.svg`, `google-pay.svg`, `shop-pay.svg`
 
-**`src/components/order/UpgradeStep.tsx`** — "Add Shipping Protection — $5.95":
-- Use `format()` for the protection price.
+## 3. Tighten the payments row layout
 
-### 3d. Currency indicator in header
-**`src/components/order/SiteHeader.tsx`** — add a small right-aligned chip: `🇬🇧 GBP` (flag + currency code) so users immediately see the page has adapted to them. Click does nothing for now (read-only indicator); we can add a manual override later if desired.
+**File: `src/components/order/UpgradeStep.tsx`**
 
-### 3e. Important caveat shown to user
-At the very bottom of `OrderSummary` when converted, render a single 11px muted line:
-> *Prices shown in {CURRENCY} for reference. Final charge is processed by Shopify at checkout in your local currency.*
+- Drop the `bg-secondary/40` pill background and the "WE ACCEPT" label — the badges form their own visual unit.
+- Render badges in a single centered flex row: `flex flex-wrap justify-center gap-1.5 sm:gap-2`.
+- Badge size: `h-7 sm:h-8` (slightly larger so the wordmarks are legible at mobile width 390px).
+- Add `mt-4` from the microline above for breathing room.
 
-This avoids any legal/UX risk of a mismatch between displayed and charged amounts (Shopify's checkout handles the actual conversion at its own rate).
+---
 
 ## Files touched
-- **Edit** `src/index.css` — repoint `--order-blue`, `--order-blue-soft`, `--ring` to brand green
-- **Edit** `src/components/order/QuantityStep.tsx` — remove TrustRow, add currency formatting
-- **Edit** `src/components/order/ColorSizeStep.tsx` — remove TrustRow
-- **Edit** `src/components/order/UpgradeStep.tsx` — add TrustRow under microline, currency-format protection price
-- **Edit** `src/components/order/OrderSummary.tsx` — currency-format all rows + add disclaimer
-- **Edit** `src/components/order/SavingsHero.tsx` — currency-format saved/retail
-- **Edit** `src/components/order/SiteHeader.tsx` — add flag+currency chip on the right
-- **New** `src/lib/currency.ts` — country→currency map, rate fetch w/ cache + fallback, formatter
-- **New** `src/hooks/useCurrency.ts` — combines geo + rates into a single hook
+- **Edit** `src/components/order/UpgradeStep.tsx` — collapse 3 trust rows into 1 microline, drop the "WE ACCEPT" pill wrapper, remove `<TrustRow />` import + render
+- **Delete** `src/components/order/TrustRow.tsx` — no longer used anywhere after this change
+- **Rewrite** all 8 SVGs in `public/payments/` with clean path-based wordmarks on a unified white-card style
 
-## Out of scope (will not touch)
-- Shopify checkout itself (already auto-converts by IP at checkout — no API change needed)
-- Manual currency-switcher UI (can add later if user wants override control)
-- Server-side rate caching (client cache is sufficient for this volume)
+## Out of scope
+- The "Almost There — Review & Checkout" header, savings hero, scarcity bar, summary, and protection toggle above the CTA — those are working as intended per the prior approved design.
+- Adding more trust seals (Norton/McAfee/etc.) — these would re-add clutter; the new microline + Shopify mention covers it.

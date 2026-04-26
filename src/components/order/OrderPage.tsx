@@ -106,7 +106,7 @@ export function OrderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
       <TopBars />
 
@@ -145,18 +145,20 @@ export function OrderPage() {
             </div>
           </div>
 
-          {/* RIGHT — product info */}
-          <aside className="space-y-6">
-            <ProductPanel />
-            <hr className="border-t border-border" />
-            <GuaranteeBlock />
-            <hr className="border-t border-border" />
-            <ReviewsBlock />
+          {/* RIGHT — product info (sticky on desktop) */}
+          <aside className="md:sticky md:top-[120px] md:self-start">
+            <div className="space-y-6 rounded-xl border border-[hsl(var(--hairline))] bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+              <ProductPanel />
+              <hr className="border-t border-[hsl(var(--hairline))]" />
+              <GuaranteeBlock />
+              <hr className="border-t border-[hsl(var(--hairline))]" />
+              <ReviewsBlock />
+            </div>
           </aside>
         </div>
       </main>
 
-      <footer className="border-t border-border py-5">
+      <footer className="border-t border-[hsl(var(--hairline))] bg-background py-5">
         <div className="container-order text-center text-[12px] text-[hsl(var(--text-mute))]">
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>

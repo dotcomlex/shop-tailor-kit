@@ -8,7 +8,7 @@ export function SiteHeader() {
   const { currency, countryFlag, loading } = useCurrency();
 
   return (
-    <header className="sticky top-0 z-30 bg-background/95 shadow-[0_1px_0_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-background/85">
+    <header className="bg-background shadow-[0_1px_0_rgba(0,0,0,0.06)]">
       <div className="container-order flex items-center justify-between py-2.5 sm:py-3.5">
         <a href="/" aria-label="VitalWalk home" className="inline-flex items-center">
           <img

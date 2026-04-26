@@ -73,7 +73,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
           return (
             <li key={opt.qty} className="relative">
               {opt.badgeAbove && (
-                <span className="absolute -top-3 left-5 z-10 rounded-sm bg-order-blue px-3 py-1 text-[11px] font-bold tracking-wide text-white">
+                <span className="absolute right-3 top-3 z-10 rounded-sm bg-order-blue px-2.5 py-0.5 text-[10.5px] font-extrabold tracking-wider text-white shadow-sm sm:text-[11px]">
                   {opt.badgeAbove}
                 </span>
               )}

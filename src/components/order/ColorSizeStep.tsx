@@ -4,7 +4,7 @@ import type { ShopifyProductData } from "@/lib/shopify";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { ColorSwatch } from "./ColorSwatch";
-import { SizeSelect } from "./SizeSelect";
+import { SizeTileGrid } from "./SizeTileGrid";
 import { TrueToSizeMeter } from "./TrueToSizeMeter";
 import { SizingDialogs } from "./SizingDialogs";
 
@@ -103,11 +103,16 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
               </div>
 
               {/* Size */}
-              <p className="mt-5 text-[14px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[15px]">
-                Size
-              </p>
+              <div className="mt-6 flex items-baseline justify-between">
+                <p className="text-[14px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[15px]">
+                  Size
+                </p>
+                <p className="text-[11.5px] font-medium text-[hsl(var(--text-mute))]">
+                  Tap to choose
+                </p>
+              </div>
               <div className="mt-2.5">
-                <SizeSelect
+                <SizeTileGrid
                   sizes={sizes}
                   value={sel.size}
                   onChange={(v) => onUpdate(idx, { size: v })}
@@ -115,7 +120,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
               </div>
 
               {/* Sizing helpers */}
-              <div className="mt-3.5">
+              <div className="mt-4">
                 <SizingDialogs sizes={sizes} selectedSize={sel.size} />
               </div>
             </div>

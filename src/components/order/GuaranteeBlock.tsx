@@ -38,7 +38,7 @@ export function GuaranteeBlock() {
             fontFamily="system-ui, sans-serif"
             letterSpacing="-0.5"
           >
-            100
+            60
           </text>
           <text
             x="50"
@@ -69,8 +69,8 @@ export function GuaranteeBlock() {
 
       <div className="min-w-0 flex-1">
         <p className="text-[14px] leading-relaxed text-[hsl(var(--text-body))]">
-          <span className="font-bold text-[hsl(var(--text-strong))]">100 Day Money-Back Guarantee:</span>{" "}
-          Feel safe knowing you are protected with a 100 day guarantee. Simply send the item(s) back in the
+          <span className="font-bold text-[hsl(var(--text-strong))]">60 Day Money-Back Guarantee:</span>{" "}
+          Feel safe knowing you are protected with a 60 day guarantee. Simply send the item(s) back in the
           original packaging to receive a full refund or replacement, less S&amp;H.
         </p>
       </div>

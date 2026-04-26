@@ -6,7 +6,7 @@ export function ProductPanel() {
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
         <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-save">
-          New 2025 Release
+          New 2026 Release
         </p>
         <h1 className="text-[22px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))] sm:text-[26px]">
           The Original VitalWalk® Shoes

@@ -1,158 +1,159 @@
 
 # Goal
-This is the bottom of the funnel — the user already read the advertorial and product page. So the order page must be **fast, focused, and high-conversion**: see price → pick variants → checkout. No fluff, no marketing.
 
-I'll strip distractions, sharpen visuals, make Step 2 dramatically clearer, and turn Step 3 into a high-energy "close the deal" panel with savings, free shipping, and a real scarcity timer.
-
----
-
-## 1. REMOVE — clear the visual noise
-
-- **Delete `TopBars.tsx` entirely** from `OrderPage.tsx` (estimated delivery strip + countdown box). The countdown moves into Step 3 where it has more conversion impact.
-- **Tighten `SiteHeader.tsx`**: drop the dark trust strip (already covered by Step 3). Keep only one clean white bar with the VitalWalk logo + a small "Need help?" link. Add a subtle 1px shadow underneath. Result: ~60px tall, premium, minimal — more Apple, less Shopify.
-- **Reduce top padding** on `OrderPage.tsx` so Step 1 is visible above the fold immediately.
+Fix the broken bundle card (badge collides with price), make the size chart genuinely beautiful and multi-region (US / UK / EU / AU-NZ), de-clutter Step 3, auto-detect the buyer's country to personalize the shipping line with their flag, polish payment methods, and tighten everything for mobile-first. Update guarantee copy to **60 days** and release year to **2026**.
 
 ---
 
-## 2. STEP 1 — Quantity (small polish only, it's already solid)
+## 1. Fix Step 1 — broken "MOST POPULAR" badge collision
 
-- Slightly larger bundle thumbnails (`92×92` desktop) so customers can recognize the product without squinting.
-- Move the "MOST POPULAR" badge to a thin ribbon on the **right edge** of the card (less intrusive than the floating top-left badge, won't overflow on mobile).
-- Add a tiny `"In stock — ready to ship"` line in green under the bundle name to subconsciously reduce hesitation.
+The blue `MOST POPULAR` ribbon is currently `absolute right-3 top-3` and overlaps the `$53.95/ea` price. I'll rebuild the card layout so nothing overlaps.
 
----
+In `QuantityStep.tsx`:
+- Move the `badgeAbove` ribbon **outside** the card, sitting on top as a small floating chip that breaks the top border (right side, ~12px from the edge) — like a real ribbon, won't collide with price.
+- Reduce its padding so it's compact: `px-2 py-[3px] text-[10px]`.
+- Remove the duplicated "Most Popular" star line in the right-side price block — redundant with the ribbon. Keep only **price**, **/ea**, and **strikethrough compare**.
+- Reorder the right column: `compare price (small, struck)` → `current per-pair price (big bold)` → `/ea` inline. This is the WCS pattern and reads cleaner.
+- Add a subtle 1px highlight ring on the selected card instead of the heavy `shadow-[0_0_0_3px]` glow which feels harsh on mobile.
 
-## 3. STEP 2 — Color & size (the big upgrade)
-
-### 3a. Massively bigger color swatches
-
-- Bump `ColorSwatch.tsx` from `52px` → **`72px`** (desktop) / `64px` (mobile) circular photo swatches.
-- Add the color name **directly below each swatch** (small bold label) so the user doesn't have to mentally map "the beige circle = Beige". This is exactly how Nike, Allbirds, and Hoka do it.
-- Selected state: thicker `ring-[3px]` in order-blue + a subtle white inner ring + checkmark badge in the bottom-right corner of the swatch (the WCS visual language).
-- Layout becomes a responsive grid (`grid-cols-4 sm:grid-cols-4 md:grid-cols-4`) so all 4 colors are always on one row, evenly spaced.
-
-### 3b. "How do they fit?" — true-to-size meter (matches the screenshot you uploaded)
-
-New component `src/components/order/TrueToSizeMeter.tsx`:
-- Light gray rounded card (`bg-secondary`, `rounded-xl`, padding 16-20px).
-- Top row: bold "How do they fit?" left, "ⓘ Learn more" right.
-- Horizontal track with 3 labels: **RUNS SMALL · TRUE TO SIZE · RUNS LONG**.
-- Filled black dot centered on "TRUE TO SIZE" with a black ring around it (exactly like the screenshot).
-- Pure CSS, no interaction — purely informational, builds confidence.
-- Placed **right above the size selector** (not below) so users see "true to size" *before* they commit to a size.
-
-### 3c. Size chart + tips — much more visible
-
-Currently the chart and tips are collapsibles that look like buttons (easy to miss).
-
-- Replace with **two visible inline links** styled as `font-bold text-order-blue underline-offset-4 hover:underline` next to a 📏 / 💡 icon, in a single horizontal row right below the size selector. Example:
-  - 📏 **View Size Chart**   |   💡 **Sizing Tips**
-- Clicking opens a clean **shadcn Dialog** (modal) instead of inline expansion. Modals are easier to scan than inline collapsibles and don't push the rest of the form down.
-- Inside the size chart modal: same US Women / US Men / UK table, but with a sticky header and zebra rows.
-- Inside the tips modal: the same two ✅ tips, plus the shoe icon + "Sizing is currently displayed in US sizes" note.
-
-### 3d. Per-pair card polish
-
-- When `selections.length > 1` (2 or 3 pairs), each pair card gets a subtle numbered avatar in the top-left (`1`, `2`, `3`) inside a circle, instead of the small uppercase "PAIR 1" label. More scannable.
-- Add a subtle green check next to the pair number once both color + size are selected for that pair — gives users a sense of progress.
+Result: clean card, no overlap, price always fully visible.
 
 ---
 
-## 4. STEP 3 — "Almost there" (the big upgrade)
+## 2. Redesign the size chart — beautiful, multi-region, easy to scan
 
-This step currently shows just shipping protection + a checkout button. It's flat. We make it the most exciting part of the page.
+The current chart only shows US Women / US Men / UK. Buyers come from US, UK, AU, NZ, Canada, EU. I'll rebuild `SizingDialogs.tsx` (`SizeChartDialog` portion):
 
-### 4a. New top: "You're saving $X" hero strip
+### Layout
+- **Tab strip** at the top: `US · UK · EU · AU/NZ` (4 segmented pills, only one active). Default to detected country (see §5). Canada uses US sizing.
+- Below the tabs: a **single clean two-column table** showing only what's relevant for the selected region:
+  - US tab → `US Women` | `US Men`
+  - UK tab → `UK Women` | `UK Men`
+  - EU tab → `EU Women` | `EU Men`
+  - AU/NZ tab → `AU Women` | `AU Men` (same as UK numerically, labeled for clarity)
+- Rows: clean zebra stripes, larger row height (`h-11`), sticky header, tabular nums, the **user's currently selected size** highlighted in a soft blue band so they instantly see "that's me" across regions.
+- Above the table: a single helpful line — "**Find your size below.** All pairs are true to size." (replaces the old "Sizing is currently displayed in US sizes" line — removed per request).
+- Below the table: a small foot-measurement tip card with a tiny ruler icon: "Not sure? Measure your foot in cm and match it to the EU column for the most accurate fit."
 
-Inside Step 3, before the protection card, add a green strip:
-- Background: `bg-verified/10`, border `border-verified/30`, rounded.
-- Large bold text: `🎉 You're saving $XX.XX today` (calculated from `bundle.compare - bundle.total`).
-- Sub-line: `vs ${compare} retail price`.
-- Visual cue: small confetti icon or a sparkle, no animation (clean, no gimmicks).
+### Data
+Add a small `src/data/sizeChart.ts` with a hard-coded matrix mapping each Shopify size string (which is currently `US W X / US M Y / UK Z`) to its EU and AU equivalents. Standard women's/men's conversion table — no fabricated data, just industry-standard sizing.
 
-### 4b. Free shipping confirmation
-
-Below the savings strip, a thin row:
-- ✅ **FREE US shipping** included
-- ✅ Ships within 24 hours
-- Two-column on desktop, stacked on mobile.
-
-### 4c. Scarcity / countdown timer (now lives in Step 3 only)
-
-Move the 24-hour countdown from `TopBars` into a new component `src/components/order/ScarcityBar.tsx`, placed inside Step 3 right above the Checkout CTA:
-- Compact pill: `🔥 First-time buyer offer expires in **HH:MM:SS**`
-- Red background tint, dark border, bold black timer in monospace.
-- Behavior: 24h countdown using `localStorage` so it persists per-session (won't reset on every reload — feels real, not fake).
-
-### 4d. Shipping protection card
-
-Keep the current card but tighten the copy and add visual polish:
-- Bold heading: `Add Shipping Protection — $5.95`
-- One concise line: "Free returns + replacement coverage. Cancel anytime."
-- Toggle on the right (already in place).
-- When toggled on, the protection price quietly appears under the Order Total.
-
-### 4e. Order summary block
-
-Replace the current single-line "Order Total" with a real summary:
-```
-Subtotal           $107.90
-Shipping             FREE
-Protection          +$5.95   (only if enabled)
-─────────────────────────────
-Total              $113.85
-You saved          $131.90   ← in green
-```
-Pure HTML, all values from existing state.
-
-### 4f. Checkout CTA — sharper
-
-- Keep yellow `YellowCta` styling.
-- Change label to `Complete My Order →` (more committal than just "Checkout").
-- Below it, one small line of micro-trust: `🔒 Secure checkout · Powered by Shopify · 100-day money-back`.
-- Payment logos row stays — already clean.
+### Sizing tips dialog
+- Keep the two ✅ tips.
+- **Remove** the "Sizing is currently displayed in US sizes" pill (per request).
+- Add: "Wide feet? Our adjustable strap accommodates wider widths comfortably."
 
 ---
 
-## 5. RIGHT COLUMN — minor cleanup
+## 3. Step 3 — de-clutter, less overwhelming
 
-- Remove the redundant `21,734+ Happy Customers` from the right-column header (now lives nowhere → cleaner). Replace with a clean `In stock · Ships in 24h` row in green.
-- Keep `ProductPanel`, `GuaranteeBlock`, `ReviewsBlock` as-is (they already look right).
-- Tighten the right-column gap so the sticky panel sits closer to the top of the viewport.
+Current Step 3 stacks: SavingsHero → 2 trust pills → ScarcityBar → Protection card → OrderSummary → CTA → micro-trust → 4 payment logos. That's 8 visual blocks — too much.
+
+New, leaner stack:
+1. **Combined Savings + Shipping strip** (single rounded card, two rows inside):
+   - Top row: `🎉 You're saving $XX.XX  ·  vs $YYY.YY retail`
+   - Bottom row: `✅ FREE & fast shipping to {country with flag}` (auto-detected, see §5). Falls back to "FREE worldwide shipping" if detection fails.
+   - Replaces both the SavingsHero card AND the two separate trust pills.
+2. **Scarcity bar** — kept, but visually softened: remove dashed border, use solid soft red background `bg-[hsl(0_85%_97%)]`, smaller pill size, single line on mobile.
+3. **Shipping protection** — kept as-is, already clean.
+4. **Order summary** — kept, but bump Total font size for clarity on mobile.
+5. **CTA** + **single condensed micro-trust line** + **payment row** (see §4).
+
+Net: 8 blocks → 5 blocks. Much easier to scan.
 
 ---
 
-## 6. Files
+## 4. Payment methods row — optimized
+
+Currently 4 logos in a centered row. Improvements in `UpgradeStep.tsx`:
+- Add **Apple Pay**, **Google Pay**, **Shop Pay**, **PayPal** SVGs to `public/payments/` (the real checkout supports these — they boost trust massively).
+- Wrap row in a subtle `bg-secondary/40` pill container with `rounded-lg` so it reads as a unified "we accept" group rather than scattered icons.
+- Add a tiny left-aligned label "We accept" inside the pill at `text-[11px] uppercase tracking-wider text-[hsl(var(--text-mute))]`.
+- Logos at uniform `h-6` with consistent ~32px width slots, evenly spaced. Wraps cleanly on mobile (8 logos → 4×2 grid below 380px).
+- Add the four new SVGs as new files: `apple-pay.svg`, `google-pay.svg`, `shop-pay.svg`, `paypal.svg`. Real, recognizable brand marks (using the publicly available official wordmarks in SVG form).
+
+---
+
+## 5. Auto-detect country → personalize shipping line
+
+New utility `src/lib/geo.ts`:
+- Async function `detectCountry()` that calls `https://ipapi.co/json/` (no key, free, returns `{country_code, country_name}`). Wrap in try/catch with a 2-second timeout.
+- Cache the result in `localStorage` under `vitalwalk_geo` for the session (no need to re-hit the API on every render).
+- Returns `{ code: 'US', name: 'United States', flag: '🇺🇸' }` shape. Map ISO code → emoji flag with a small inline helper (codepoint math: regional indicator letters).
+- If detection fails or returns nothing, return `null` — the UI falls back to "FREE worldwide shipping".
+
+New hook `src/hooks/useGeo.ts`:
+- Wraps `detectCountry()` in a `useEffect`, returns `{ country, loading }`.
+
+Used in:
+- The **combined Savings + Shipping strip** in Step 3 → renders `✅ FREE & fast shipping to 🇬🇧 United Kingdom` when detected.
+- The **Size chart dialog default tab** → if country ∈ `{GB, IE}` default to UK; `{AU, NZ}` → AU/NZ; EU country list → EU; else US (covers US + Canada + everywhere else).
+
+Privacy: this is purely client-side, no data stored beyond the cached country code in localStorage.
+
+---
+
+## 6. Update copy — 60-day guarantee, 2026 release
+
+Search-and-replace across the whole `src/components/order/` folder + `index.html`:
+- `100-day money-back` / `100 Day Guarantee` / `100-day` → **`60-day money-back`** / **`60 Day Guarantee`** / **`60-day`**.
+- `New 2025 Release` → **`New 2026 Release`** (in `ProductPanel.tsx`).
+- Update the SVG starburst medallion in `GuaranteeBlock.tsx` so the inner text reads `60 DAY GUARANTEE`.
+- Update `<title>` and meta description in `index.html` if they reference the old guarantee.
+
+---
+
+## 7. Mobile-first polish (the page is already responsive, this tightens it)
+
+- `SiteHeader.tsx`: shrink vertical padding on mobile (`py-2.5` instead of `py-3.5`), shrink logo to `h-7` on mobile / `h-9` desktop. Adds ~20px of vertical space above the fold.
+- `OrderPage.tsx`: reduce top padding (`pt-3 sm:pt-5`) and gap between cards (`space-y-6` instead of `space-y-8` on mobile, keep `space-y-8` on `md:`).
+- `StepHeader.tsx`: tighten the sub-strip padding so each step header is ~8px shorter on mobile.
+- `ColorSwatch.tsx`: bump touch target up — outer button gets `p-1` so the tappable area is ≥44px even when swatch is 64px (Apple HIG / Google MD touch-target compliance).
+- `SizeSelect.tsx`: bump trigger height to `h-12` on mobile for easier tap.
+- `YellowCta.tsx`: ensure min-height `h-14` on mobile so the primary CTA is always thumb-friendly.
+- `OrderSummary.tsx`: bump Total to `text-[24px]` on mobile (currently `text-[22px]`).
+
+---
+
+## 8. Files
 
 **New**
-- `src/components/order/TrueToSizeMeter.tsx` — the "How do they fit?" gauge.
-- `src/components/order/ScarcityBar.tsx` — Step-3 countdown pill (uses `localStorage` for real persistence).
-- `src/components/order/SizingDialogs.tsx` — Size Chart + Sizing Tips as shadcn Dialogs.
-- `src/components/order/SavingsHero.tsx` — Step-3 "You're saving $X" strip.
-- `src/components/order/OrderSummary.tsx` — Subtotal / shipping / protection / total / savings block.
+- `src/data/sizeChart.ts` — full US/UK/EU/AU sizing matrix.
+- `src/lib/geo.ts` — `detectCountry()` + flag helper.
+- `src/hooks/useGeo.ts` — React hook wrapper.
+- `public/payments/apple-pay.svg`
+- `public/payments/google-pay.svg`
+- `public/payments/shop-pay.svg`
+- `public/payments/paypal.svg`
 
 **Edited**
-- `src/components/order/OrderPage.tsx` — remove `TopBars`, pass bundle compare price into Step 3, tighter top padding.
-- `src/components/order/SiteHeader.tsx` — strip the dark top bar, single clean header.
-- `src/components/order/QuantityStep.tsx` — bigger thumb, ribbon-style "MOST POPULAR" badge, in-stock line.
-- `src/components/order/ColorSwatch.tsx` — `72px`, label below, checkmark on selected.
-- `src/components/order/ColorSizeStep.tsx` — bigger grid, true-to-size meter above size selector, dialog triggers instead of inline collapsibles.
-- `src/components/order/UpgradeStep.tsx` — savings hero, free-shipping row, scarcity bar, order summary, sharper CTA copy.
-- `src/components/order/ProductPanel.tsx` — replace top stats line with the in-stock row.
+- `src/components/order/QuantityStep.tsx` — fix badge overlap, clean right-column price stack.
+- `src/components/order/SizingDialogs.tsx` — multi-region tabbed size chart, remove "displayed in US" line, add measurement tip + wide-feet tip.
+- `src/components/order/UpgradeStep.tsx` — collapse SavingsHero + shipping pills into one strip; soften scarcity bar; redesigned payment row with 8 logos and "We accept" label.
+- `src/components/order/SavingsHero.tsx` — extended to render the country-flag shipping line internally (becomes "SavingsShippingStrip").
+- `src/components/order/ScarcityBar.tsx` — visual softening (no dashed border, smaller).
+- `src/components/order/SiteHeader.tsx` — tighter mobile padding, smaller logo.
+- `src/components/order/OrderPage.tsx` — tighter top padding, smaller mobile gap.
+- `src/components/order/StepHeader.tsx` — tighter mobile padding.
+- `src/components/order/ColorSwatch.tsx` — larger tap target.
+- `src/components/order/SizeSelect.tsx` — `h-12` mobile trigger.
+- `src/components/order/YellowCta.tsx` — `h-14` mobile min-height.
+- `src/components/order/OrderSummary.tsx` — bigger total on mobile.
+- `src/components/order/ProductPanel.tsx` — `New 2026 Release`.
+- `src/components/order/GuaranteeBlock.tsx` — `60 Day Guarantee` in medallion.
+- `index.html` — title/meta if needed.
 
 **Deleted**
-- `src/components/order/TopBars.tsx` — fully removed.
+- None.
 
 ---
 
-## 7. What I'm NOT touching
-
-- Cart/checkout logic (`shopify.ts`, `findVariant`, `createCheckoutForLines`) — already correct.
-- Quantity → variant resolution flow.
-- Bundle pricing math (numbers stay identical).
-- Reviews block content (per the strict reviews policy).
-- Footer.
+## 9. What I'm NOT touching
+- Cart / checkout / Shopify variant resolution — already correct.
+- Bundle pricing math — unchanged.
+- Reviews block content — strict no-fake-reviews policy.
+- Color swatches and Step 2 layout — already polished.
 
 ---
 
-Approving this plan flips me to default mode. I'll ship every item above in one pass and visually verify before confirming.
+Approving this plan flips me to default mode and I'll ship every item in one pass, then visually verify in the preview before confirming.

@@ -108,10 +108,10 @@ export function OrderPage() {
     <div className="min-h-screen bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
 
-      <main className="container-order pb-16 pt-4 sm:pt-6">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-10">
+      <main className="container-order pb-16 pt-3 sm:pt-5">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-10">
           {/* LEFT — order flow */}
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             <QuantityStep
               quantity={quantity}
               onQuantityChange={setQuantity}

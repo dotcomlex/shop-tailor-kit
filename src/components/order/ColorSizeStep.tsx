@@ -117,7 +117,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
 
               {/* Sizing helpers */}
               <div className="mt-3.5">
-                <SizingDialogs sizes={sizes} />
+                <SizingDialogs sizes={sizes} selectedSize={sel.size} />
               </div>
             </div>
           );

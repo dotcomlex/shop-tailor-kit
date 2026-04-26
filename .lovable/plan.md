@@ -1,65 +1,81 @@
-## Why the current size selection feels choppy
+# Plan: Unisex Sizing Clarity + Sticky Checkout CTA
 
-The current `SizeSelect` uses the generic Radix dropdown:
-- Each row shows the **full Shopify string** (`"US W 8 / US M 6.5 / UK 5.5"`) — cramped on a 390px viewport.
-- Default `SelectItem` styling adds a left checkmark indent (`pl-8`), tiny `text-sm` rows, no real visual hierarchy.
-- Opens as a popover that overlays content, with a hard scroll inside a small box → feels list-like and clunky.
-- No region awareness — the user sees all conversions at once even though they only care about their own.
+Two improvements aimed at male shoppers' confidence and conversion at the bottom of Step 3.
 
-## New approach: tactile **tile grid** + smart region display
+---
 
-Replace the dropdown with a responsive grid of size tiles — the same pattern shoe brands like Nike, Allbirds, and Hoka use. It's faster to scan, easier to tap, and visually matches the existing color swatch grid right above it.
+## 1. Make the unisex/men's sizing obvious
 
-### 1. New component: `src/components/order/SizeTileGrid.tsx`
+**Problem:** The current size tiles show a big number (US Women's by default) with a tiny `M 6.5` underneath. A man scanning quickly may not realize these shoes fit him too, or which size to pick.
 
-- **Layout**: `grid-cols-4 sm:grid-cols-5` of square-ish tiles (`aspect-[1.15/1]`, ~64px tall on mobile).
-- **Tile content** (region-aware, using existing `useGeo` + `parseShopifySize`):
-  - Big primary number (e.g. `8` for US Women) — `text-[18px] font-extrabold tabular-nums`.
-  - Tiny secondary label below (e.g. `M 6.5` or `UK 5.5`) — `text-[10px] text-mute`.
-  - This collapses the cramped one-line string into a clean two-tier tile.
-- **States**:
-  - Default: `border-2 border-border bg-background`.
-  - Hover: `border-[hsl(var(--text-body))]` + subtle `bg-secondary/40`.
-  - Selected: `border-[hsl(var(--order-blue))] bg-[hsl(var(--order-blue-soft))] text-[hsl(var(--order-blue))]` + small check badge in the top-right corner.
-  - Disabled / out of stock: diagonal strikethrough line via a pseudo-gradient, `opacity-60`, `cursor-not-allowed`, `aria-disabled`.
-  - Focus: `ring-2 ring-[hsl(var(--ring))] ring-offset-2` for keyboard users.
-- **Animation**: `transition-all duration-150` on border/bg; selected tile gets a soft `animate-scale-in` on first selection.
-- **A11y**: rendered as a `role="radiogroup"`, each tile is a `button` with `role="radio"` and `aria-checked`. Keyboard arrow navigation handled with a small `onKeyDown` (Left/Right/Up/Down).
+### Changes
 
-### 2. Selected-size confirmation strip
+**`src/components/order/SizeTileGrid.tsx`**
+- Add a **dual-label tile layout** that gives equal visual weight to Women's and Men's sizing (instead of one big primary number).
+  - Top row: `W 8` (women's badge in soft pink/neutral)
+  - Bottom row: `M 6.5` (men's badge in soft blue/neutral)
+  - Both shown in tabular-nums, same font weight, separated by a thin divider
+- Update the confirmation strip to read: `✓ Selected: Women's 8 · Men's 6.5 · EU 38.5 · UK 6`
+- For UK/EU/AU regions: keep the regional size as the headline but still show **both W & M** sub-labels so men recognize their fit.
 
-Below the grid, when a size is picked, a thin confirmation row fades in:
-> ✓ Selected: **US W 8** · EU 38.5 · UK 5.5
+**`src/components/order/ColorSizeStep.tsx`**
+- Above the size grid, add a small **"Unisex Fit" badge row**:
+  - Pill: `👟 Unisex — fits Men & Women`
+  - Helper text: `Men: order ~1.5 sizes down from your usual men's size` (matches industry standard W→M conversion)
+- Place it between the "Size" label and the `SizeTileGrid`.
 
-This gives reassurance + cross-region info without forcing the user to open the size chart. Uses `animate-fade-in`.
+**`src/components/order/QuantityStep.tsx`** (light touch)
+- Add a tiny `Unisex` chip near the product title/bundle copy so the unisex nature is established BEFORE size selection — not just discovered there. *(Will confirm exact placement when reading the file in implementation.)*
 
-### 3. Wire-up in `ColorSizeStep.tsx`
+---
 
-- Swap `<SizeSelect …/>` for `<SizeTileGrid …/>` (same props: `sizes`, `value`, `onChange`, optional `disabledSizes`).
-- Keep `SizingDialogs` (size chart + tips) right below — unchanged.
-- Tighten label spacing (`mt-5` → `mt-6`) so the new grid breathes.
+## 2. Sticky "Complete My Order" CTA on Step 3
 
-### 4. Cleanup
+**Problem:** Step 3 now contains the order summary, shipping protection, guarantee, ~6 reviews, and a 6-item FAQ. Users who scroll down to read reviews/FAQs have to scroll back up to checkout — friction at the highest-intent moment.
 
-- Delete `src/components/order/SizeSelect.tsx` (no longer referenced anywhere — it's only used in `ColorSizeStep`).
+### Changes
 
-### What stays the same
+**New component: `src/components/order/StickyCheckoutBar.tsx`**
+- Fixed position at bottom of viewport: `fixed bottom-0 inset-x-0 z-40`
+- Backdrop: white with subtle blur (`bg-background/95 backdrop-blur-md`) and top border/shadow for separation
+- Layout (mobile-first, single row):
+  - Left: compact total — `Total: $XX.XX` with strikethrough compare price beneath in tiny text
+  - Right: shrunk `YellowCta` variant — `Complete Order →` (40-44px tall, not 60px)
+- Includes a tiny `🔒 Secure checkout` microline above the button on slightly taller screens (optional)
+- Safe-area inset padding (`pb-[env(safe-area-inset-bottom)]`) so it sits above iOS home bar
 
-- `parseShopifySize` and the size chart dialog are untouched — the tile grid reuses `parseShopifySize` to get clean per-region values.
-- No changes to the checkout/variant resolution logic — the tile still emits the original raw Shopify size string via `onChange`.
-- Brand colors (forest green `#0F483A`), typography, and the existing card layout remain consistent.
+**Visibility rules (smart, not annoying):**
+- Only renders when `currentStep === 3`
+- Uses an `IntersectionObserver` on the main "Complete My Order" CTA — sticky bar appears ONLY when the main CTA is scrolled OUT of view (so we don't double up two buttons on screen)
+- Slides in/out with `translate-y-full` ↔ `translate-y-0` transition for polish
+- Hidden on `md:hidden` for desktop (desktop users see the full page without thumb-reach concerns) — *(or kept on all sizes; will go with mobile-only by default since this is a mobile conversion concern)*
 
-## Files
+**`src/components/order/UpgradeStep.tsx`**
+- Mount `<StickyCheckoutBar />` at the end of the section, passing `total`, `comparePrice`, `onCheckout`, `isCheckingOut`, and a ref to the main CTA so the bar can observe its visibility.
+- Add bottom padding to the page container so the sticky bar never covers the FAQ's last item.
 
-**New**
-- `src/components/order/SizeTileGrid.tsx`
+**`src/components/order/OrderPage.tsx`** (minor)
+- Add `pb-[80px] md:pb-16` to the `<main>` when on step 3, so content can scroll past the sticky bar.
 
-**Modified**
-- `src/components/order/ColorSizeStep.tsx` (swap component, minor spacing)
+---
 
-**Deleted**
-- `src/components/order/SizeSelect.tsx`
+## Files to be created / modified
 
-## Result
+**New:**
+- `src/components/order/StickyCheckoutBar.tsx`
 
-A clean, tap-friendly grid that mirrors the color swatches above it — no more tiny dropdown rows with overflowing text. Scanning sizes becomes a glance instead of a scroll, which is exactly what's missing today.
+**Modified:**
+- `src/components/order/SizeTileGrid.tsx` — dual W/M tile labels + updated confirmation strip
+- `src/components/order/ColorSizeStep.tsx` — unisex fit badge above size grid
+- `src/components/order/QuantityStep.tsx` — small unisex chip near product copy
+- `src/components/order/UpgradeStep.tsx` — mount sticky bar, pass refs/props
+- `src/components/order/OrderPage.tsx` — extra bottom padding on step 3
+
+No data/schema changes. No new dependencies (uses native `IntersectionObserver`).
+
+---
+
+## Why this works
+- **Men feel seen** the moment they hit Step 2 — no squinting at a tiny "M 6.5" caption.
+- **Sticky CTA removes scroll friction** at peak intent, while the IntersectionObserver prevents a redundant double-CTA when the main button is already visible.
+- Both changes are **conversion-focused, mobile-first**, and stay consistent with the existing brand tokens (yellow CTA, forest green accents, rounded pills).

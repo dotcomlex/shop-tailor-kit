@@ -13,43 +13,46 @@ interface SizeTileGridProps {
 }
 
 interface TileLabels {
-  primary: string;     // big number
-  secondary: string;   // small caption under primary
-  region: Region;
-  /** Used only for the confirmation strip */
-  primaryFull: string; // e.g. "US W 8"
+  /** Top line on the tile, e.g. "W 8" or "UK 5.5" */
+  top: { label: string; value: string };
+  /** Bottom line on the tile, e.g. "M 6.5" */
+  bottom: { label: string; value: string };
+  /** Used in the confirmation strip below the grid */
+  womenFull: string;
+  menFull: string;
 }
 
 function labelsFor(parsed: SizeRow, region: Region): TileLabels {
+  // Always show BOTH Women and Men sizing on every tile so men can identify their fit.
+  // The "headline" pair changes by region but W/M is always present.
   switch (region) {
     case "UK":
       return {
-        primary: parsed.uk,
-        secondary: `EU ${parsed.eu}`,
-        region,
-        primaryFull: `UK ${parsed.uk}`,
+        top: { label: "UK", value: parsed.uk },
+        bottom: { label: "EU", value: parsed.eu },
+        womenFull: `Women's UK ${parsed.uk}`,
+        menFull: `Men's UK ${parsed.uk}`,
       };
     case "EU":
       return {
-        primary: parsed.eu,
-        secondary: `UK ${parsed.uk}`,
-        region,
-        primaryFull: `EU ${parsed.eu}`,
+        top: { label: "EU", value: parsed.eu },
+        bottom: { label: "UK", value: parsed.uk },
+        womenFull: `Women's EU ${parsed.eu}`,
+        menFull: `Men's EU ${parsed.eu}`,
       };
     case "AU":
-      // AU/NZ Women number == US Women number; show UK underneath for cross-ref.
       return {
-        primary: parsed.auW,
-        secondary: `M ${parsed.auM}`,
-        region,
-        primaryFull: `AU/NZ W ${parsed.auW}`,
+        top: { label: "W", value: parsed.auW },
+        bottom: { label: "M", value: parsed.auM },
+        womenFull: `AU/NZ Women's ${parsed.auW}`,
+        menFull: `AU/NZ Men's ${parsed.auM}`,
       };
     default:
       return {
-        primary: parsed.usW,
-        secondary: `M ${parsed.usM}`,
-        region,
-        primaryFull: `US W ${parsed.usW}`,
+        top: { label: "W", value: parsed.usW },
+        bottom: { label: "M", value: parsed.usM },
+        womenFull: `Women's US ${parsed.usW}`,
+        menFull: `Men's US ${parsed.usM}`,
       };
   }
 }
@@ -65,12 +68,15 @@ export function SizeTileGrid({
 
   const tiles = useMemo(
     () =>
-      sizes.map((raw) => ({
-        raw,
-        parsed: parseShopifySize(raw),
-        labels: labelsFor(parseShopifySize(raw), region),
-        disabled: disabledSizes?.has(raw) ?? false,
-      })),
+      sizes.map((raw) => {
+        const parsed = parseShopifySize(raw);
+        return {
+          raw,
+          parsed,
+          labels: labelsFor(parsed, region),
+          disabled: disabledSizes?.has(raw) ?? false,
+        };
+      }),
     [sizes, region, disabledSizes],
   );
 
@@ -104,7 +110,7 @@ export function SizeTileGrid({
     <div>
       <div
         role="radiogroup"
-        aria-label="Select your size"
+        aria-label="Select your size — fits both women and men"
         className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-2.5"
       >
         {tiles.map((t, i) => {
@@ -117,12 +123,13 @@ export function SizeTileGrid({
               role="radio"
               aria-checked={selected}
               aria-disabled={t.disabled || undefined}
+              aria-label={`${t.labels.womenFull} or ${t.labels.menFull}${t.disabled ? " — out of stock" : ""}`}
               disabled={t.disabled}
               tabIndex={selected || (!value && i === 0) ? 0 : -1}
               onClick={() => !t.disabled && onChange(t.raw)}
               onKeyDown={(e) => onKeyDown(e, i)}
               className={cn(
-                "group relative flex aspect-[1.15/1] flex-col items-center justify-center rounded-lg border-2 bg-background px-1 py-2 text-center transition-all duration-150",
+                "group relative flex aspect-[1/1.05] flex-col items-stretch justify-center rounded-lg border-2 bg-background p-1 text-center transition-all duration-150",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2",
                 t.disabled
                   ? "cursor-not-allowed border-border opacity-55"
@@ -153,41 +160,84 @@ export function SizeTileGrid({
                 </span>
               )}
 
+              {/* Top: Women's */}
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <span
+                  className={cn(
+                    "text-[9px] font-bold uppercase leading-none tracking-[0.06em]",
+                    selected
+                      ? "text-[hsl(var(--order-blue))]/70"
+                      : "text-[hsl(var(--text-mute))]",
+                  )}
+                >
+                  {t.labels.top.label}
+                </span>
+                <span
+                  className={cn(
+                    "mt-0.5 text-[16px] font-extrabold leading-none tabular-nums tracking-tight sm:text-[17px]",
+                    selected
+                      ? "text-[hsl(var(--order-blue))]"
+                      : "text-[hsl(var(--text-strong))]",
+                  )}
+                >
+                  {t.labels.top.value}
+                </span>
+              </div>
+
+              {/* Divider */}
               <span
+                aria-hidden
                 className={cn(
-                  "text-[18px] font-extrabold leading-none tabular-nums tracking-tight sm:text-[19px]",
+                  "mx-2 h-px",
                   selected
-                    ? "text-[hsl(var(--order-blue))]"
-                    : "text-[hsl(var(--text-strong))]",
+                    ? "bg-[hsl(var(--order-blue))]/25"
+                    : "bg-border",
                 )}
-              >
-                {t.labels.primary}
-              </span>
-              <span
-                className={cn(
-                  "mt-1 text-[10px] font-semibold uppercase leading-none tracking-wide",
-                  selected
-                    ? "text-[hsl(var(--order-blue))]/75"
-                    : "text-[hsl(var(--text-mute))]",
-                )}
-              >
-                {t.labels.secondary}
-              </span>
+              />
+
+              {/* Bottom: Men's */}
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <span
+                  className={cn(
+                    "text-[9px] font-bold uppercase leading-none tracking-[0.06em]",
+                    selected
+                      ? "text-[hsl(var(--order-blue))]/70"
+                      : "text-[hsl(var(--text-mute))]",
+                  )}
+                >
+                  {t.labels.bottom.label}
+                </span>
+                <span
+                  className={cn(
+                    "mt-0.5 text-[16px] font-extrabold leading-none tabular-nums tracking-tight sm:text-[17px]",
+                    selected
+                      ? "text-[hsl(var(--order-blue))]"
+                      : "text-[hsl(var(--text-strong))]",
+                  )}
+                >
+                  {t.labels.bottom.value}
+                </span>
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Confirmation strip */}
+      {/* Confirmation strip — shows BOTH women's and men's so every shopper sees their fit */}
       {selectedTile && (
         <div
           className="mt-3 flex items-center gap-2 rounded-md bg-[hsl(var(--order-blue-soft))] px-3 py-2 text-[12.5px] font-medium text-[hsl(var(--order-blue))] animate-fade-in"
           role="status"
         >
           <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
-          <span className="truncate">
-            Selected:&nbsp;
-            <span className="font-extrabold">{selectedTile.labels.primaryFull}</span>
+          <span className="min-w-0 flex-1">
+            <span className="font-extrabold">
+              Women's {selectedTile.parsed.usW}
+            </span>
+            <span className="opacity-60"> = </span>
+            <span className="font-extrabold">
+              Men's {selectedTile.parsed.usM}
+            </span>
             <span className="opacity-70">
               {" · "}EU {selectedTile.parsed.eu} · UK {selectedTile.parsed.uk}
             </span>

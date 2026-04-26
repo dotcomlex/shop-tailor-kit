@@ -105,7 +105,7 @@ export function OrderPage() {
     <div className="min-h-screen bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
 
-      <main className="container-order pb-16 pt-3 sm:pt-5">
+      <main className={`container-order pt-3 sm:pt-5 ${currentStep >= 3 ? "pb-32 md:pb-16" : "pb-16"}`}>
         <div className="mx-auto max-w-[640px] space-y-6 md:space-y-8">
           <QuantityStep
             quantity={quantity}

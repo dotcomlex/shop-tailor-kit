@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ShieldCheck, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { StepHeader } from "./StepHeader";
@@ -8,6 +9,7 @@ import { OrderSummary } from "./OrderSummary";
 import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
 import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
 import { FaqBlock } from "./FaqBlock";
+import { StickyCheckoutBar } from "./StickyCheckoutBar";
 import { useCurrency } from "@/hooks/useCurrency";
 import paymentBadges from "@/assets/payment-badges.png";
 
@@ -32,6 +34,8 @@ export function UpgradeStep({
 }: UpgradeStepProps) {
   const { format } = useCurrency();
   const saved = Math.max(0, comparePrice - total);
+  const ctaWrapperRef = useRef<HTMLDivElement | null>(null);
+  const totalWithProtection = total + (protectionEnabled ? protectionPrice : 0);
 
   return (
     <section aria-labelledby="step-3-heading" className="animate-fade-in">
@@ -77,7 +81,7 @@ export function UpgradeStep({
         <RiskFreeGuarantee />
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3" ref={ctaWrapperRef}>
         <YellowCta label="Complete My Order" onClick={onCheckout} loading={isCheckingOut} />
 
         {/* Single consolidated trust microline */}
@@ -108,6 +112,15 @@ export function UpgradeStep({
         <VerifiedReviewsBlock />
         <FaqBlock />
       </div>
+
+      {/* Sticky mobile checkout bar — appears only when the main CTA scrolls out of view */}
+      <StickyCheckoutBar
+        total={totalWithProtection}
+        comparePrice={comparePrice}
+        onCheckout={onCheckout}
+        isCheckingOut={isCheckingOut}
+        observeRef={ctaWrapperRef}
+      />
     </section>
   );
 }

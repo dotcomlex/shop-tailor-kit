@@ -1,31 +1,41 @@
-# Fix: page appears blank/not loading
+## Goal
 
-## What I checked
-- Dev server: healthy, returns 200, no build errors, no runtime errors in console.
-- Network: no failed requests captured.
-- Edge function `geo`: booting normally (~20ms).
-- Code: `Index.tsx` → `OrderPage` renders fine; structure is intact.
+Make the page feel native on mobile — green section headers and content extend to the screen edges (like the competitor screenshot), with comfortable breathing room inside each card.
 
-## Root cause
-In the recent currency hardening, `useCurrency.format()` was changed to return an **empty string** while geo + Shopify localized pricing are still resolving (to prevent a "USD flash" for UK/EU/AU/NZ/CA shoppers).
+## The root cause
 
-Every price on the page (`QuantityStep`, `SavingsHero`, `OrderSummary`, `StickyCheckoutBar`) calls `format(...)`. On a cold load with no geo cache, this means:
-- ~300–800ms where every price slot renders as `""`
-- The page **looks broken / half-loaded** during that window — which matches what you're seeing in the preview right now (no cached geo in the iframe).
+Right now there's a 16px gutter wrapping the entire page (`.container-order` adds `px-4` on mobile). That gutter pushes the green headers, bundle cards, and all sections inward — leaving a visible strip of background on both sides. The competitor's page has zero outer gutter on mobile, so their blue header bars run flush to the screen edges and the content feels properly sized.
 
-The page is technically loading correctly; it just looks empty because the prices are blanked instead of showing a placeholder.
+## What will change
 
-## Fix
+**1. Remove the outer mobile gutter (edge-to-edge layout)**
+- On mobile, the main content column will go flush to the screen edges (0px outer padding).
+- The site header and footer keep a small gutter so the logo/currency pill don't kiss the edge.
+- On tablet/desktop (≥640px) the existing comfortable gutter stays — nothing changes for larger screens.
 
-1. **`src/hooks/useCurrency.ts`** — return a small placeholder (`"…"` or a fixed-width skeleton string like `"—"`) instead of `""` while awaiting localized price. The page will visibly populate immediately and prices will swap in cleanly when Shopify responds.
-2. **Optimistic USD-then-swap for cached non-US shoppers** — when geo is cached, we already know the country, so render the USD-equivalent immediately styled as a skeleton (lower opacity) and swap to localized currency the moment Shopify responds. No blank window.
-3. **Cap the wait** — if Shopify localized response takes >1.2s, fall back to showing the USD price rather than staying blank indefinitely. A late-arriving wrong currency is far better than a permanently empty page (and we already invalidate + re-render via `vitalwalk:geo-changed`).
-4. **Prefetch geo earlier** — kick off `detectCountry()` from `main.tsx` (before React mounts) so the geo round-trip overlaps with React hydration and the Shopify fetch can fire with the right country on the very first query.
+**2. Square off the step headers on mobile**
+- The green "1. Select Quantity / Bundle and Save!" bar will lose its rounded corners on mobile (matching competitor) and stretch fully edge-to-edge. Rounded corners return on tablet+.
 
-## Files to edit
-- `src/hooks/useCurrency.ts` — placeholder + 1.2s timeout fallback
-- `src/main.tsx` — prefetch `detectCountry()` on module load
-- `src/components/order/SavingsHero.tsx`, `OrderSummary.tsx`, `QuantityStep.tsx`, `StickyCheckoutBar.tsx` — wrap empty `format()` output in a subtle skeleton span (opacity-40 + min-width) so the layout never collapses
+**3. Add internal padding to the content rows so nothing feels cramped**
+- Bundle option cards, the color/size step, the upgrade step, and the order summary each get a small inner horizontal padding (~12px) on mobile so text and prices don't touch the edges. Net effect: the colored bars touch the edges, but the white card content sits with proper breathing room — exactly like the WCS reference.
+
+**4. Slightly larger price + name typography on mobile**
+- Bundle name bumps from 16px → 17px and price from 19px → 20px on mobile so the row feels less "tight" (matching the competitor's confident sizing).
+
+## Files touched
+
+- `src/index.css` — adjust `.container-order` (no horizontal padding on mobile, restore on `sm:`); add a new `.container-edge` helper for header/footer that keeps a gutter.
+- `src/components/order/StepHeader.tsx` — remove `rounded-lg` on mobile (apply only at `sm:`).
+- `src/components/order/OrderPage.tsx` — wrap each step in a small mobile-only inner padding wrapper so card content stays comfortable while the header bars run edge-to-edge.
+- `src/components/order/SiteHeader.tsx` — switch to the gutter-preserving container so the header doesn't go edge-to-edge.
+- `src/components/order/QuantityStep.tsx` — slight typography bump for name/price on mobile.
+
+## What stays the same
+
+- Desktop/tablet layout is unchanged.
+- All currency, geo-detection, checkout, and Shopify logic is untouched.
+- Colors, fonts, and brand styling are unchanged.
 
 ## Result
-On every load (cached or cold, US or non-US, ad-blockers on or off), the page paints all prices within ~50ms — either as the cached/static value or as a visible skeleton — and never appears blank.
+
+On a phone, your page will look like the WCS reference: the green section bars run flush to both edges of the screen, the bundle cards sit comfortably inside with proper padding, and nothing feels squeezed. Desktop is unaffected.

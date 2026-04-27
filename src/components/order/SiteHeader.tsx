@@ -11,7 +11,7 @@ export function SiteHeader() {
 
   return (
     <header className="bg-background shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-      <div className="container-order flex items-center justify-between py-3 sm:py-3.5">
+      <div className="container-edge flex items-center justify-between py-3 sm:py-3.5">
         <a href="/" aria-label="VitalWalk home" className="inline-flex items-center">
           <img
             src={VITALWALK_LOGO_URL}

@@ -85,8 +85,15 @@
     font-variant-numeric: tabular-nums;
   }
   .container-order {
+    @apply mx-auto w-full px-0 sm:px-6;
+    max-width: 1100px;
+  }
+  .container-edge {
     @apply mx-auto w-full px-4 sm:px-6;
     max-width: 1100px;
+  }
+  .row-pad {
+    @apply px-3 sm:px-0;
   }
 
   .text-save-red {

@@ -64,6 +64,26 @@ export function OrderPage() {
 
   const advanceToStep3 = () => {
     setCurrentStep(3);
+    // Fire AddToCart once per session (user finished color+size selection).
+    if (!addToCartFiredRef.current && product) {
+      addToCartFiredRef.current = true;
+      const currency = product.priceRange.minVariantPrice.currencyCode;
+      const variantIds = selections
+        .map((s) => (s.color && s.size ? findVariant(product, s.color, s.size) : undefined))
+        .filter((v): v is NonNullable<ReturnType<typeof findVariant>> => !!v)
+        .map((v) => variantNumericId(v.id));
+      const opt = BUNDLE_OPTIONS.find((o) => o.qty === quantity);
+      fbTrack("AddToCart", {
+        customData: {
+          content_type: "product",
+          content_ids: variantIds.length ? variantIds : [product.id.replace(/\D/g, "")],
+          content_name: product.title,
+          currency,
+          value: opt?.total ?? parseFloat(product.priceRange.minVariantPrice.amount),
+          num_items: quantity,
+        },
+      });
+    }
     requestAnimationFrame(() => {
       step3Ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });

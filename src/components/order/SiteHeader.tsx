@@ -1,11 +1,13 @@
-import { Phone } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useSupportChat } from "@/components/support/SupportChatProvider";
 
 export const VITALWALK_LOGO_URL =
   "https://vitalwalk.store/cdn/shop/files/VitalWalk_Logo_Header_3000x1000_74780930-59cf-4a88-b62c-a3f8398a8f3d.png?v=1756180394&width=300";
 
 export function SiteHeader() {
   const { currency, countryFlag, loading } = useCurrency();
+  const { openChat } = useSupportChat();
 
   return (
     <header className="bg-background shadow-[0_1px_0_rgba(0,0,0,0.06)]">
@@ -29,13 +31,19 @@ export function SiteHeader() {
               {currency}
             </span>
           )}
-          <a
-            href="mailto:support@vitalwalk.store"
-            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[hsl(var(--text-body))] hover:text-[hsl(var(--text-strong))]"
+          <button
+            type="button"
+            onClick={openChat}
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[13px] font-semibold text-[hsl(var(--text-body))] hover:text-[hsl(var(--text-strong))] hover:bg-secondary/60 transition-colors"
+            aria-label="Open live chat with Alyssa from Customer Care"
           >
-            <Phone className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+            <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
             Need help?
-          </a>
+          </button>
         </div>
       </div>
     </header>

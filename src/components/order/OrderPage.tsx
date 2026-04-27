@@ -117,7 +117,7 @@ export function OrderPage() {
       <SiteHeader />
 
       <main className={`container-order pt-2 sm:pt-4 ${currentStep >= 3 ? "pb-32 md:pb-16" : "pb-16"}`}>
-        <div className="mx-auto max-w-[640px] space-y-4 md:space-y-8">
+        <div className="mx-auto max-w-[640px] space-y-3 md:space-y-8">
           <QuantityStep
             quantity={quantity}
             onQuantityChange={setQuantity}

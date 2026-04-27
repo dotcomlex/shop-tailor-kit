@@ -1,57 +1,92 @@
 ## Goal
 
-Make every price on the order page match the Shopify checkout to the cent, in the customer's local currency, with no "≈ USD" disclaimer and no rate drift.
+On mobile (≈390×750 effective viewport after the iOS URL bar), the customer should land on Step 1 and see **everything** — header, the 3 bundle cards, and the yellow CTA — without scrolling. Step 2 and beyond can scroll normally. At the same time, body / label text should feel comfortable to read on a real iPhone (closer to 16px, not 12–13px).
 
-Today: we use `open.er-api.com` rates client-side. Shopify Markets uses its own rates at checkout, so the displayed price and the checkout price can differ slightly. We'll fix that by asking Shopify itself for the localized prices via the `@inContext(country:)` directive on the Storefront API.
+---
 
-## Approach
+## Why it scrolls today
 
-Use Shopify's Storefront API `@inContext(country: $country)` directive. When the query is run with a country code, Shopify returns `priceRange`, `compareAtPriceRange`, and each variant's `price` / `compareAtPrice` already converted into that market's currency (using Shopify's own FX rates — the same ones used at checkout).
+At 390px width, current Step 1 stacks to roughly:
 
-We'll detect the customer's country (already done via `useGeo`), pass it to the product query, and render the localized amounts Shopify returns. The same country code is also passed to `cartCreate` via `buyerIdentity.countryCode` so the checkout opens in the matching market.
+| Block | ~Height |
+|---|---|
+| SiteHeader | 52px |
+| Step header (blue + green sub-strip) | 88px |
+| "Unisex" pill row (`mt-2`) | 32px |
+| 3 bundle cards (`p-2.5`, gap 2.5, thumb 64px) | ~310px |
+| Yellow CTA + `mt-4` | 76px |
+| **Total** | **~558px** above the footer/padding |
 
-## Changes
+Add the iOS Safari address bar (~90–110px on first paint) and the bottom home-bar safe area (~34px), and the CTA + bottom of the third card get pushed below the fold — which is exactly the "scrolling on Step 1" the user is reporting.
 
-### 1. `src/lib/shopify.ts`
-- Add `@inContext(country: $country)` to `PRODUCT_BY_HANDLE_QUERY`, with `$country: CountryCode!`.
-- Update `fetchVitalWalkProduct(country: string)` to take a country code and pass it as a variable. Default to `"US"` when none is detected.
-- Add `buyerIdentity: { countryCode }` to the `CART_CREATE_MUTATION` input and to `createCheckoutForLines(lines, discountCodes, country)`.
-- Keep `formatMoney` but make it currency-aware (use `Intl.NumberFormat` with the `currencyCode` Shopify returns).
+Two small typography problems on top of that:
+- Bundle name is `text-[15px]` on mobile, save % is `13px`, struck price is `12px`, "/ea" is `11px`. On a real Retina screen those read noticeably small.
+- The "Unisex — fits Men & Women" pill is `10.5px` uppercase — also feels tiny.
 
-### 2. `src/hooks/useVitalWalkProduct.ts`
-- Take the detected country from `useGeo()` and include it in the React Query key, e.g. `["vitalwalk-product", country]`.
-- Pass it through to `fetchVitalWalkProduct`.
-- Update `useDisplayPrice` to format using the Shopify-returned `currencyCode` (no manual FX math).
+---
 
-### 3. New helper: `src/lib/money.ts` (small)
-- Export `formatMoney(amount: number | string, currencyCode: string)` using `Intl.NumberFormat` — single source of truth used by all components.
+## Plan
 
-### 4. Bundle pricing (the tricky part)
-`QuantityStep` currently hard-codes USD bundle totals (`69.95`, `116.58`, `139.90`, etc.). To stay accurate per market we'll derive bundle totals from Shopify's localized single-pair price:
+### 1. Make Step 1 fit the mobile viewport (no scroll on landing)
 
-- Read `product.priceRange.minVariantPrice` (now localized) and `compareAtPriceRange.minVariantPrice` from the query.
-- Compute each bundle's localized totals using the same per-pair multipliers we already use today, but applied to the localized base price:
-  - 1 pair: `1 × price`, compare `1 × compareAt`
-  - 2 pair: `2 × price × (116.58 / (2 × 69.95))` → i.e. apply the same effective bundle discount ratio to the localized price
-  - 3 pair: same idea with the 3-pack ratio
-- Or, simpler and more accurate: keep the discount **percentages** (Save 0% / 17% off pair-of-2 / 33% off pair-of-3 vs single-pair price) constant, derived from the existing USD figures, and apply them to the localized per-pair price. That keeps the maths consistent across markets and matches what the Shopify discount codes (`VITALWALK-2PACK`, `VITALWALK-3PACK`) actually deduct at checkout — they're fixed-amount USD codes, but Shopify Markets converts them automatically.
-- Pass the localized `BUNDLE_OPTIONS` down as data instead of being a module-level constant. We'll move `BUNDLE_OPTIONS` into a hook (`useBundleOptions`) that derives them from the live product query.
+In `src/components/order/QuantityStep.tsx`:
+- Tighten the wrapping spacing on mobile only (keep desktop generous):
+  - "Unisex" pill row: `mt-2` → `mt-1.5`
+  - Bundle list `mt-3 space-y-2.5` → `mt-2 space-y-2` on mobile, restore `sm:space-y-2.5`
+  - CTA wrapper `mt-4` → `mt-3 sm:mt-4`
+- Slim the bundle cards on mobile:
+  - `p-2.5` → `p-2 sm:p-4`
+  - `gap-2.5` → `gap-2 sm:gap-4`
+- Shrink the bundle thumbnail on mobile (in `BundleThumb` — switch from a fixed ~64px to ~52px on `<sm`, keep current size from `sm:` up). I'll confirm the exact prop/class when implementing.
+- Shrink the ribbon offset so cards can sit closer (`pt-2.5` → `pt-2`).
 
-### 5. `OrderPage.tsx`
-- Read bundle totals from the new `useBundleOptions()` hook instead of the static export.
-- Pass `country` through to `createCheckoutForLines(...)`.
+In `src/components/order/StepHeader.tsx`:
+- Reduce vertical padding on mobile only:
+  - Title bar `py-3.5` → `py-2.5 sm:py-3.5`
+  - Sub-strip `py-2` → `py-1.5 sm:py-2`
 
-### 6. Cleanup
-- `src/hooks/useCurrency.ts` and `src/lib/currency.ts` are no longer needed for pricing — delete them, plus the FX disclaimer in `OrderSummary`.
-- Keep the country-flag + currency badge in `SiteHeader`, but source the currency code from the Shopify-returned `currencyCode` instead of the FX library.
+In `src/components/order/SiteHeader.tsx`:
+- `py-2.5 sm:py-3.5` → `py-2 sm:py-3.5` and logo `h-7` → `h-6 sm:h-9` (saves ~8–10px without hurting brand presence).
 
-## Verification (after the switch)
-1. Load the page from a US IP → see USD prices that match the existing checkout.
-2. Use a UK / AU / CA / EU VPN (or override `useGeo`) → see GBP / AUD / CAD / EUR.
-3. Click **Complete Order** in each market → confirm the Shopify checkout opens in the same currency and the totals match the on-page totals.
-4. Confirm the bundle discount codes (`VITALWALK-2PACK`, `VITALWALK-3PACK`) still bring the cart to the advertised localized total.
+In `src/components/order/OrderPage.tsx`:
+- The `<main>` currently uses `pt-2 sm:pt-4`. Keep as is, but add `space-y-3 md:space-y-8` to the inner stack (currently `space-y-4`) so Step 1 hugs the header on mobile.
 
-## Risks / notes
-- The bundle discount codes are fixed-amount USD. Shopify Markets converts them to the buyer's currency at checkout. There may still be ±1 cent rounding on bundle totals between page and checkout — acceptable, and far better than the current setup.
-- Countries Shopify Markets isn't configured to ship to will fall back to the shop's primary currency (USD). That's the correct behaviour.
-- No new dependencies required.
+Together this trims ~70–90px on mobile — enough to put the whole Step 1 above the iOS fold even with the address bar showing.
+
+### 2. Bump readable text sizes (mobile-first, no desktop regressions)
+
+All sizes below are mobile values; current `sm:` desktop values are kept unchanged.
+
+In `QuantityStep.tsx`:
+- Bundle name: `text-[15px]` → `text-[16px]`
+- "Save X%": `text-[13px]` → `text-[14px]`
+- Struck compare price: `text-[12px]` → `text-[13px]`
+- Big per-pair price: `text-[18px]` → `text-[19px]`
+- "/ea" suffix: `text-[11px]` → `text-[12px]`
+- "Unisex — fits Men & Women" pill: `text-[10.5px]` → `text-[11.5px]`
+
+In `StepHeader.tsx`:
+- Title `text-[17px]` → `text-[18px]` on mobile (matches desktop).
+- Sub-strip `text-[13px]` → `text-[14px]`.
+- "Bundle and Save!" right label `text-[13px]` → `text-[13.5px]` (kept compact so it doesn't wrap on small phones).
+
+In `SiteHeader.tsx`:
+- Currency pill `text-[11px]` → `text-[12px]`
+- "Need help?" link `text-[12px]` → `text-[13px]`
+
+These bumps are small (1–2px each) but add up to a noticeably more comfortable read on a real iPhone, while staying within the design system's hierarchy.
+
+### 3. Verify (default-mode, after approval)
+
+Once the changes are in:
+- Use the browser tool at 390×844 (iPhone 14/15) and 375×812 (iPhone SE/mini) to screenshot the landing view and confirm the yellow "Select Your Color and Size" CTA is visible without scrolling.
+- Sanity-check 320×568 (smallest supported) — if Step 1 is *still* slightly clipped at that size, the CTA arrow will be partially visible, which is acceptable and signals scroll-ability.
+- Confirm Step 2 / Step 3 layouts haven't been visually affected on `sm:` and up.
+
+---
+
+## Out of scope (intentionally)
+
+- No changes to Step 2 or Step 3 typography — user said scrolling there is fine, and bumping fonts there risks pushing the size grid to wrap.
+- Not touching the global `body { font-size: 16px }` baseline — it's already 16px; the perceived smallness is from component-level overrides, which is what we're fixing.
+- No layout changes to the bundle thumbnails' visual style, just the mobile dimension.

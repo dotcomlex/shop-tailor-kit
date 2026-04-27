@@ -112,19 +112,15 @@ export function OrderPage() {
     }
   };
 
-  const isLanding = currentStep === 1;
-
   return (
-    <div className="flex min-h-screen flex-col bg-[hsl(0_0%_98.5%)]">
+    <div className="bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
 
       <main
         className={`container-order ${
-          isLanding
-            ? "flex-1 pt-3 pb-6 sm:pt-4 sm:pb-16"
-            : currentStep >= 3
-              ? "pt-3 pb-32 sm:pt-4 md:pb-16"
-              : "pt-3 pb-16 sm:pt-4"
+          currentStep >= 3
+            ? "pt-3 pb-32 sm:pt-4 md:pb-16"
+            : "pt-3 pb-6 sm:pt-4 sm:pb-16"
         }`}
       >
         <div className="mx-auto max-w-[640px] space-y-4 md:space-y-8">
@@ -158,11 +154,7 @@ export function OrderPage() {
         </div>
       </main>
 
-      {/* Footer hidden on the mobile landing view to avoid creating extra
-          scroll/blank space below Step 1; visible on later steps and on desktop. */}
-      <footer
-        className={`${isLanding ? "hidden md:block" : "block"} border-t border-[hsl(var(--hairline))] bg-background py-5`}
-      >
+      <footer className="border-t border-[hsl(var(--hairline))] bg-background py-4 sm:py-5">
         <div className="container-order text-center text-[12px] text-[hsl(var(--text-mute))]">
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>

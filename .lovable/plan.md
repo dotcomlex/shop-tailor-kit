@@ -1,52 +1,41 @@
 ## Goal
-Restore a clean, premium mobile landing view without the cramped look, while still preventing annoying first-screen scrolling. Also simplify the final checkout step by removing the savings promo panel.
+Eliminate the empty white area on the live mobile site (visible after the yellow CTA) and restore the small footer line, while keeping the clean Step 1 layout the preview already shows.
+
+## Root cause
+In `src/components/order/OrderPage.tsx` the page shell is `flex min-h-screen flex-col` with `<main className="flex-1 ...">`. On iOS Safari `min-h-screen` resolves to `100vh`, which equals the *largest* viewport (URL bar collapsed). On initial load the actual visible viewport is shorter, so:
+- The document is taller than what is visible → the user can scroll.
+- `flex-1` makes `<main>` stretch to fill that 100vh → a tall blank area appears under the CTA.
+- The footer is currently hidden on mobile during Step 1, so there is nothing visible at the bottom — just white space.
+
+This does not show up in the Lovable preview iframe because the preview has no collapsible URL bar.
 
 ## Plan
 
-### 1. Rebalance Step 1 mobile spacing instead of over-compressing it
-Update the mobile layout so it feels closer to the earlier, cleaner version:
-- In `src/components/order/SiteHeader.tsx`, restore a bit more vertical breathing room and logo presence on mobile.
-- In `src/components/order/StepHeader.tsx`, loosen the title/sub-strip padding slightly so the section header doesn’t feel jammed against the top.
-- In `src/components/order/QuantityStep.tsx`, roll back the most aggressive spacing cuts:
-  - slightly more space above the pill, between cards, and above the CTA
-  - slightly roomier card padding/gaps where it does not cause overflow
-- In `src/components/order/BundleThumb.tsx`, increase the mobile thumbnail size modestly so the cards look less compressed.
+### 1. Stop forcing the page to fill 100vh on Step 1
+In `src/components/order/OrderPage.tsx`:
+- Remove `min-h-screen flex flex-col` from the outer wrapper.
+- Remove `flex-1` from `<main>`.
+- Result: document height = header + step content + footer. No artificial stretch, no blank gap.
 
-This keeps the readability gains, but removes the “crammed up” feel.
+### 2. Restore the small footer on all steps (mobile + desktop)
+In `src/components/order/OrderPage.tsx`:
+- Remove the `isLanding ? "hidden md:block" : "block"` toggle.
+- Always render the `© {year} VitalWalk. All rights reserved.` line.
+- Keep the existing tight padding (`py-5`) so it stays a thin line, matching the aesthetic the user liked.
 
-### 2. Fix the real cause of the landing scroll / white-space issue
-Instead of forcing everything to fit by shrinking the UI, fix the page shell on mobile Step 1:
-- In `src/components/order/OrderPage.tsx`, add step-aware mobile spacing so Step 1 does not carry the same bottom padding as later steps.
-- Prevent the footer from creating extra scroll/blank area on the initial mobile landing state.
-  - Hide or defer the footer on mobile while `currentStep === 1`
-  - Keep it visible on later steps and desktop
-- Adjust the top/bottom shell spacing so the first screen ends naturally around the CTA rather than feeling pushed into the header or leaving dead space below.
+### 3. Keep mobile spacing exactly as it looks in the preview
+No changes to `SiteHeader.tsx`, `StepHeader.tsx`, `QuantityStep.tsx`, or `BundleThumb.tsx`. These already produce the layout the user described as “looks perfect here on the preview.”
 
-This preserves aesthetics while removing the immediate up/down scroll problem on arrival.
+### 4. Verify on a real iPhone-sized viewport
+After implementation, on 390×844:
+- No blank white area under the yellow CTA.
+- The thin `© 2026 VitalWalk. All rights reserved.` line sits directly below the CTA at the natural end of the content.
+- Minor scroll caused by mobile Safari URL-bar behavior is acceptable, but no large empty region exists.
+- Step 2 and Step 3 still look correct (they use longer padding and aren’t affected by removing the flex stretch).
 
-### 3. Simplify Step 3
-Remove the savings-heavy promo treatment from the final review step:
-- In `src/components/order/UpgradeStep.tsx`, remove the `SavingsHero` block entirely.
-- In `src/components/order/OrderSummary.tsx`, remove the extra “You saved” row so the summary is cleaner.
-- In `src/components/order/StickyCheckoutBar.tsx`, remove the savings line there too, leaving just the key total + CTA.
+## Files touched
+- `src/components/order/OrderPage.tsx` (only file changed)
 
-Result: Step 3 becomes cleaner and more checkout-focused.
-
-### 4. Verify mobile behavior after implementation
-After approval and implementation:
-- Check Step 1 on mobile widths against the screenshot issue
-- Confirm the landing view no longer feels cramped
-- Confirm there is no extra blank white area / unnecessary initial scroll on landing
-- Confirm Step 3 no longer shows the “You’re saving X amount today” section or other extra savings callouts
-
-## Technical details
-- Files likely touched:
-  - `src/components/order/OrderPage.tsx`
-  - `src/components/order/SiteHeader.tsx`
-  - `src/components/order/StepHeader.tsx`
-  - `src/components/order/QuantityStep.tsx`
-  - `src/components/order/BundleThumb.tsx`
-  - `src/components/order/UpgradeStep.tsx`
-  - `src/components/order/OrderSummary.tsx`
-  - `src/components/order/StickyCheckoutBar.tsx`
-- Main design change: fix viewport/layout behavior first, then tune spacing. Do not solve this by squeezing typography or card content further.
+## Notes
+- Intentionally NOT re-introducing viewport hacks (`100dvh`/`100svh`) — letting content drive height is the most reliable way to avoid a blank gap on iOS Safari.
+- The thin footer strip preserves the preferred aesthetic while ensuring something fills the bottom of the screen instead of empty white.

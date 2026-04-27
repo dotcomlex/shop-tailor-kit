@@ -202,6 +202,7 @@ export function AlyssaChat({ open, onOpenChange }: { open: boolean; onOpenChange
         className={cn(
           "flex h-[88vh] flex-col gap-0 rounded-t-2xl border-t p-0",
           "sm:inset-y-0 sm:right-0 sm:left-auto sm:h-full sm:max-w-md sm:rounded-none sm:rounded-l-2xl sm:border-l",
+          "[&>button.absolute]:hidden",
         )}
       >
         <SheetTitle className="sr-only">Chat with Alyssa from VitalWalk Customer Care</SheetTitle>

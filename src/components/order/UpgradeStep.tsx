@@ -8,7 +8,6 @@ import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
 import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
 import { FaqBlock } from "./FaqBlock";
 import { StickyCheckoutBar } from "./StickyCheckoutBar";
-import { LiveActivity } from "./LiveActivity";
 import { IncludedChecklist } from "./IncludedChecklist";
 import paymentBadges from "@/assets/payment-badges.png";
 
@@ -39,7 +38,6 @@ export function UpgradeStep({
         <ScarcityBar />
         <OrderSummary subtotal={total} saved={saved} />
         <IncludedChecklist />
-        <LiveActivity />
 
         {/* 60-day risk-free guarantee — final reassurance right before CTA */}
         <RiskFreeGuarantee />
@@ -53,13 +51,6 @@ export function UpgradeStep({
           leadingLock
         />
 
-        {/* Click-anxiety reducer right under the CTA */}
-        <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[12px] text-[hsl(var(--text-body))]">
-          <Lock className="h-3 w-3 shrink-0" strokeWidth={2.5} />
-          <span>
-            You won't be charged until you confirm your order on the next screen
-          </span>
-        </p>
 
         {/* Single consolidated trust microline */}
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">

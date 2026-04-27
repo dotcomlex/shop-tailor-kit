@@ -9,12 +9,12 @@ export function SiteHeader() {
 
   return (
     <header className="bg-background shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-      <div className="container-order flex items-center justify-between py-2 sm:py-3.5">
+      <div className="container-order flex items-center justify-between py-3 sm:py-3.5">
         <a href="/" aria-label="VitalWalk home" className="inline-flex items-center">
           <img
             src={VITALWALK_LOGO_URL}
             alt="VitalWalk"
-            className="h-6 w-auto sm:h-9 md:h-10"
+            className="h-7 w-auto sm:h-9 md:h-10"
             loading="eager"
           />
         </a>

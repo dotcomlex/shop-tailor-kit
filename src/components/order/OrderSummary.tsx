@@ -23,10 +23,6 @@ export function OrderSummary({ subtotal, saved }: OrderSummaryProps) {
             {format(total)}
           </span>
         </div>
-        <div className="mt-1 flex items-baseline justify-between text-[12.5px]">
-          <span className="font-semibold text-[hsl(var(--text-mute))]">You saved</span>
-          <span className="font-extrabold tabular-nums text-verified">{format(saved)}</span>
-        </div>
       </div>
     </div>
   );

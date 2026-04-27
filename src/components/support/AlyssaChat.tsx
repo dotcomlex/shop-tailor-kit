@@ -296,7 +296,7 @@ export function AlyssaChat({ open, onOpenChange }: { open: boolean; onOpenChange
               rows={1}
               placeholder="Type your message…"
               disabled={isStreaming}
-              className="flex-1 resize-none rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-[15px] leading-snug placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--order-blue))]/40 disabled:opacity-60"
+              className="flex-1 resize-none rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-[16px] leading-snug placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--order-blue))]/40 disabled:opacity-60"
               style={{ maxHeight: 120 }}
             />
             <button

@@ -1,10 +1,10 @@
 // Lightweight client-side country detection with localStorage caching.
 // Used to personalize the shipping line and default the size-chart region.
 
-const CACHE_KEY = "vitalwalk_geo_v2";
+const CACHE_KEY = "vitalwalk_geo_v3";
 const OVERRIDE_KEY = "vitalwalk_geo_override";
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day for successful lookups
-const FAIL_TTL_MS = 5 * 60 * 1000; // 5 min for failures (so we retry soon)
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h for successful lookups
+const FAIL_TTL_MS = 2 * 60 * 1000; // 2 min for failures (so we retry soon)
 
 export interface DetectedCountry {
   code: string; // ISO-2, e.g. "US", "GB"
@@ -142,6 +142,24 @@ async function fetchWithTimeout(url: string, ms = 1500): Promise<Response | null
   }
 }
 
+// Server-side geo (Lovable Cloud edge function). First in the chain because
+// it's invisible to ad-blockers and corporate firewalls that block public
+// IP-geolocation APIs.
+async function tryServerGeo(): Promise<DetectedCountry | null> {
+  try {
+    const url = `https://vsbvrchqdvzwggsrgcrm.supabase.co/functions/v1/geo`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2000);
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = (await res.json()) as { country?: string; name?: string };
+    return buildCountry(data.country ?? "", data.name);
+  } catch {
+    return null;
+  }
+}
+
 async function tryIpwhois(): Promise<DetectedCountry | null> {
   const res = await fetchWithTimeout("https://ipwho.is/");
   if (!res) return null;
@@ -183,28 +201,59 @@ async function tryIpapi(): Promise<DetectedCountry | null> {
   }
 }
 
+async function runProviderChain(): Promise<DetectedCountry | null> {
+  // Server-side first — bulletproof against ad-blockers + corporate firewalls.
+  const providers = [tryServerGeo, tryIpwhois, tryGeojs, tryIpapi];
+  for (const provider of providers) {
+    const result = await provider();
+    if (result) return result;
+  }
+  return null;
+}
+
 export async function detectCountry(): Promise<DetectedCountry | null> {
-  // 1. Manual override (URL ?country=GB or persisted override)
+  // 1. Manual override (URL ?country=GB or persisted override) — always wins.
   const override = readOverride();
   if (override) return override;
 
-  // 2. Cached lookup
+  // 2. Cached lookup — return immediately for instant first paint.
   const cached = readCache();
-  if (cached) return cached.value;
-
-  // 3. Multi-provider lookup with failover
-  const providers = [tryIpwhois, tryGeojs, tryIpapi];
-  for (const provider of providers) {
-    const result = await provider();
-    if (result) {
-      writeCache(result);
-      return result;
-    }
+  if (cached) {
+    // Background re-validate: if the real country differs from cache,
+    // update cache + notify subscribers so prices re-render.
+    void revalidateInBackground(cached.value?.code ?? null);
+    return cached.value;
   }
 
-  // All providers failed — cache null briefly so we retry soon
-  // eslint-disable-next-line no-console
+  // 3. No cache — run the provider chain inline.
+  const result = await runProviderChain();
+  if (result) {
+    writeCache(result);
+    return result;
+  }
+
+  // All providers failed — cache null briefly so we retry soon.
   console.warn("[geo] All country-detection providers failed; using fallback copy.");
   writeCache(null);
   return null;
 }
+
+const CHANGE_EVENT = "vitalwalk:geo-changed";
+
+async function revalidateInBackground(cachedCode: string | null) {
+  // Skip if a manual override is active.
+  if (readOverride()) return;
+  const fresh = await runProviderChain();
+  if (!fresh) return;
+  if (fresh.code !== cachedCode) {
+    writeCache(fresh);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(CHANGE_EVENT, { detail: fresh }),
+      );
+    }
+  }
+}
+
+export const GEO_CHANGE_EVENT = CHANGE_EVENT;
+

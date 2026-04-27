@@ -5,7 +5,8 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 interface StickyCheckoutBarProps {
   total: number;
-  comparePrice: number;
+  /** Kept for API compatibility; no longer rendered in the bar. */
+  comparePrice?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
   /** Ref to the main "Complete My Order" CTA — bar shows only when this is off-screen. */
@@ -14,7 +15,6 @@ interface StickyCheckoutBarProps {
 
 export function StickyCheckoutBar({
   total,
-  comparePrice,
   onCheckout,
   isCheckingOut,
   observeRef,

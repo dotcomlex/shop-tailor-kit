@@ -65,84 +65,86 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:mt-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
-          <span aria-hidden>👟</span> Unisex — fits Men &amp; Women
-        </span>
-      </div>
+      <div className="row-pad">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:mt-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
+            <span aria-hidden>👟</span> Unisex — fits Men &amp; Women
+          </span>
+        </div>
 
-      <ul className="mt-3 space-y-2.5">
-        {OPTIONS.map((opt) => {
-          const selected = quantity === opt.qty;
-          const ribbonClass =
-            opt.ribbon?.tone === "best"
-              ? "bg-[hsl(var(--order-blue))] text-white"
-              : "bg-[hsl(var(--order-blue))] text-white";
-          return (
-            <li key={opt.qty} className="relative pt-2.5">
-              {opt.ribbon && (
-                <span
-                  className={cn(
-                    "absolute right-3 top-0 z-10 rounded-md px-2 py-[3px] text-[10px] font-extrabold tracking-wider shadow-sm",
-                    ribbonClass,
-                  )}
-                >
-                  {opt.ribbon.label}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => onQuantityChange(opt.qty)}
-                aria-pressed={selected}
-                className={cn(
-                  "flex w-full items-center gap-2.5 rounded-xl border-2 bg-card p-2.5 text-left transition-all sm:gap-4 sm:p-4",
-                  selected
-                    ? "border-order-blue"
-                    : "border-border hover:border-[hsl(var(--text-mute))]",
+        <ul className="mt-3 space-y-2.5">
+          {OPTIONS.map((opt) => {
+            const selected = quantity === opt.qty;
+            const ribbonClass =
+              opt.ribbon?.tone === "best"
+                ? "bg-[hsl(var(--order-blue))] text-white"
+                : "bg-[hsl(var(--order-blue))] text-white";
+            return (
+              <li key={opt.qty} className="relative pt-2.5">
+                {opt.ribbon && (
+                  <span
+                    className={cn(
+                      "absolute right-3 top-0 z-10 rounded-md px-2 py-[3px] text-[10px] font-extrabold tracking-wider shadow-sm",
+                      ribbonClass,
+                    )}
+                  >
+                    {opt.ribbon.label}
+                  </span>
                 )}
-              >
-                {/* radio */}
-                <span
+                <button
+                  type="button"
+                  onClick={() => onQuantityChange(opt.qty)}
+                  aria-pressed={selected}
                   className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                    selected ? "border-order-blue bg-order-blue" : "border-[hsl(var(--text-mute))]",
+                    "flex w-full items-center gap-2.5 rounded-xl border-2 bg-card p-3 text-left transition-all sm:gap-4 sm:p-4",
+                    selected
+                      ? "border-order-blue"
+                      : "border-border hover:border-[hsl(var(--text-mute))]",
                   )}
-                  aria-hidden
                 >
-                  {selected && <span className="h-2 w-2 rounded-full bg-white" />}
-                </span>
+                  {/* radio */}
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                      selected ? "border-order-blue bg-order-blue" : "border-[hsl(var(--text-mute))]",
+                    )}
+                    aria-hidden
+                  >
+                    {selected && <span className="h-2 w-2 rounded-full bg-white" />}
+                  </span>
 
-                {/* thumb */}
-                <BundleThumb count={opt.qty} />
+                  {/* thumb */}
+                  <BundleThumb count={opt.qty} />
 
-                {/* name + save */}
-                <div className="min-w-0 flex-1">
-                  <p className="text-[16px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
-                    {opt.name}
-                  </p>
-                  <p className="mt-1 text-[14px] font-extrabold text-save">
-                    Save {opt.savePct}%
-                  </p>
-                </div>
+                  {/* name + save */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
+                      {opt.name}
+                    </p>
+                    <p className="mt-1 text-[14px] font-extrabold text-save">
+                      Save {opt.savePct}%
+                    </p>
+                  </div>
 
-                {/* price — clean stack: struck → big price → /ea */}
-                <div className="shrink-0 text-right">
-                  <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                    {format(opt.compare)}
-                  </p>
-                  <p className="mt-0.5 text-[19px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                    {format(opt.perPair)}
-                    <span className="ml-0.5 text-[12px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
-                  </p>
-                </div>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                  {/* price — clean stack: struck → big price → /ea */}
+                  <div className="shrink-0 text-right">
+                    <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
+                      {format(opt.compare)}
+                    </p>
+                    <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
+                      {format(opt.perPair)}
+                      <span className="ml-0.5 text-[12px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
+                    </p>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
 
-      <div className="mt-4">
-        <YellowCta label="Select Your Color and Size" onClick={onContinue} />
+        <div className="mt-4">
+          <YellowCta label="Select Your Color and Size" onClick={onContinue} />
+        </div>
       </div>
     </section>
   );

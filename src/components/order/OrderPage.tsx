@@ -208,7 +208,7 @@ export function OrderPage() {
       </main>
 
       <footer className="border-t border-[hsl(var(--hairline))] bg-background py-4 sm:py-5">
-        <div className="container-order text-center text-[12px] text-[hsl(var(--text-mute))]">
+        <div className="container-edge text-center text-[12px] text-[hsl(var(--text-mute))]">
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>
       </footer>

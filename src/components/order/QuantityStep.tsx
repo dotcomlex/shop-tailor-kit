@@ -65,13 +65,13 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:mt-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:mt-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
           <span aria-hidden>👟</span> Unisex — fits Men &amp; Women
         </span>
       </div>
 
-      <ul className="mt-2 space-y-2 sm:mt-3 sm:space-y-2.5">
+      <ul className="mt-3 space-y-2.5">
         {OPTIONS.map((opt) => {
           const selected = quantity === opt.qty;
           const ribbonClass =
@@ -79,7 +79,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               ? "bg-[hsl(var(--order-blue))] text-white"
               : "bg-[hsl(var(--order-blue))] text-white";
           return (
-            <li key={opt.qty} className="relative pt-2 sm:pt-2.5">
+            <li key={opt.qty} className="relative pt-2.5">
               {opt.ribbon && (
                 <span
                   className={cn(
@@ -95,7 +95,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 onClick={() => onQuantityChange(opt.qty)}
                 aria-pressed={selected}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-xl border-2 bg-card p-2 text-left transition-all sm:gap-4 sm:p-4",
+                  "flex w-full items-center gap-2.5 rounded-xl border-2 bg-card p-2.5 text-left transition-all sm:gap-4 sm:p-4",
                   selected
                     ? "border-order-blue"
                     : "border-border hover:border-[hsl(var(--text-mute))]",
@@ -141,7 +141,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         })}
       </ul>
 
-      <div className="mt-3 sm:mt-4">
+      <div className="mt-4">
         <YellowCta label="Select Your Color and Size" onClick={onContinue} />
       </div>
     </section>

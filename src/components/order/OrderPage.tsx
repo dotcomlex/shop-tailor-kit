@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useGeo } from "@/hooks/useGeo";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
+import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
@@ -16,9 +17,28 @@ export function OrderPage() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const viewContentFiredRef = useRef(false);
+  const addToCartFiredRef = useRef(false);
 
   const step2Ref = useRef<HTMLDivElement | null>(null);
   const step3Ref = useRef<HTMLDivElement | null>(null);
+
+  // Fire ViewContent once when product data is available.
+  useEffect(() => {
+    if (!product || viewContentFiredRef.current) return;
+    viewContentFiredRef.current = true;
+    const currency = product.priceRange.minVariantPrice.currencyCode;
+    const value = parseFloat(product.priceRange.minVariantPrice.amount);
+    fbTrack("ViewContent", {
+      customData: {
+        content_type: "product",
+        content_ids: [product.id.replace(/\D/g, "")],
+        content_name: product.title,
+        currency,
+        value,
+      },
+    });
+  }, [product]);
 
   // Resize selections when quantity changes
   useEffect(() => {
@@ -44,6 +64,26 @@ export function OrderPage() {
 
   const advanceToStep3 = () => {
     setCurrentStep(3);
+    // Fire AddToCart once per session (user finished color+size selection).
+    if (!addToCartFiredRef.current && product) {
+      addToCartFiredRef.current = true;
+      const currency = product.priceRange.minVariantPrice.currencyCode;
+      const variantIds = selections
+        .map((s) => (s.color && s.size ? findVariant(product, s.color, s.size) : undefined))
+        .filter((v): v is NonNullable<ReturnType<typeof findVariant>> => !!v)
+        .map((v) => variantNumericId(v.id));
+      const opt = BUNDLE_OPTIONS.find((o) => o.qty === quantity);
+      fbTrack("AddToCart", {
+        customData: {
+          content_type: "product",
+          content_ids: variantIds.length ? variantIds : [product.id.replace(/\D/g, "")],
+          content_name: product.title,
+          currency,
+          value: opt?.total ?? parseFloat(product.priceRange.minVariantPrice.amount),
+          num_items: quantity,
+        },
+      });
+    }
     requestAnimationFrame(() => {
       step3Ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -89,6 +129,19 @@ export function OrderPage() {
       quantity === 3 ? ["VITALWALK-3PACK"] :
       quantity === 2 ? ["VITALWALK-2PACK"] :
       [];
+
+    // Fire InitiateCheckout right before redirecting to Shopify checkout.
+    const currency = product.priceRange.minVariantPrice.currencyCode;
+    fbTrack("InitiateCheckout", {
+      customData: {
+        content_type: "product",
+        content_ids: variantIds.map((id) => variantNumericId(id)),
+        content_name: product.title,
+        currency,
+        value: bundleTotal,
+        num_items: quantity,
+      },
+    });
 
     setIsCheckingOut(true);
     try {

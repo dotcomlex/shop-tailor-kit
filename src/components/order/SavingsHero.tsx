@@ -13,7 +13,7 @@ export function SavingsHero({ saved, comparePrice }: SavingsHeroProps) {
 
   const shippingLine = country
     ? `FREE & fast shipping to ${country.name} ${country.flag}`
-    : "FREE worldwide shipping included";
+    : "FREE & fast shipping to your door";
 
   return (
     <div className="overflow-hidden rounded-xl border border-verified/30 bg-[hsl(var(--verified-green)/0.08)]">

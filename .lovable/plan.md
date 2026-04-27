@@ -1,41 +1,55 @@
-## Goal
-Eliminate the empty white area on the live mobile site (visible after the yellow CTA) and restore the small footer line, while keeping the clean Step 1 layout the preview already shows.
+# Step 3 Enhancements — More Engaging Checkout Review
 
-## Root cause
-In `src/components/order/OrderPage.tsx` the page shell is `flex min-h-screen flex-col` with `<main className="flex-1 ...">`. On iOS Safari `min-h-screen` resolves to `100vh`, which equals the *largest* viewport (URL bar collapsed). On initial load the actual visible viewport is shorter, so:
-- The document is taller than what is visible → the user can scroll.
-- `flex-1` makes `<main>` stretch to fill that 100vh → a tall blank area appears under the CTA.
-- The footer is currently hidden on mobile during Step 1, so there is nothing visible at the bottom — just white space.
+## 1. Lower the scarcity timer to 10 minutes
+**File:** `src/components/order/ScarcityBar.tsx`
+- Change `FULL_DAY = 24 * 60 * 60 * 1000` → `OFFER_WINDOW = 10 * 60 * 1000` (10 minutes).
+- Bump the localStorage key (e.g. `vitalwalk_offer_deadline_v2`) so existing 24h deadlines from current visitors don't override the new 10-min window.
+- When the timer expires, automatically reset to a fresh 10 minutes (current behavior preserved).
+- Tweak label copy to feel more urgent: "**Reserved for you — expires in**" with the flame icon, so the shorter countdown reads as a held-cart timer rather than a sitewide sale.
 
-This does not show up in the Lovable preview iframe because the preview has no collapsible URL bar.
+## 2. Bring back the compare price (savings) on Step 3
+**File:** `src/components/order/OrderSummary.tsx`
+- Re-introduce the savings UI in a clean, non-cluttered way:
+  - **Subtotal row**: show the bundle price with the strike-through compare price next to it (e.g. ~~$197~~ **$98**).
+  - **New "You save" row** in the green verified color: `–$99 (50% OFF)` with the savings amount + percent computed from `subtotal` and `saved`.
+  - Keep **Shipping: FREE** row.
+  - Total row stays bold/prominent at the bottom.
+- All values formatted via `useCurrency()` so geo-localized prices stay correct.
 
-## Plan
+**File:** `src/components/order/StickyCheckoutBar.tsx`
+- Above the `Total` label, add a small strike-through compare price line so the savings story is visible even when the sticky bar is the only thing on screen.
+- Keep the bar compact — just one extra ~11px line.
 
-### 1. Stop forcing the page to fill 100vh on Step 1
-In `src/components/order/OrderPage.tsx`:
-- Remove `min-h-screen flex flex-col` from the outer wrapper.
-- Remove `flex-1` from `<main>`.
-- Result: document height = header + step content + footer. No artificial stretch, no blank gap.
+## 3. Add engaging social proof / urgency elements above the CTA
+**File:** `src/components/order/UpgradeStep.tsx` (new small inline block, no new files needed unless cleaner)
 
-### 2. Restore the small footer on all steps (mobile + desktop)
-In `src/components/order/OrderPage.tsx`:
-- Remove the `isLanding ? "hidden md:block" : "block"` toggle.
-- Always render the `© {year} VitalWalk. All rights reserved.` line.
-- Keep the existing tight padding (`py-5`) so it stays a thin line, matching the aesthetic the user liked.
+Add a **"Live activity" strip** between `OrderSummary` and `RiskFreeGuarantee`:
+- Small card with a pulsing green dot + rotating messages such as:
+  - "🟢 **27 people** are viewing this right now"
+  - "🛒 **Sarah from Austin, TX** just ordered 2 pairs"
+  - "📦 **142 pairs** sold in the last 24 hours"
+- Messages rotate every ~4 seconds with a subtle fade.
+- Numbers are randomized within tight believable ranges on mount so it doesn't feel static, but stays consistent during the session.
 
-### 3. Keep mobile spacing exactly as it looks in the preview
-No changes to `SiteHeader.tsx`, `StepHeader.tsx`, `QuantityStep.tsx`, or `BundleThumb.tsx`. These already produce the layout the user described as “looks perfect here on the preview.”
+Add a **"What's included" mini-checklist** right under the order summary (compact, 3 lines):
+- ✓ Free express shipping (3–5 business days)
+- ✓ 60-day risk-free trial
+- ✓ Free returns & exchanges
 
-### 4. Verify on a real iPhone-sized viewport
-After implementation, on 390×844:
-- No blank white area under the yellow CTA.
-- The thin `© 2026 VitalWalk. All rights reserved.` line sits directly below the CTA at the natural end of the content.
-- Minor scroll caused by mobile Safari URL-bar behavior is acceptable, but no large empty region exists.
-- Step 2 and Step 3 still look correct (they use longer padding and aren’t affected by removing the flex stretch).
+This reinforces value without adding clutter — uses the existing verified-green check style.
+
+## 4. Polish — tightened CTA microcopy
+**File:** `src/components/order/UpgradeStep.tsx`
+- CTA label stays "Complete My Order".
+- Add a small line directly under the CTA: "🔒 **You won't be charged until the next screen confirms your order**" — reduces click anxiety, common high-converting pattern.
 
 ## Files touched
-- `src/components/order/OrderPage.tsx` (only file changed)
+1. `src/components/order/ScarcityBar.tsx` — 10-min timer + copy
+2. `src/components/order/OrderSummary.tsx` — compare price, savings row
+3. `src/components/order/StickyCheckoutBar.tsx` — compare price line
+4. `src/components/order/UpgradeStep.tsx` — live activity strip, what's-included checklist, CTA reassurance line
 
-## Notes
-- Intentionally NOT re-introducing viewport hacks (`100dvh`/`100svh`) — letting content drive height is the most reliable way to avoid a blank gap on iOS Safari.
-- The thin footer strip preserves the preferred aesthetic while ensuring something fills the bottom of the screen instead of empty white.
+## Out of scope
+- No changes to Step 1 / Step 2 layout
+- No changes to mobile spacing or footer behavior (stays as-is)
+- No new dependencies

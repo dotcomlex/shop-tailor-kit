@@ -32,19 +32,16 @@ export function useCurrency() {
   const rate = localizedBase && localizedBase > 0 ? localizedBase / USD_BASE : 1;
   const isConverted = currency !== "USD" && !!localizedBase;
 
-  // True while we don't yet know what currency to render in. We DON'T want
-  // to flash USD to a UK/EU/AU/NZ/CA shopper while Shopify is responding,
-  // so the format() function returns "" in that window.
-  const isUsCountry = !country || country.code === "US";
-  const awaitingLocalizedPrice = !product && (geoLoading || (!isUsCountry && productLoading));
-
+  // Always render *something* so the page never appears blank. If Shopify's
+  // localized response hasn't arrived yet, fall back to USD — the price will
+  // re-render in the correct currency the moment the query resolves (and
+  // again if background geo re-validation discovers a different country).
   const format = useCallback(
     (amountUsd: number) => {
-      if (awaitingLocalizedPrice) return "";
       if (!product) return formatMoney(amountUsd, "USD");
       return formatMoney(amountUsd * rate, currency);
     },
-    [product, rate, currency, awaitingLocalizedPrice],
+    [product, rate, currency],
   );
 
   const formatUsd = useCallback((amountUsd: number) => formatMoney(amountUsd, "USD"), []);

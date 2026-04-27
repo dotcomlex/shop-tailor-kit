@@ -3,7 +3,11 @@
 // conversions are tracked even when the browser pixel is blocked.
 // Dedupe is achieved by sending the same event_id from both browser & server.
 
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
 const FB_GRAPH_VERSION = "v21.0";
 

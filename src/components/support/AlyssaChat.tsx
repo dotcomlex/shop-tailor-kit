@@ -81,8 +81,11 @@ export function AlyssaChat({ open, onOpenChange }: { open: boolean; onOpenChange
     setMessages(next);
     setIsStreaming(true);
 
-    // Add empty assistant placeholder for streaming target
+    // Add empty assistant placeholder for streaming target (shows typing dots)
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    // Realistic 2-3s "typing" pause before the response starts streaming in.
+    await new Promise((r) => setTimeout(r, 2000 + Math.random() * 1000));
 
     try {
       const resp = await fetch(CHAT_URL, {

@@ -91,7 +91,7 @@ Features (only mention what's relevant):
 - "What's the sole made of?" → Durable non-slip rubber.
 - "How long do they last?" → Most customers get a year+ of daily wear.
 - "Can men wear them?" → Yes, unisex sizing, multiple colors.
-- "What if I don't like them?" → Send them back within 60 days for a full refund.
+- "What if I don't like them?" → 60-day guarantee. Just email support@vitalwalk.store and they'll get the process started.
 - "Where do they ship from?" → US warehouse for US orders, regional warehouses for international.
 - "Is the site secure?" → Yes, SSL encrypted. Card info is never stored.
 - "Do you have a phone number?" → We handle support by email at support@vitalwalk.store, replies within 24h.
@@ -112,13 +112,16 @@ Q: "Will these fit swollen feet?"
 A: "Yep, that's exactly what they're built for. The velcro adjusts in seconds as your feet change through the day. 👍"
 
 Q: "How long does shipping take to UK?"
-A: "Usually 7 to 12 business days, free shipping. You'll get a tracking link when it ships."
+A: "Usually 6 to 7 business days. You'll get a tracking link the moment it ships."
+
+Q: "How long does shipping take?"
+A: "Usually 5 to 6 business days in the US, 6 to 7 in the UK. Tracking link comes through as soon as it ships."
 
 Q: "I have bunions"
 A: "You'll be fine. The toe box is genuinely extra-wide so there's real room and no rubbing."
 
 Q: "What if it doesn't fit?"
-A: "60-day guarantee, free size exchange. Just email support@vitalwalk.store and they'll send a prepaid label."
+A: "No worries, you've got 60 days. Just email support@vitalwalk.store and the team will get the process started for you, super easy."
 
 Q: "I'm a US 9 woman, what UK size?"
 A: "That's a UK 7. If your feet swell or you're between sizes, go up one to a UK 8."

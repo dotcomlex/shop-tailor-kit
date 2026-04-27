@@ -1,37 +1,65 @@
-# Fix: Country & flag not appearing in shipping line
+## Plan — Facebook Pixel tracking + UK sizing verification
 
-## Root cause
+### 1. Facebook Pixel (browser) — Pixel ID `851134777335081`
 
-The Shopify request in your current session is going out with `"country":"US"` — meaning `useGeo()` is returning `null`. The shipping line in `IncludedChecklist.tsx` then falls back to "Fast & free shipping to your door" instead of "...to United Kingdom 🇬🇧".
+Add the standard FB Pixel base snippet to `index.html` (in `<head>`), plus a `<noscript>` fallback `<img>` placed inside `<body>` (HTML5 disallows it in `<head>`).
 
-The geo lookup in `src/lib/geo.ts` only calls `https://ipapi.co/json/`. That endpoint is:
-- Rate-limited aggressively on the free tier (1k/day per IP, often blocks bursts)
-- Frequently blocked by ad-blockers / privacy extensions
-- Returns errors silently in this session (no network entry, no console error)
+Fire these events from the React app (no extra page-load PageView since base code already fires it):
 
-Once it fails, we cache `null` for 24 hours in `localStorage` (`vitalwalk_geo`), so the user keeps seeing the generic fallback even after the network recovers.
+- **`PageView`** — automatic via base snippet on `/` (the order/cart page).
+- **`InitiateCheckout`** — fired in `OrderPage.handleCheckout()` right before redirecting to Shopify checkout. Payload:
+  - `value`: `bundleTotal` (already in user currency via Shopify `@inContext`)
+  - `currency`: from `product.priceRange.minVariantPrice.currencyCode`
+  - `num_items`: `quantity`
+  - `content_ids`: array of selected variant IDs (numeric portion of `gid://shopify/ProductVariant/...`)
+  - `content_type`: `"product"`
+- **`AddToCart`** — fired once per user when they first complete Step 2 (color + size selected, advancing to Step 3). Same payload shape using single-pair price.
+- **`ViewContent`** — fired once when product data loads on page mount.
 
-## Fix plan
+All events also dedupe-ready: generate a UUID `event_id` per event and pass it both to `fbq('track', ..., {...}, {eventID})` and to the CAPI call below.
 
-### 1. `src/lib/geo.ts` — multi-provider detection with fast failover
-- Try providers in order, return on first success (each with ~1.5s timeout):
-  1. `https://ipwho.is/` (free, no key, generous limits, returns `country_code` + `country`)
-  2. `https://get.geojs.io/v1/ip/country.json` (free, no key, very reliable)
-  3. `https://ipapi.co/json/` (current — kept as last resort)
-- Only cache **successful** lookups for 24h. Cache failures for just **5 minutes** (instead of 24h) so a transient block doesn't lock the user into the fallback all day.
-- Add a one-time `console.warn` when all providers fail (so we can see it in logs next time).
+### 2. Facebook Conversions API (server-side) — for iOS/ad-blocker resilience
 
-### 2. `src/hooks/useGeo.ts` — expose a manual override for testing
-- Read `?country=GB` from the URL on mount; if present, set it as the detected country (and skip the network call). Lets you verify the UK copy on the live site by visiting `/?country=GB` without waiting on IP detection.
-- Also persist that override in `localStorage` so it sticks across reloads during testing.
+Since this is a client-side Vite app with no backend, we'll add a **Lovable Cloud edge function** `fb-capi` that proxies events to Facebook's Graph API:
 
-### 3. Clear the stale negative cache automatically
-- Bump the cache key from `vitalwalk_geo` → `vitalwalk_geo_v2` so every existing visitor (including you) gets a fresh lookup against the new provider chain on next load. Old cached `null` values are abandoned.
+- Endpoint: `POST https://graph.facebook.com/v21.0/851134777335081/events`
+- Stores access token as `FB_CAPI_ACCESS_TOKEN` secret (the long token you provided).
+- Receives `{event_name, event_id, event_time, custom_data, user_data}` from the browser.
+- Hashes email/phone (none today, but ready) with SHA-256; passes `client_user_agent`, `client_ip_address` (from request headers), and `fbp` / `fbc` cookies for matching.
+- Returns 200 quickly; logs Facebook response for debugging.
 
-### 4. No UI changes
-- `IncludedChecklist.tsx` and `SavingsHero.tsx` already render `Fast & free shipping to {country.name} {country.flag}` correctly — they just need `useGeo()` to actually return a country. No changes needed there.
-- Currency/price formatting via `useCurrency` is already wired through the same `useGeo` → so fixing detection also fixes any cases where prices were stuck in USD for non-US visitors.
+Browser side: small helper `src/lib/fbpixel.ts` that:
+- exposes `track(eventName, customData)` which fires `fbq` AND posts to the edge function with the same `event_id` (deduplication).
+- reads `_fbp` / `_fbc` cookies and includes them in the CAPI body.
 
-## Verification after deploy
-- Visit live site → shipping line should read e.g. "Fast & free shipping to the United Kingdom 🇬🇧" and prices should render in GBP.
-- For quick QA: append `?country=GB`, `?country=DE`, `?country=AU` to the URL to force-test each region without leaving home.
+### 3. Lovable Cloud setup
+
+This requires enabling **Lovable Cloud** (one click) so we get an edge function runtime + secrets storage. Then add the secret `FB_CAPI_ACCESS_TOKEN` with the value you provided.
+
+### 4. UK sizing verification
+
+Right now `src/data/sizeChart.ts` uses an industry-standard conversion table. The user wants it to **exactly match what's listed in their Shopify product for UK customers**.
+
+The Shopify session is currently expired so I can't read the live variant size labels yet. After reconnecting Shopify, I will:
+
+1. Pull the live product variants for `the-original-vitalwalk®-shoes-copy`.
+2. Read each `Size` option string (e.g. `"US W 8 / US M 6.5 / UK 5.5"`).
+3. Diff the UK numbers against the `TABLE` in `sizeChart.ts`.
+4. If anything mismatches, update the `uk` column in `TABLE` so the size tile grid + size chart dialog show the exact UK number Shopify uses.
+
+No layout changes — only data corrections if needed.
+
+### Files touched
+
+- `index.html` — add FB Pixel base snippet + `<noscript>` pixel in `<body>`.
+- `src/lib/fbpixel.ts` — **new** helper (`track`, dedupe, CAPI POST).
+- `src/components/order/OrderPage.tsx` — fire `ViewContent`, `AddToCart`, `InitiateCheckout`.
+- `supabase/functions/fb-capi/index.ts` — **new** edge function proxy to Facebook Graph API.
+- Lovable Cloud secret: `FB_CAPI_ACCESS_TOKEN`.
+- `src/data/sizeChart.ts` — only if Shopify UK numbers differ from current table.
+
+### Approval needed
+
+Approving this plan will:
+1. Enable **Lovable Cloud** on this project (needed for the CAPI edge function + secret storage).
+2. Re-prompt **Shopify reconnect** so I can verify the UK sizing against your live variants.

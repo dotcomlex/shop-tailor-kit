@@ -5,7 +5,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 interface StickyCheckoutBarProps {
   total: number;
-  /** Kept for API compatibility; no longer rendered in the bar. */
+  /** Strike-through retail price shown above the live total. */
   comparePrice?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
@@ -15,6 +15,7 @@ interface StickyCheckoutBarProps {
 
 export function StickyCheckoutBar({
   total,
+  comparePrice,
   onCheckout,
   isCheckingOut,
   observeRef,
@@ -35,6 +36,8 @@ export function StickyCheckoutBar({
     return () => obs.disconnect();
   }, [observeRef]);
 
+  const showCompare = typeof comparePrice === "number" && comparePrice > total;
+
   return (
     <div
       aria-hidden={!visible}
@@ -53,8 +56,13 @@ export function StickyCheckoutBar({
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto flex max-w-[640px] items-stretch gap-3 px-4 py-3">
-          {/* Left zone — total only */}
+          {/* Left zone — compare price, total */}
           <div className="flex min-w-0 shrink-0 flex-col justify-center pr-3">
+            {showCompare && (
+              <span className="text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
+                {format(comparePrice as number)}
+              </span>
+            )}
             <span className="text-[22px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
               {format(total)}
             </span>

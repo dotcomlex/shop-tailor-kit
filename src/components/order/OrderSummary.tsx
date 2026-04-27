@@ -7,12 +7,40 @@ interface OrderSummaryProps {
 
 export function OrderSummary({ subtotal, saved }: OrderSummaryProps) {
   const total = subtotal;
+  const compare = subtotal + saved;
+  const savedPct = compare > 0 ? Math.round((saved / compare) * 100) : 0;
   const { format } = useCurrency();
 
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3.5 sm:px-5 sm:py-4">
       <div className="space-y-2 text-[14px]">
-        <Row label="Subtotal" value={format(subtotal)} />
+        {/* Subtotal with strike-through compare */}
+        <div className="flex items-baseline justify-between">
+          <span className="text-[hsl(var(--text-body))]">Subtotal</span>
+          <span className="flex items-baseline gap-2">
+            {saved > 0 && (
+              <span className="text-[12.5px] tabular-nums text-[hsl(var(--text-mute))] line-through">
+                {format(compare)}
+              </span>
+            )}
+            <span className="tabular-nums font-semibold text-[hsl(var(--text-strong))]">
+              {format(subtotal)}
+            </span>
+          </span>
+        </div>
+
+        {/* Savings row */}
+        {saved > 0 && (
+          <div className="flex items-baseline justify-between">
+            <span className="text-[hsl(var(--text-body))]">You save</span>
+            <span className="tabular-nums font-extrabold text-verified">
+              −{format(saved)}{savedPct > 0 && (
+                <span className="ml-1 text-[12px] font-bold">({savedPct}% OFF)</span>
+              )}
+            </span>
+          </div>
+        )}
+
         <Row label="Shipping" value="FREE" valueClass="text-verified font-bold" />
       </div>
 

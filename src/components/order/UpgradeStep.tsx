@@ -3,7 +3,6 @@ import { Lock } from "lucide-react";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { ScarcityBar } from "./ScarcityBar";
-import { SavingsHero } from "./SavingsHero";
 import { OrderSummary } from "./OrderSummary";
 import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
 import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
@@ -35,7 +34,6 @@ export function UpgradeStep({
       <StepHeader number={3} title="Almost There — Review &amp; Checkout" />
 
       <div className="mt-4 space-y-3.5">
-        <SavingsHero saved={saved} comparePrice={comparePrice} />
         <ScarcityBar />
         <OrderSummary subtotal={total} saved={saved} />
 

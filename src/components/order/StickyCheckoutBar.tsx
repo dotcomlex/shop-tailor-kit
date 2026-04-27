@@ -35,9 +35,6 @@ export function StickyCheckoutBar({
     return () => obs.disconnect();
   }, [observeRef]);
 
-  const saved = Math.max(0, comparePrice - total);
-  const savePct = comparePrice > 0 ? Math.round((saved / comparePrice) * 100) : 0;
-
   return (
     <div
       aria-hidden={!visible}
@@ -56,23 +53,14 @@ export function StickyCheckoutBar({
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto flex max-w-[640px] items-stretch gap-3 px-4 py-3">
-          {/* Left zone — price + savings */}
+          {/* Left zone — total only */}
           <div className="flex min-w-0 shrink-0 flex-col justify-center pr-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[22px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
-                {format(total)}
-              </span>
-              {comparePrice > total && (
-                <span className="text-[12px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
-                  {format(comparePrice)}
-                </span>
-              )}
-            </div>
-            {saved > 0 && (
-              <p className="mt-1 text-[12px] font-bold leading-none tabular-nums text-save">
-                Save {format(saved)} ({savePct}%)
-              </p>
-            )}
+            <span className="text-[22px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
+              {format(total)}
+            </span>
+            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--text-mute))]">
+              Total
+            </span>
           </div>
 
           {/* Subtle divider hairline */}

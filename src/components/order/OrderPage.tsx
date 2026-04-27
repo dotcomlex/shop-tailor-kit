@@ -130,6 +130,19 @@ export function OrderPage() {
       quantity === 2 ? ["VITALWALK-2PACK"] :
       [];
 
+    // Fire InitiateCheckout right before redirecting to Shopify checkout.
+    const currency = product.priceRange.minVariantPrice.currencyCode;
+    fbTrack("InitiateCheckout", {
+      customData: {
+        content_type: "product",
+        content_ids: variantIds.map((id) => variantNumericId(id)),
+        content_name: product.title,
+        currency,
+        value: bundleTotal,
+        num_items: quantity,
+      },
+    });
+
     setIsCheckingOut(true);
     try {
       const { checkoutUrl, error } = await createCheckoutForLines(

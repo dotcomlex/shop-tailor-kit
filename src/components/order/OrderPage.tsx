@@ -17,9 +17,28 @@ export function OrderPage() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const viewContentFiredRef = useRef(false);
+  const addToCartFiredRef = useRef(false);
 
   const step2Ref = useRef<HTMLDivElement | null>(null);
   const step3Ref = useRef<HTMLDivElement | null>(null);
+
+  // Fire ViewContent once when product data is available.
+  useEffect(() => {
+    if (!product || viewContentFiredRef.current) return;
+    viewContentFiredRef.current = true;
+    const currency = product.priceRange.minVariantPrice.currencyCode;
+    const value = parseFloat(product.priceRange.minVariantPrice.amount);
+    fbTrack("ViewContent", {
+      customData: {
+        content_type: "product",
+        content_ids: [product.id.replace(/\D/g, "")],
+        content_name: product.title,
+        currency,
+        value,
+      },
+    });
+  }, [product]);
 
   // Resize selections when quantity changes
   useEffect(() => {

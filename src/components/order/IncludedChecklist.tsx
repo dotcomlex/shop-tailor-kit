@@ -1,15 +1,17 @@
 import { Check } from "lucide-react";
-
-const ITEMS = [
-  "Free express shipping (3–5 business days)",
-  "60-day risk-free trial",
-  "Free returns & exchanges",
-];
+import { useGeo } from "@/hooks/useGeo";
 
 export function IncludedChecklist() {
+  const { country } = useGeo();
+  const shippingLine = country?.name
+    ? `Fast & free shipping to ${country.name}`
+    : "Fast & free worldwide shipping";
+
+  const items = [shippingLine, "Easy returns & exchanges"];
+
   return (
-    <ul className="space-y-1.5 rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-3.5">
-      {ITEMS.map((item) => (
+    <ul className="space-y-2 rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-3.5">
+      {items.map((item) => (
         <li
           key={item}
           className="flex items-center gap-2.5 text-[13px] text-[hsl(var(--text-body))] sm:text-[13.5px]"

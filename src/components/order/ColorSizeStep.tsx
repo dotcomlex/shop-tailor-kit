@@ -40,7 +40,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
       </h2>
       <StepHeader number={2} title="Select Your Color and Size" />
 
-      <div className="mt-4 space-y-5">
+      <div className="row-pad mt-4 space-y-5">
         {selections.map((sel, idx) => {
           const pairComplete = !!(sel.color && sel.size);
           return (
@@ -128,7 +128,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
         })}
       </div>
 
-      <div className="mt-5">
+      <div className="row-pad mt-5">
         <YellowCta label="Next" onClick={onContinue} disabled={!allComplete} />
       </div>
     </section>

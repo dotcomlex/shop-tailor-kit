@@ -34,7 +34,7 @@ export function UpgradeStep({
       </h2>
       <StepHeader number={3} title="Almost There — Review &amp; Checkout" />
 
-      <div className="mt-4 space-y-3.5">
+      <div className="row-pad mt-4 space-y-3.5">
         <ScarcityBar />
         <OrderSummary subtotal={total} saved={saved} />
         <IncludedChecklist />
@@ -43,7 +43,7 @@ export function UpgradeStep({
         <RiskFreeGuarantee />
       </div>
 
-      <div className="mt-4" ref={ctaWrapperRef}>
+      <div className="row-pad mt-4" ref={ctaWrapperRef}>
         <YellowCta
           label="Complete My Order"
           onClick={onCheckout}
@@ -76,7 +76,7 @@ export function UpgradeStep({
       </div>
 
       {/* Below-the-fold trust blocks — only mounted on Step 3, fade in beautifully */}
-      <div className="mt-10 space-y-6 animate-fade-in">
+      <div className="row-pad mt-10 space-y-6 animate-fade-in">
         <VerifiedReviewsBlock />
         <FaqBlock />
       </div>

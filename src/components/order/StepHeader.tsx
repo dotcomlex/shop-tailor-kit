@@ -7,7 +7,7 @@ interface StepHeaderProps {
 
 export function StepHeader({ number, title, rightLabel, subStrip }: StepHeaderProps) {
   return (
-    <div className="overflow-hidden rounded-lg shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+    <div className="overflow-hidden rounded-none shadow-[0_1px_0_rgba(0,0,0,0.04)] sm:rounded-lg">
       <div className="flex items-center justify-between bg-order-blue px-5 py-3 text-white sm:py-3.5">
         <div className="flex items-baseline gap-1.5 text-[18px] font-extrabold tracking-tight">
           <span>{number}.</span>

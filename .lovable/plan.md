@@ -1,40 +1,37 @@
-# Alyssa chat: tighter replies + fix duplicate close button
+# Tighter shipping + realistic typing delay + softer returns language
 
-Two quick fixes based on your feedback.
+Three small fixes.
 
-## 1. Fix the duplicate X (close button overlay)
+## 1. Shorter, less scary shipping windows
 
-The Radix `Sheet` component renders its own built-in close button in the top-right corner, and we added a custom one in the chat header. They overlap, which is what you're seeing.
+In `supabase/functions/support-chat/index.ts`, update the SHIPPING block:
 
-Fix: hide the default Radix close button on this specific sheet (one CSS class on `SheetContent`: `[&>button.absolute]:hidden`). Keep our custom white X inside the blue header.
+- US: usually **5 to 6 business days** (was 5–8)
+- UK: usually **6 to 7 business days** (was 7–12)
+- Canada / AU / NZ: usually **7 to 9 business days** (was 7–12)
+- Add: "Keep shipping answers short and reassuring. Don't quote longer windows, it scares people off."
+- Add: "Free shipping is on every order, but don't bring it up unless they ask about cost." So when someone asks *how long*, she answers the time only.
+- Update the example: "How long does shipping take to UK?" → "Usually 6 to 7 business days. You'll get a tracking link the moment it ships."
 
-## 2. Make Alyssa punchy, casual, no follow-up questions
+## 2. Soften the returns / exchange language
 
-Rewrite the system prompt in `supabase/functions/support-chat/index.ts` with these new rules:
+Right now Alyssa promises specifics ("free size exchange", "prepaid return label") that we don't want to commit to in chat. Reword the RETURNS section + matching examples + the "What if it doesn't fit?" objection so it's reassuring but vague on logistics:
 
-**Style rules**
-- 1 to 2 sentences ideal, 3 max. Never paragraphs.
-- Casual texting tone, like a friend.
-- **No em dashes**, no semicolons.
-- **No follow-up questions.** Answer, done. Don't keep the chat going.
-- No "Great question!" / "Absolutely!" filler.
-- No bullet lists unless explicitly asked.
-- Goal: give them the answer fast so they hit X and keep buying.
+- New tone: "If the size isn't right, just shoot us an email at support@vitalwalk.store and we'll get the process started for you. It's quick and easy."
+- Keep the **60-day money-back guarantee** mention (it's a strong reassurance), but drop the prepaid-label and "free exchange" specifics.
+- Add an explicit rule in the prompt: *"Don't promise specific return logistics like prepaid labels, free exchanges, or refund timing. Just say to email support@vitalwalk.store and the team will start the process. Keep it warm and easy-sounding."*
+- Update the worked example for "What if it doesn't fit?" to match.
 
-**Expanded knowledge base** (so she can handle almost anything without stalling):
-- All key features (DayFlex velcro, EasyEntry, WideComfort toe box, seamless interior, removable insole, memory foam, arch support, non-slip rubber outsole, breathable mesh, machine-washable, unisex).
-- Conditions: edema, bunions, hammertoes, wide feet, diabetes/neuropathy, plantar fasciitis, arthritis, post-surgery/limited mobility, heel spurs, flat feet, Morton's neuroma, standing-all-day fatigue, balance issues.
-- Sizing: true to size, size up if between sizes / swelling / compression socks. UK ≈ 2 sizes smaller than US Women's, ≈ 1 size smaller than US Men's. Point them to the on-page size chart.
-- Shipping: free, ships in 24h, US 5-8 business days, UK/CA/AU/NZ 7-12 business days, tracking on dispatch, never promise specific dates.
-- Returns: 60-day money-back, free size exchanges, prepaid label, no restocking fees, email support@vitalwalk.store.
-- Pricing: up to 70% off bundles, bigger bundle = bigger discount, one-time payment, secure checkout, all major payment methods.
-- Common objections: standing all day, orthotics compatible, slip resistance, arch support, water resistance, machine wash, wide feet, blisters, diabetic skin, weight, durability, men wearing them, returns, shipping origin, site security, no phone (email only).
-- Order status: she can't look it up, redirect to support@vitalwalk.store with order number.
-- Medical guardrail: never "cure/treat/heal", always "help with / designed for"; defer specifics to their doctor.
-- Off-topic: politely steer back or to email support.
+## 3. Realistic 2–3 second typing delay
 
-**Worked examples** included in the prompt so the model copies the short, casual register (e.g. *"Yep, that's exactly what they're built for. The velcro adjusts in seconds as your feet change through the day. 👍"*).
+In `src/components/support/AlyssaChat.tsx`, after we add the empty assistant placeholder (which triggers the typing-dots bubble) and before the `fetch` call, wait a randomized **2000–3000 ms**:
 
-## Files touched
-- `src/components/support/AlyssaChat.tsx` — one className addition to hide the duplicate close button.
-- `supabase/functions/support-chat/index.ts` — new system prompt (deploy after edit).
+```ts
+await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000));
+```
+
+So the customer sees Alyssa "typing" for 2–3 seconds before her message starts streaming in.
+
+## Files
+- `supabase/functions/support-chat/index.ts` — update SHIPPING, RETURNS, and matching examples; redeploy.
+- `src/components/support/AlyssaChat.tsx` — add the typing delay.

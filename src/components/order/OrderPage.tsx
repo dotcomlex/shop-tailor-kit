@@ -166,7 +166,7 @@ export function OrderPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[hsl(0_0%_98.5%)]">
+    <div className="flex min-h-[100dvh] flex-col bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
 
       <main

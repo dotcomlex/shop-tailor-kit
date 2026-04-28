@@ -166,14 +166,14 @@ export function OrderPage() {
   };
 
   return (
-    <div className="bg-[hsl(0_0%_98.5%)]">
+    <div className="flex min-h-screen flex-col bg-[hsl(0_0%_98.5%)]">
       <SiteHeader />
 
       <main
-        className={`container-order ${
+        className={`container-order flex-1 ${
           currentStep >= 3
             ? "pt-3 pb-32 sm:pt-4 md:pb-16"
-            : "pt-3 pb-6 sm:pt-4 sm:pb-16"
+            : "pt-3 pb-3 sm:pt-4 sm:pb-16"
         }`}
       >
         <div className="mx-auto max-w-[640px] space-y-4 md:space-y-8">
@@ -207,7 +207,7 @@ export function OrderPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[hsl(var(--hairline))] bg-background py-4 sm:py-5">
+      <footer className="border-t border-[hsl(var(--hairline))] bg-background py-3 sm:py-5">
         <div className="container-edge text-center text-[12px] text-[hsl(var(--text-mute))]">
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>

@@ -1,41 +1,32 @@
-## Goal
+## Issue
 
-Make the page feel native on mobile — green section headers and content extend to the screen edges (like the competitor screenshot), with comfortable breathing room inside each card.
+On mobile, after the yellow "Select Your Color and Size" CTA there's a large empty white strip before the small "© 2026 VitalWalk" footer line. It makes the page look unfinished.
 
-## The root cause
+## Cause
 
-Right now there's a 16px gutter wrapping the entire page (`.container-order` adds `px-4` on mobile). That gutter pushes the green headers, bundle cards, and all sections inward — leaving a visible strip of background on both sides. The competitor's page has zero outer gutter on mobile, so their blue header bars run flush to the screen edges and the content feels properly sized.
+Two stacked paddings produce the gap on Step 1:
+- Main content has `pb-6` (24px bottom padding)
+- The body background below the page extends because the page is shorter than the viewport on tall phones (iPhone 14 Pro Max etc.)
+- Footer adds another `py-4` (16px top + 16px bottom)
 
-## What will change
+Combined with the fact that Step 1 is short content on a tall phone, the page doesn't fill the screen and the white footer area looks like dead space.
 
-**1. Remove the outer mobile gutter (edge-to-edge layout)**
-- On mobile, the main content column will go flush to the screen edges (0px outer padding).
-- The site header and footer keep a small gutter so the logo/currency pill don't kiss the edge.
-- On tablet/desktop (≥640px) the existing comfortable gutter stays — nothing changes for larger screens.
+## Fix
 
-**2. Square off the step headers on mobile**
-- The green "1. Select Quantity / Bundle and Save!" bar will lose its rounded corners on mobile (matching competitor) and stretch fully edge-to-edge. Rounded corners return on tablet+.
+**1. Tighten bottom spacing on Step 1 (mobile only)**
+- Reduce main `pb-6` → `pb-3` on mobile (desktop unchanged).
+- Reduce footer `py-4` → `py-3` on mobile (desktop unchanged).
 
-**3. Add internal padding to the content rows so nothing feels cramped**
-- Bundle option cards, the color/size step, the upgrade step, and the order summary each get a small inner horizontal padding (~12px) on mobile so text and prices don't touch the edges. Net effect: the colored bars touch the edges, but the white card content sits with proper breathing room — exactly like the WCS reference.
+**2. Make the page always fill the viewport**
+- Add `min-h-screen` + flex column to the outer wrapper so the footer sits at the bottom of the screen on tall phones, eliminating the awkward floating gap. Main grows to fill remaining space.
 
-**4. Slightly larger price + name typography on mobile**
-- Bundle name bumps from 16px → 17px and price from 19px → 20px on mobile so the row feels less "tight" (matching the competitor's confident sizing).
+**3. Match the page background through the empty area**
+- The dead space currently shows the white footer background. Switching to `min-h-screen` keeps the soft gray page bg consistent until the footer sits flush at the bottom.
 
-## Files touched
+## File
 
-- `src/index.css` — adjust `.container-order` (no horizontal padding on mobile, restore on `sm:`); add a new `.container-edge` helper for header/footer that keeps a gutter.
-- `src/components/order/StepHeader.tsx` — remove `rounded-lg` on mobile (apply only at `sm:`).
-- `src/components/order/OrderPage.tsx` — wrap each step in a small mobile-only inner padding wrapper so card content stays comfortable while the header bars run edge-to-edge.
-- `src/components/order/SiteHeader.tsx` — switch to the gutter-preserving container so the header doesn't go edge-to-edge.
-- `src/components/order/QuantityStep.tsx` — slight typography bump for name/price on mobile.
-
-## What stays the same
-
-- Desktop/tablet layout is unchanged.
-- All currency, geo-detection, checkout, and Shopify logic is untouched.
-- Colors, fonts, and brand styling are unchanged.
+- `src/components/order/OrderPage.tsx` — wrap with `min-h-screen flex flex-col`, set main to `flex-1`, reduce mobile bottom padding on main and footer.
 
 ## Result
 
-On a phone, your page will look like the WCS reference: the green section bars run flush to both edges of the screen, the bundle cards sit comfortably inside with proper padding, and nothing feels squeezed. Desktop is unaffected.
+On phones, Step 1 fills the screen cleanly: bundle cards, yellow CTA, then the footer sits right below — no awkward white strip. Steps 2 and 3 are unaffected (they're already long enough to fill the screen, and Step 3 keeps its `pb-32` to clear the sticky checkout bar). Desktop is unchanged.

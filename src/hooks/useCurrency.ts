@@ -28,7 +28,7 @@ export function useCurrency() {
 
   // USD reference price (matches Shopify product's USD price). Used to
   // derive the FX rate from any USD amount we display.
-  const USD_BASE = 69.95;
+  const USD_BASE = 59.95;
   const rate = localizedBase && localizedBase > 0 ? localizedBase / USD_BASE : 1;
   const isConverted = currency !== "USD" && !!localizedBase;
 

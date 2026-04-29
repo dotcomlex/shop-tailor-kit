@@ -10,6 +10,7 @@ import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 
 export function OrderPage() {
+  const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
   const { country } = useGeo();
 

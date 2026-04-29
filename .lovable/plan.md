@@ -1,42 +1,45 @@
-## Problem
+# Multi-currency price/discount sanity check
 
-On a real phone (Step 1), the page can be scrolled up/down even though there's nothing more to see. This doesn't show in the desktop preview because the issue is caused by mobile browser chrome (Safari/Chrome address bar).
+## What I verified in the code
 
-## Root cause
+The funnel's pricing is authored in **USD** as constants in `QuantityStep.tsx`:
 
-In `OrderPage.tsx` we use:
+| Bundle | Price (USD) | Compare (USD) | Save % |
+|---|---|---|---|
+| 1 pair | $69.95 | $233.17 | 70% |
+| 2 pair | $116.58 | $466.33 | 75% |
+| 3 pair | $139.90 | $699.50 | 80% |
 
-```
-<div className="flex min-h-screen flex-col …">
-  …
-  <main className="flex-1 …">
-```
+Every on-page price is rendered through `useCurrency().format(usdAmount)`, which:
+1. Reads Shopify's localized base price (Shopify Markets returns the product price in GBP/AUD/EUR/etc. via `@inContext`).
+2. Computes `rate = localizedBase / 69.95`.
+3. Multiplies every USD figure by that same rate.
 
-`min-h-screen` resolves to `min-height: 100vh`. On iOS Safari & Android Chrome, `100vh` equals the viewport **with the address bar hidden** — i.e. it's *taller than what you can actually see* when the bar is visible. The `flex-1` `<main>` then stretches to fill that oversized height, which makes the page scrollable by exactly the height of the browser toolbar even when content fits.
+**Result:** ratios are preserved. 70/75/80% savings stay 70/75/80% in every currency. Compare price always = ~3.33× total. So visually nothing will look "off" to UK/AU/EU shoppers — the strikethrough, the per-pair, the subtotal, the "you save" line, and the % all scale together cleanly.
 
-This is why scroll appears on a phone but not in the in-app preview (which uses a fixed-size iframe with no dynamic browser chrome).
+## The one real risk: checkout total vs. funnel total in non-USD
 
-## Fix
+The funnel auto-applies discount codes `VITALWALK-2PACK` and `VITALWALK-3PACK` at Shopify checkout to make the cart match the advertised bundle total. These codes were created in Shopify's USD context.
 
-Switch from `100vh` to the dynamic viewport unit `100dvh`, which always equals the *currently visible* viewport (it shrinks/grows as the address bar shows/hides). When content is short, the page fills exactly the visible area and there is nothing to scroll. When content is tall (Steps 2/3), normal scrolling still works as expected.
+- If they're **percentage** discounts (e.g. 50% off / 60% off) → they scale correctly in every currency. Safe.
+- If they're **fixed-amount USD** discounts (e.g. "$23.32 off") → in GBP/AUD checkout the discount converts but the *base* price is also localized, so the post-discount total can drift a few cents/pounds from the funnel's displayed total. Shoppers may see a small mismatch on the Shopify checkout page.
 
-### File: `src/components/order/OrderPage.tsx`
+I couldn't inspect the price rules just now (Shopify session expired in this environment). Once approved, I'll re-auth and:
 
-- Replace the wrapper class `flex min-h-screen flex-col` with `flex min-h-[100dvh] flex-col`.
-- No other changes. Footer placement, step transitions, sticky checkout bar, and currency logic all stay intact.
+1. Read both `VITALWALK-2PACK` and `VITALWALK-3PACK` price rules.
+2. Confirm whether they're percentage-based (ideal) or fixed-amount (risky for non-USD).
+3. If fixed-amount: convert them to **percentage** discounts that produce the same total in USD — e.g. 2-pack should be 50% off (`$233.18 → $116.58 implies 50%`), 3-pack should be 80% off … and verify against the actual product/compare-at price in Shopify so the math lines up.
+4. Spot-check by simulating a checkout in a non-USD market to confirm the totals match.
 
-### Why this is safe
+## What I'm NOT changing
 
-- `100dvh` is supported on all iOS 15.4+ / Android Chrome 108+ browsers (essentially every device that will see the ad).
-- Older browsers fall back to ignoring the value; the `<main>` keeps its natural height, which is the same behavior the page had before we introduced `min-h-screen`. No regression.
-- No JS, no resize listeners, no layout shift on toolbar show/hide — purely a CSS swap.
+- The funnel UI, copy, percentages, or compare prices — they're already mathematically consistent across currencies.
+- The currency conversion logic in `useCurrency` — it's correctly tied to Shopify's localized response, so no rounding surprises on-page.
 
-## What stays the same
+## Steps
 
-- Currency converter, geo detection, Shopify checkout, Facebook pixel events — all untouched.
-- Edge-to-edge mobile headers from the previous change — untouched.
-- Footer-pinned-to-bottom behavior on tall screens — preserved (now even more accurate).
-
-## Out of scope
-
-No content changes, no spacing changes, no new components. Single one-line class swap.
+1. Reconnect Shopify session.
+2. Inspect `VITALWALK-2PACK` and `VITALWALK-3PACK` price rules.
+3. Report back what type they are.
+4. If they're fixed-amount, convert them to equivalent percentage discounts so checkout totals stay in sync with the funnel in GBP, AUD, EUR, CAD, etc.
+5. No code changes expected unless step 4 reveals a mismatch — and even then it's a Shopify-side discount fix, not a funnel code change.

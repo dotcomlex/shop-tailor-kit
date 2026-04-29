@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchVitalWalkProduct } from "@/lib/shopify";
+import { fetchVitalWalkBundles, type BundleProducts } from "@/lib/shopify";
 import { useGeo } from "@/hooks/useGeo";
 import { formatMoney } from "@/lib/money";
 
@@ -11,15 +11,34 @@ export const STATIC_FALLBACK = {
   currency: "USD",
 };
 
-export function useVitalWalkProduct() {
+/**
+ * Fetches all three pack-size products (1-pair, 2-pair bundle, 3-pair bundle)
+ * in a single localized request, then selects which one to use based on the
+ * user's chosen quantity. The 1-pair product remains the source of truth for
+ * color/size options + imagery in the UI.
+ */
+export function useVitalWalkBundles() {
   const { country } = useGeo();
   const code = (country?.code ?? "US").toUpperCase();
   return useQuery({
-    queryKey: ["vitalwalk-product", code],
-    queryFn: () => fetchVitalWalkProduct(code),
+    queryKey: ["vitalwalk-bundles", code],
+    queryFn: () => fetchVitalWalkBundles(code),
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
+}
+
+/**
+ * Backwards-compatible hook returning just the 1-pair product. The rest of the
+ * UI (color/size step, hero, product panel) keys off this — only the checkout
+ * step needs the other two bundles.
+ */
+export function useVitalWalkProduct() {
+  const query = useVitalWalkBundles();
+  return {
+    ...query,
+    data: query.data?.[1] ?? null,
+  };
 }
 
 /**
@@ -48,3 +67,5 @@ export function useDisplayPrice() {
     raw: { price: priceNum, compareAt: compareNum },
   };
 }
+
+export type { BundleProducts };

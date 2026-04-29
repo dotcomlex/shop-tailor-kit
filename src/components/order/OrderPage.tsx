@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
+import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useGeo } from "@/hooks/useGeo";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
@@ -10,6 +10,7 @@ import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 
 export function OrderPage() {
+  const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
   const { country } = useGeo();
 
@@ -100,43 +101,61 @@ export function OrderPage() {
       return;
     }
 
-    // Resolve each selection into a variant id
-    const variantIds: string[] = [];
+    // Pick the bundle product matching the chosen pack size. Each pack size
+    // is a separate Shopify product with the bundle price baked into its
+    // variants, so checkout shows a single clean line item with the full
+    // strike-through (no "Subtotal − Discount" line that makes the savings
+    // look small).
+    const bundleProduct = bundles?.[quantity];
+    if (!bundleProduct) {
+      toast.error("Bundle is still loading. Please wait a moment and try again.");
+      return;
+    }
+
+    // Validate every pair has a color + size selected.
     for (const sel of selections) {
       if (!sel.color || !sel.size) {
         toast.error("Please pick a color and size for every pair.");
         return;
       }
-      const variant = findVariant(product, sel.color, sel.size);
-      if (!variant) {
-        toast.error(`We couldn't find ${sel.color} in size ${sel.size}.`);
-        return;
-      }
-      if (!variant.availableForSale) {
-        toast.error(`${sel.color} in size ${sel.size} is currently sold out.`);
-        return;
-      }
-      variantIds.push(variant.id);
     }
 
-    // Group identical variants into a single line w/ quantity
-    const counts = new Map<string, number>();
-    for (const id of variantIds) counts.set(id, (counts.get(id) ?? 0) + 1);
-    const lines = Array.from(counts.entries()).map(([variantId, quantity]) => ({ variantId, quantity }));
+    // Pair 1 picks the actual variant on the bundle product.
+    const pair1 = selections[0];
+    const pair1Variant = findVariant(bundleProduct, pair1.color!, pair1.size!);
+    if (!pair1Variant) {
+      toast.error(`We couldn't find ${pair1.color} in size ${pair1.size}.`);
+      return;
+    }
+    if (!pair1Variant.availableForSale) {
+      toast.error(`${pair1.color} in size ${pair1.size} is currently sold out.`);
+      return;
+    }
 
-    // Auto-apply the matching bundle discount so cart total = advertised total.
-    const discountCodes =
-      quantity === 3 ? ["VITALWALK-3PACK"] :
-      quantity === 2 ? ["VITALWALK-2PACK"] :
-      [];
+    // Pairs 2+ are passed as line-item attributes — visible to the customer
+    // at checkout, on the order in Shopify admin, and on the packing slip.
+    const attributes: Array<{ key: string; value: string }> = [];
+    for (let i = 1; i < selections.length; i++) {
+      const s = selections[i];
+      attributes.push({ key: `Pair ${i + 1} Color`, value: s.color! });
+      attributes.push({ key: `Pair ${i + 1} Size`, value: s.size! });
+    }
+
+    const lines = [
+      {
+        variantId: pair1Variant.id,
+        quantity: 1, // The bundle product itself is the unit.
+        ...(attributes.length ? { attributes } : {}),
+      },
+    ];
 
     // Fire InitiateCheckout right before redirecting to Shopify checkout.
-    const currency = product.priceRange.minVariantPrice.currencyCode;
+    const currency = bundleProduct.priceRange.minVariantPrice.currencyCode;
     fbTrack("InitiateCheckout", {
       customData: {
         content_type: "product",
-        content_ids: variantIds.map((id) => variantNumericId(id)),
-        content_name: product.title,
+        content_ids: [variantNumericId(pair1Variant.id)],
+        content_name: bundleProduct.title,
         currency,
         value: bundleTotal,
         num_items: quantity,
@@ -147,7 +166,7 @@ export function OrderPage() {
     try {
       const { checkoutUrl, error } = await createCheckoutForLines(
         lines,
-        discountCodes,
+        [], // No discount codes — bundle pricing is in the variant itself.
         country?.code ?? "US",
       );
       if (!checkoutUrl) {

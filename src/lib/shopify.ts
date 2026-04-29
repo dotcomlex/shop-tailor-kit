@@ -7,8 +7,19 @@ export const SHOPIFY_STORE_PERMANENT_DOMAIN = "6cefa8-2.myshopify.com";
 export const SHOPIFY_STOREFRONT_TOKEN = "abed53c0d22333dd9e20bb528289533b";
 export const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
-// Product handle for "The Original VitalWalk® Shoes (Copy)"
-export const VITALWALK_PRODUCT_HANDLE = "the-original-vitalwalk®-shoes-copy";
+// Three real Shopify products — Funnelish-style. The bundle products carry
+// the discounted price baked into the variant, so checkout shows a single
+// clean line item (e.g. "VitalWalk 2-Pair Bundle — $99.92") with the full
+// strike-through compare-at, instead of "Subtotal $X − Discount $Y".
+export const VITALWALK_PRODUCT_HANDLES = {
+  1: "the-original-vitalwalk®-shoes-copy",
+  2: "vitalwalk®-shoes-2-pair-bundle",
+  3: "vitalwalk®-shoes-3-pair-bundle",
+} as const;
+
+// Backwards-compatible alias used elsewhere in the app for the 1-pair product
+// (it's still the source of truth for color/size option values + imagery).
+export const VITALWALK_PRODUCT_HANDLE = VITALWALK_PRODUCT_HANDLES[1];
 
 export interface ShopifyImage {
   url: string;
@@ -70,68 +81,73 @@ export async function storefrontApiRequest<T = unknown>(
   return data;
 }
 
-const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
-  query ProductByHandle($handle: String!, $country: CountryCode!)
-  @inContext(country: $country) {
-    product(handle: $handle) {
-      id
-      handle
-      title
-      description
-      priceRange {
-        minVariantPrice { amount currencyCode }
-      }
-      compareAtPriceRange {
-        minVariantPrice { amount currencyCode }
-      }
-      images(first: 20) {
-        edges { node { url altText } }
-      }
-      variants(first: 100) {
-        edges {
-          node {
-            id
-            title
-            availableForSale
-            price { amount currencyCode }
-            compareAtPrice { amount currencyCode }
-            selectedOptions { name value }
-          }
+const PRODUCT_FIELDS = /* GraphQL */ `
+  fragment ProductFields on Product {
+    id
+    handle
+    title
+    description
+    priceRange {
+      minVariantPrice { amount currencyCode }
+    }
+    compareAtPriceRange {
+      minVariantPrice { amount currencyCode }
+    }
+    images(first: 20) {
+      edges { node { url altText } }
+    }
+    variants(first: 100) {
+      edges {
+        node {
+          id
+          title
+          availableForSale
+          price { amount currencyCode }
+          compareAtPrice { amount currencyCode }
+          selectedOptions { name value }
         }
       }
-      options { name values }
     }
+    options { name values }
   }
 `;
 
-interface RawProductResponse {
-  product: {
-    id: string;
-    handle: string;
-    title: string;
-    description: string;
-    priceRange: { minVariantPrice: ShopifyMoney };
-    compareAtPriceRange: { minVariantPrice: ShopifyMoney };
-    images: { edges: Array<{ node: ShopifyImage }> };
-    variants: { edges: Array<{ node: ShopifyVariant }> };
-    options: Array<{ name: string; values: string[] }>;
-  } | null;
+const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
+  ${PRODUCT_FIELDS}
+  query ProductByHandle($handle: String!, $country: CountryCode!)
+  @inContext(country: $country) {
+    product(handle: $handle) { ...ProductFields }
+  }
+`;
+
+const ALL_BUNDLES_QUERY = /* GraphQL */ `
+  ${PRODUCT_FIELDS}
+  query AllBundles(
+    $h1: String!
+    $h2: String!
+    $h3: String!
+    $country: CountryCode!
+  ) @inContext(country: $country) {
+    p1: product(handle: $h1) { ...ProductFields }
+    p2: product(handle: $h2) { ...ProductFields }
+    p3: product(handle: $h3) { ...ProductFields }
+  }
+`;
+
+interface RawProduct {
+  id: string;
+  handle: string;
+  title: string;
+  description: string;
+  priceRange: { minVariantPrice: ShopifyMoney };
+  compareAtPriceRange: { minVariantPrice: ShopifyMoney };
+  images: { edges: Array<{ node: ShopifyImage }> };
+  variants: { edges: Array<{ node: ShopifyVariant }> };
+  options: Array<{ name: string; values: string[] }>;
 }
 
-/**
- * Fetch the VitalWalk product with prices localized for the given country.
- * Pass an ISO-3166 alpha-2 country code (e.g. "US", "GB", "CA"). Falls back
- * to "US" when none is supplied. Shopify converts prices to that market's
- * currency using the same FX rates checkout uses.
- */
-export async function fetchVitalWalkProduct(country: string = "US"): Promise<ShopifyProductData | null> {
-  const result = await storefrontApiRequest<RawProductResponse>(PRODUCT_BY_HANDLE_QUERY, {
-    handle: VITALWALK_PRODUCT_HANDLE,
-    country: (country || "US").toUpperCase(),
-  });
-
-  if (!result?.data?.product) return null;
-  const p = result.data.product;
+function normalizeProduct(p: RawProduct | null): ShopifyProductData | null {
+  if (!p) return null;
   return {
     id: p.id,
     handle: p.handle,
@@ -142,6 +158,49 @@ export async function fetchVitalWalkProduct(country: string = "US"): Promise<Sho
     images: p.images.edges.map((e) => e.node),
     variants: p.variants.edges.map((e) => e.node),
     options: p.options,
+  };
+}
+
+/**
+ * Fetch the 1-pair VitalWalk product with prices localized for the given country.
+ */
+export async function fetchVitalWalkProduct(country: string = "US"): Promise<ShopifyProductData | null> {
+  const result = await storefrontApiRequest<{ product: RawProduct | null }>(
+    PRODUCT_BY_HANDLE_QUERY,
+    {
+      handle: VITALWALK_PRODUCT_HANDLES[1],
+      country: (country || "US").toUpperCase(),
+    },
+  );
+  return normalizeProduct(result?.data?.product ?? null);
+}
+
+export interface BundleProducts {
+  1: ShopifyProductData | null;
+  2: ShopifyProductData | null;
+  3: ShopifyProductData | null;
+}
+
+/**
+ * Fetch all three pack products (1-pair, 2-pair bundle, 3-pair bundle) in
+ * one round-trip, all localized for the given country.
+ */
+export async function fetchVitalWalkBundles(country: string = "US"): Promise<BundleProducts> {
+  const result = await storefrontApiRequest<{
+    p1: RawProduct | null;
+    p2: RawProduct | null;
+    p3: RawProduct | null;
+  }>(ALL_BUNDLES_QUERY, {
+    h1: VITALWALK_PRODUCT_HANDLES[1],
+    h2: VITALWALK_PRODUCT_HANDLES[2],
+    h3: VITALWALK_PRODUCT_HANDLES[3],
+    country: (country || "US").toUpperCase(),
+  });
+
+  return {
+    1: normalizeProduct(result?.data?.p1 ?? null),
+    2: normalizeProduct(result?.data?.p2 ?? null),
+    3: normalizeProduct(result?.data?.p3 ?? null),
   };
 }
 
@@ -162,6 +221,13 @@ const CART_CREATE_MUTATION = /* GraphQL */ `
 export interface CartLineInput {
   variantId: string;
   quantity: number;
+  /**
+   * Line-item attributes shown to the customer at checkout, on the order in
+   * Shopify admin, and on the packing slip. Used to communicate the color/size
+   * of additional pairs in a bundle (since the variant itself only encodes
+   * Pair 1's color+size).
+   */
+  attributes?: Array<{ key: string; value: string }>;
 }
 
 interface CartCreateResponse {
@@ -204,6 +270,7 @@ export async function createCheckoutForLines(
     lines: lines.map((l) => ({
       merchandiseId: l.variantId,
       quantity: l.quantity,
+      ...(l.attributes && l.attributes.length ? { attributes: l.attributes } : {}),
     })),
     buyerIdentity: {
       countryCode: (country || "US").toUpperCase(),
@@ -230,6 +297,7 @@ export async function createCheckoutForLines(
 
 /**
  * Find the variant matching the requested color + size selection.
+ * Tolerates option names with or without trailing colons (`Color` vs `Color:`).
  */
 export function findVariant(
   product: ShopifyProductData,

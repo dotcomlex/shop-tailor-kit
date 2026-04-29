@@ -1,45 +1,42 @@
-# Multi-currency price/discount sanity check
+# Lower price to $59.95 (70% off) — full funnel + Shopify resync
 
-## What I verified in the code
+Single source-of-truth change: 1-pair USD price becomes **$59.95**, with **70% off** vs. a compare-at of **$199.83**. Bundle math is rebuilt around the same 70/75/80% savings ladder so every currency stays consistent (Shopify Markets handles FX, our funnel just multiplies USD × Shopify's localized rate).
 
-The funnel's pricing is authored in **USD** as constants in `QuantityStep.tsx`:
+## New price ladder (USD source of truth)
 
-| Bundle | Price (USD) | Compare (USD) | Save % |
-|---|---|---|---|
-| 1 pair | $69.95 | $233.17 | 70% |
-| 2 pair | $116.58 | $466.33 | 75% |
-| 3 pair | $139.90 | $699.50 | 80% |
+| Pack | Per pair | Total | Compare-at | Save |
+|---|---|---|---|---|
+| 1× | $59.95 | $59.95 | **$199.83** | 70% |
+| 2× | $49.96 | $99.92 | $399.67 | 75% |
+| 3× | $39.97 | $119.90 | $599.50 | 80% |
 
-Every on-page price is rendered through `useCurrency().format(usdAmount)`, which:
-1. Reads Shopify's localized base price (Shopify Markets returns the product price in GBP/AUD/EUR/etc. via `@inContext`).
-2. Computes `rate = localizedBase / 69.95`.
-3. Multiplies every USD figure by that same rate.
+Math: 1× compare = 59.95 / 0.30. 2× per-pair = base × 0.8333… (75% off retail = same 16.67% bundle discount as today). 3× per-pair = base × 0.6667 (80% off retail = same 33.33% bundle discount). **Bundle discount percentages do not change**, so the existing `VITALWALK-2PACK` (16.67%) and `VITALWALK-3PACK` (33.33%) Shopify price rules continue to work unchanged in every currency.
 
-**Result:** ratios are preserved. 70/75/80% savings stay 70/75/80% in every currency. Compare price always = ~3.33× total. So visually nothing will look "off" to UK/AU/EU shoppers — the strikethrough, the per-pair, the subtotal, the "you save" line, and the % all scale together cleanly.
+## Changes in the funnel codebase
 
-## The one real risk: checkout total vs. funnel total in non-USD
+1. `src/components/order/QuantityStep.tsx` — replace `OPTIONS` numbers with the table above.
+2. `src/hooks/useCurrency.ts` — `USD_BASE = 59.95` (so the FX rate is derived from Shopify's localized $59.95 equivalent).
+3. `src/hooks/useVitalWalkProduct.ts` — update `STATIC_FALLBACK` to `price: "59.95"`, `compareAtPrice: "199.83"` (only used pre-API-response; not user-visible in normal flow).
 
-The funnel auto-applies discount codes `VITALWALK-2PACK` and `VITALWALK-3PACK` at Shopify checkout to make the cart match the advertised bundle total. These codes were created in Shopify's USD context.
+No other files reference these constants. `OrderSummary`, `UpgradeStep`, `StickyCheckoutBar`, `SavingsHero` all derive from props, so they update automatically.
 
-- If they're **percentage** discounts (e.g. 50% off / 60% off) → they scale correctly in every currency. Safe.
-- If they're **fixed-amount USD** discounts (e.g. "$23.32 off") → in GBP/AUD checkout the discount converts but the *base* price is also localized, so the post-discount total can drift a few cents/pounds from the funnel's displayed total. Shoppers may see a small mismatch on the Shopify checkout page.
+## Changes in Shopify
 
-I couldn't inspect the price rules just now (Shopify session expired in this environment). Once approved, I'll re-auth and:
+For the live product `the-original-vitalwalk®-shoes-copy`, for **every variant**:
+- `price` → `59.95` (USD)
+- `compare_at_price` → `199.83` (USD)
 
-1. Read both `VITALWALK-2PACK` and `VITALWALK-3PACK` price rules.
-2. Confirm whether they're percentage-based (ideal) or fixed-amount (risky for non-USD).
-3. If fixed-amount: convert them to **percentage** discounts that produce the same total in USD — e.g. 2-pack should be 50% off (`$233.18 → $116.58 implies 50%`), 3-pack should be 80% off … and verify against the actual product/compare-at price in Shopify so the math lines up.
-4. Spot-check by simulating a checkout in a non-USD market to confirm the totals match.
+Shopify Markets will auto-convert both to GBP, AUD, CAD, EUR, etc. using the same FX rate the funnel reads via `@inContext`, so the 70% strike-through stays accurate in every currency.
 
-## What I'm NOT changing
+**Bundle discount price rules: no change.** `VITALWALK-2PACK` (-16.67%) and `VITALWALK-3PACK` (-33.33%) remain percentage-based, so they scale cleanly to the new base in all currencies.
 
-- The funnel UI, copy, percentages, or compare prices — they're already mathematically consistent across currencies.
-- The currency conversion logic in `useCurrency` — it's correctly tied to Shopify's localized response, so no rounding surprises on-page.
+## Verification after implementation
 
-## Steps
+- Pull the product via Storefront API for US / GB / AU / CA / DE and confirm localized prices match the funnel's displayed values within 1¢.
+- Confirm 2-pack and 3-pack price rules still read as percentage type with the same values.
+- Spot-check checkout total in at least one non-USD market matches the funnel's displayed bundle total.
 
-1. Reconnect Shopify session.
-2. Inspect `VITALWALK-2PACK` and `VITALWALK-3PACK` price rules.
-3. Report back what type they are.
-4. If they're fixed-amount, convert them to equivalent percentage discounts so checkout totals stay in sync with the funnel in GBP, AUD, EUR, CAD, etc.
-5. No code changes expected unless step 4 reveals a mismatch — and even then it's a Shopify-side discount fix, not a funnel code change.
+## Out of scope
+
+- No copy/wording changes outside the price chips ("Save 70/75/80%" labels are already present and remain correct).
+- No changes to color/size variants, FB pixel, or geo logic.

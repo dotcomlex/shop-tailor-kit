@@ -260,6 +260,7 @@ export async function createCheckoutForLines(
   lines: CartLineInput[],
   discountCodes: string[] = [],
   country: string = "US",
+  note?: string,
 ): Promise<{
   checkoutUrl: string | null;
   error?: string;
@@ -277,6 +278,7 @@ export async function createCheckoutForLines(
     },
   };
   if (discountCodes.length) input.discountCodes = discountCodes;
+  if (note?.trim()) input.note = note.trim();
 
   const result = await storefrontApiRequest<CartCreateResponse>(CART_CREATE_MUTATION, {
     input,

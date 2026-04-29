@@ -132,20 +132,32 @@ export function OrderPage() {
       return;
     }
 
-    // Pairs 2+ are passed as line-item attributes — visible to the customer
-    // at checkout, on the order in Shopify admin, and on the packing slip.
-    const attributes: Array<{ key: string; value: string }> = [];
+    // Every pair is attached to the single bundle line so fulfillment can see
+    // the full bundle breakdown directly in Shopify checkout, admin, and on
+    // packing slips. Pair 1 is encoded both in the selected variant and in the
+    // line-item properties for clarity; pairs 2+ live in properties only.
+    const attributes: Array<{ key: string; value: string }> = [
+      { key: "Bundle Type", value: `${quantity}-Pair Bundle` },
+      { key: "Total Pairs", value: String(quantity) },
+      { key: "Pair 1 Color", value: pair1.color! },
+      { key: "Pair 1 Size", value: pair1.size! },
+    ];
     for (let i = 1; i < selections.length; i++) {
       const s = selections[i];
       attributes.push({ key: `Pair ${i + 1} Color`, value: s.color! });
       attributes.push({ key: `Pair ${i + 1} Size`, value: s.size! });
     }
 
+    const note = [
+      `Bundle: ${quantity} Pairs`,
+      ...selections.map((s, i) => `Pair ${i + 1}: ${s.color} / ${s.size}`),
+    ].join("\n");
+
     const lines = [
       {
         variantId: pair1Variant.id,
         quantity: 1, // The bundle product itself is the unit.
-        ...(attributes.length ? { attributes } : {}),
+        attributes,
       },
     ];
 
@@ -168,6 +180,7 @@ export function OrderPage() {
         lines,
         [], // No discount codes — bundle pricing is in the variant itself.
         country?.code ?? "US",
+        note,
       );
       if (!checkoutUrl) {
         toast.error(error ?? "Could not create checkout. Please try again.");

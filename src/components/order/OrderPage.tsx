@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
+import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useGeo } from "@/hooks/useGeo";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";

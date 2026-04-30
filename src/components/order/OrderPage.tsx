@@ -243,7 +243,7 @@ export function OrderPage() {
       },
     });
 
-    setIsCheckingOut(true);
+    // setIsCheckingOut was already flipped on by the price-sync guard above.
     try {
       const { checkoutUrl, error } = await createCheckoutForLines(
         lines,

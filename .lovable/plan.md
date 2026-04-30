@@ -1,59 +1,74 @@
-## Audit results — currency auto-switching
+## The Bug
 
-I traced the full path: **geo detection → Shopify `@inContext` query → `useCurrency.format()` → every visible price**. The architecture is correct, but I found **3 real risks** that can cause a visitor to see the wrong currency. Fixing them is fast.
+User in UK sees **£45.13** for the 1-pair card, but Shopify checkout shows **£45.16** — a 3p mismatch that erodes trust right at the buy moment.
 
-### What's working ✅
+### Root cause
 
-- Server-side geo (Supabase edge function) reads `cf-ipcountry` first, then falls back to a server-to-server IP lookup — bypasses ad-blockers.
-- Client geo has a 4-provider chain (server geo → ipwho.is → geojs → ipapi) + 6h cache + background re-validation that re-fires `geo-changed` and re-renders prices if the cached country was wrong.
-- Shopify Storefront query uses `@inContext(country:)` so prices come back already converted by Shopify (same FX rate as checkout).
-- `?country=GB` URL override works for testing.
-- Live Shopify check (just ran): **US, CA, GB, AU, DE, FR, NL, IE, NZ, SE, CH, DK, JP all return correct localized currency.** Bundle prices are perfectly proportional too (e.g. GB: £45.13 / £75.21 / £90.25).
+Today, `useCurrency.format()` derives every displayed price from a USD constant:
 
-### Issues found ❌
-
-**1. Some markets are NOT enabled in Shopify and silently fall back to USD.**
-Live API test results:
-```text
-NO (Norway)  → 59.95 USD   ← should be NOK
-MX (Mexico)  → 59.95 USD   ← should be MXN
-BR (Brazil)  → 59.95 USD   ← should be BRL
 ```
-A Norwegian visitor today sees `$59.95` with a 🇳🇴 flag chip — confusing, and almost certainly killing conversions for those visitors. **This must be fixed in Shopify Admin → Markets** (I cannot enable markets via the API tools available). I'll list exactly which markets to enable.
+display = usdAmount × (localizedBase / 59.95)
+```
 
-**2. USD price flash for non-US visitors on cold load.**
-`useCurrency.format()` falls back to USD while Shopify's localized response is in flight (~200–600ms). A French visitor sees `$59.95` for a moment, then `52,16 €`. That flash erodes trust on the most price-sensitive part of the page. The hook even comments "to avoid showing a USD price flash… returns ''" — but the implementation actually returns USD, contradicting the comment. **Fix:** return `""` (skeleton) until Shopify's localized response is in, exactly as the comment promises. The page will show a brief shimmer instead of a wrong-currency flash.
+Where `localizedBase` is the **1-pair product's** `priceRange.minVariantPrice` from Shopify Markets.
 
-**3. Background re-validation only invalidates the 1-pair query key.**
-`useGeo` calls `queryClient.invalidateQueries({ queryKey: ["vitalwalk-product"] })`, but the actual query key is `["vitalwalk-bundles", code]`. So if a VPN user's real country is detected late, **prices never re-fetch**. **Fix:** invalidate `["vitalwalk-bundles"]`.
+This breaks because Shopify Markets applies **per-product, per-variant rounding rules** independently (e.g. "round to nearest 0.05", "psychological .99 endings", currency-specific rules). So:
 
-### Plan
+- The **1-pair** product's localized base may round to £45.13
+- The **2-pair bundle** product's variants may round to a slightly different per-pair figure
+- The **3-pair bundle** product's variants again to another
+- Multiplying a USD ratio across all three products compounds the rounding drift
 
-**Code fixes** (small, surgical):
+At checkout, Shopify uses the **actual variant's** localized price — which is the authoritative number. Our derived number is only an approximation.
 
-1. **`src/hooks/useCurrency.ts`** — return `""` from `format()` while geo is loading or Shopify hasn't returned localized data yet. Keeps US visitors unchanged (their localized response = USD).
-2. **`src/hooks/useGeo.ts`** — fix the stale query key so background re-validation actually re-fetches prices: `["vitalwalk-bundles"]`.
-3. **`src/components/order/QuantityStep.tsx`** & any other price renderers — confirm they handle the empty-string skeleton case gracefully (the `tabular-nums` blocks already collapse cleanly; I'll add a min-height so the layout doesn't jump).
-4. **Add a tiny dev-only currency assertion** in `useCurrency`: if `currency !== "USD"` and rate is exactly 1 after product load, log a warning so we catch silent fallbacks early.
+For the 1-pair case specifically, the displayed `format(59.95)` rounds the FX product down (e.g. `59.95 × 0.7528 = 45.1303 → £45.13`), while Shopify's variant has its own rounding rule producing £45.16.
 
-**Verification** (I'll run after the edits):
+## The Fix
 
-- Re-run the multi-country Storefront API check and print a clean pass/fail table.
-- Open the preview with `?country=GB`, `?country=DE`, `?country=AU`, `?country=JP`, `?country=NO` and confirm the displayed prices match Shopify's `@inContext` response to the cent.
-- Confirm checkout opens in the matching currency (`buyerIdentity.countryCode` is already wired through `createCheckoutForLines`).
+Stop deriving prices from USD. **Read each price directly from the corresponding Shopify bundle product's localized response** — the same product/variant we send to checkout. This makes display = checkout by construction.
 
-**Manual action required from you (Shopify Admin):**
+### Changes
 
-Go to **Settings → Markets** and enable these markets (or add them to an existing International market) so Shopify returns localized prices instead of USD:
-- 🇳🇴 Norway (NOK)
-- 🇲🇽 Mexico (MXN)
-- 🇧🇷 Brazil (BRL)
-- Optional but recommended for completeness: 🇨🇿, 🇵🇱, 🇭🇺, 🇿🇦, 🇸🇬, 🇦🇪, 🇮🇳, 🇰🇷
+**1. `src/components/order/QuantityStep.tsx`**
+- Remove the hard-coded USD `total` / `compare` / `perPair` numbers from `OPTIONS`. Keep only `qty`, `name`, `savePct`, `ribbon`.
+- Pull `bundles` from `useVitalWalkBundles()`.
+- For each option, read the **actual** localized numbers from Shopify:
+  - `total` = `bundles[qty].priceRange.minVariantPrice.amount`
+  - `compare` = `bundles[qty].compareAtPriceRange.minVariantPrice.amount`
+  - `perPair` = `total / qty`
+- Format with `formatMoney(amount, currencyCode)` directly (no FX math).
+- While `bundles` is loading, render skeleton placeholders for the price column.
 
-Until those markets are enabled, visitors from those countries will see USD with their flag — there is no way around that on the API side.
+**2. `src/components/order/OrderPage.tsx`**
+- Replace the `BUNDLE_OPTIONS` lookup in `bundleTotal` / `bundleCompare` (currently a USD constant) with the live `bundles[quantity]` localized totals. These flow into `UpgradeStep` and `StickyCheckoutBar`, so checkout summary shows the **same number** the user will pay.
+- Update the `fbTrack` calls to use the localized currency + value (already partly done; ensure `value` uses the live total, not `opt.total`).
 
-### Out of scope
+**3. `src/hooks/useCurrency.ts`**
+- Deprecate the `format(usdAmount)` derivation path (still used by a few cosmetic spots if any). Replace its callers with direct `formatMoney(amount, currency)` from product data.
+- Keep `currency`, `countryFlag`, `loading`, `isConverted` for UI badges.
+- Remove the `USD_BASE = 59.95` constant and the rate calculation entirely.
 
-- Changing pricing logic (already correct).
-- Touching checkout flow (already passes `countryCode` correctly).
-- Adding a manual currency switcher in the header (can do later if you want, but auto-detection should be the primary path).
+**4. Audit other callers of `format()`** and switch each to read from product data:
+- `src/components/order/StickyCheckoutBar.tsx`
+- `src/components/order/OrderSummary.tsx`
+- `src/components/order/SavingsHero.tsx`
+- `src/components/order/ProductPanel.tsx`
+- `src/components/order/SizeTileGrid.tsx` (if it shows prices)
+- Anywhere else `useCurrency().format` appears.
+
+`useDisplayPrice()` in `useVitalWalkProduct.ts` already does the right thing (reads localized amount directly) — leave it alone, possibly extend for the bundle products.
+
+**5. Verification step**
+After implementation, run a script (in build mode) that:
+- Fetches `cartCreate` for each of the 3 bundles in `?country=GB`, `?country=DE`, `?country=AU`, etc.
+- Fetches the localized product prices via the same query the page uses
+- Asserts that for every (country, qty) pair, `pageDisplayed === checkoutTotal` to the cent.
+
+## Why this fixes 45.13 vs 45.16
+
+After the change, the 1-pair card reads £45.16 directly from `bundles[1].priceRange.minVariantPrice.amount` — the exact same field Shopify uses to charge the customer. No multiplication, no division, no rounding drift, no "USD source of truth."
+
+## Out of scope (separate issues already known)
+
+- Norway / Mexico / Brazil falling back to USD — still requires you to enable those Markets in Shopify Admin → Settings → Markets.
+- The price-flash skeleton behavior is preserved (we still wait for the localized response before showing prices).

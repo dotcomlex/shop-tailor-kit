@@ -108,6 +108,20 @@ export function OrderPage() {
     };
   }, [bundles, quantity]);
 
+  // Re-fetch the localized bundle prices whenever the user returns to the
+  // tab. Catches the case where Shopify Markets revalues FX while the tab
+  // sat in the background — without this, the page would happily display a
+  // stale price that no longer matches what checkout will charge.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        queryClient.invalidateQueries({ queryKey: ["vitalwalk-bundles"] });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [queryClient]);
+
   const handleCheckout = async () => {
     if (!product) {
       toast.error("Product is still loading. Please wait a moment and try again.");
@@ -143,6 +157,48 @@ export function OrderPage() {
     if (!pair1Variant.availableForSale) {
       toast.error(`${pair1.color} in size ${pair1.size} is currently sold out.`);
       return;
+    }
+
+    // PRICE-SYNC GUARD: Before we hand the customer to Shopify, fetch the
+    // live bundle prices one more time using the exact same @inContext
+    // query the page renders from. If the displayed total no longer matches
+    // what Shopify will charge (because FX moved, the merchant updated the
+    // product, or the cache is stale), refresh the UI and ask the user to
+    // confirm the new price instead of silently sending them to a checkout
+    // with a different total than the one on the button.
+    setIsCheckingOut(true);
+    try {
+      const fresh = await fetchVitalWalkBundles(country?.code ?? "US");
+      const freshBundle = fresh?.[quantity];
+      const freshTotal = freshBundle
+        ? parseFloat(freshBundle.priceRange.minVariantPrice.amount)
+        : NaN;
+      // Only block when the difference is >= 1 cent. Sub-cent differences
+      // can never happen with Shopify's 2-decimal currency amounts, so this
+      // is effectively "any change at all".
+      if (
+        Number.isFinite(freshTotal) &&
+        Math.abs(freshTotal - bundleTotal) >= 0.01
+      ) {
+        const freshCurrency = freshBundle!.priceRange.minVariantPrice.currencyCode;
+        // Push the fresh data into the cache so the UI re-renders the new
+        // number immediately — the customer sees the change before clicking
+        // Checkout a second time.
+        queryClient.setQueryData(
+          ["vitalwalk-bundles", (country?.code ?? "US").toUpperCase()],
+          fresh,
+        );
+        toast.message("Price updated", {
+          description: `New total is ${formatMoney(freshTotal, freshCurrency)}. Tap Checkout again to continue.`,
+        });
+        setIsCheckingOut(false);
+        return;
+      }
+    } catch (err) {
+      // If the live re-check fails (network blip), fall through and use the
+      // already-displayed total. Shopify's cartCreate will still localize
+      // correctly via buyerIdentity.countryCode below.
+      console.warn("Pre-checkout price sync failed, continuing:", err);
     }
 
     // Every pair is attached to the single bundle line so fulfillment can see

@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "How fast will my order arrive?",
-    a: "Orders ship within 24 hours from our warehouse with free standard shipping. Most US orders arrive in 5–8 business days. UK, Canada, Australia and New Zealand typically arrive within 7–12 business days. You'll get a tracking link by email the moment your pair ships.",
+    a: "Orders ship within 24 hours from our warehouse with free standard shipping. Most US orders arrive in 5–8 business days. UK, Canada, Australia and New Zealand typically arrive within 5–6 business days. You'll get a tracking link by email the moment your pair ships.",
   },
   {
     q: "What if they don't fit, or I need a different size?",

@@ -144,35 +144,28 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     </p>
                   </div>
 
-                  {/* Price column — headline is the EXACT Shopify total for
-                      the bundle (so it can never drift from checkout). The
-                      per-pair line is prefixed "Nx" to make clear it's
-                      informational, not a multiplier the customer should
-                      apply to reach the total. */}
+                  {/* Price column — per-pair is the headline anchor on
+                      Step 1 (funnel psychology). The exact Shopify bundle
+                      total is shown later (OrderSummary / sticky bar /
+                      checkout button). */}
                   <div className="shrink-0 text-right">
-                    {compareFormatted ? (
+                    {perPairCompareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                        {compareFormatted}
+                        {perPairCompareFormatted}
                       </p>
                     ) : (
                       <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    {totalFormatted ? (
+                    {perPairFormatted ? (
                       <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                        {totalFormatted}
+                        {perPairFormatted}
                       </p>
                     ) : (
                       <p className="mt-1 h-[20px] w-20 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    {opt.qty > 1 && perPairFormatted ? (
-                      <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
-                        {opt.qty}× {perPairFormatted}/ea
-                      </p>
-                    ) : opt.qty === 1 && perPairFormatted ? (
-                      <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
-                        per pair
-                      </p>
-                    ) : null}
+                    <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
+                      /pair
+                    </p>
                   </div>
                 </button>
               </li>

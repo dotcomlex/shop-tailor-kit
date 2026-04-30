@@ -107,7 +107,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             const ribbonClass = isPopular
               ? // MOST POPULAR — loud red, slightly larger, with a soft
                 // ring + drop shadow so it lifts off the card.
-                "bg-[hsl(0_84%_50%)] text-white text-[11px] px-2.5 py-[4px] ring-1 ring-[hsl(0_84%_40%)]/30 shadow-md"
+                "bg-[hsl(0_84%_50%)] text-white text-[11px] px-2.5 py-[4px] shadow-md"
               : // BEST DEAL — secondary, calmer blue treatment.
                 "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 

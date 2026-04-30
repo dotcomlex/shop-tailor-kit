@@ -199,6 +199,47 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         <div className="mt-4">
           <YellowCta label="Select Your Color and Size" onClick={onContinue} />
         </div>
+
+        {/* Trust strip — sits directly under the Step 1 CTA where drop-off
+            is highest. Three signals only: rating (mirrors the full reviews
+            block below), guarantee, free shipping. No fabricated copy. */}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-[11.5px] font-semibold text-[hsl(var(--text-body))]">
+          <span className="inline-flex items-center gap-1.5">
+            <TrustpilotMiniStars />
+            <span className="tabular-nums">
+              <span className="font-extrabold text-[hsl(var(--text-strong))]">
+                {TRUST_RATING}
+              </span>
+              <span className="text-[hsl(var(--text-mute))]">/5</span>
+              <span className="ml-1 text-[hsl(var(--text-mute))] font-medium">
+                ({TRUST_REVIEWS.toLocaleString()})
+              </span>
+            </span>
+          </span>
+          <span className="text-[hsl(var(--text-mute))]" aria-hidden>
+            ·
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <ShieldCheck
+              className="h-3.5 w-3.5 text-verified"
+              strokeWidth={2.5}
+              aria-hidden
+            />
+            <span>60-Day Guarantee</span>
+          </span>
+          <span className="text-[hsl(var(--text-mute))]" aria-hidden>
+            ·
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Truck
+              className="h-3.5 w-3.5 text-[hsl(var(--order-blue))]"
+              strokeWidth={2.5}
+              aria-hidden
+            />
+            <span>Free Shipping</span>
+          </span>
+        </div>
+
       </div>
     </section>
   );

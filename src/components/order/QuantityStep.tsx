@@ -84,18 +84,15 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 : "bg-[hsl(var(--order-blue))] text-white";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty]);
-            // Step 1 is the per-pair anchor — the funnel relies on the low
-            // per-pair number to make the 2/3-pair upgrades feel obvious.
-            // The exact Shopify bundle total is shown later (OrderSummary,
-            // sticky bar, checkout button), where it's pulled directly from
-            // Shopify so checkout always matches to the cent.
-            const perPair = totals ? totals.total / opt.qty : null;
-            const perPairCompare = totals ? totals.compare / opt.qty : null;
-            const perPairFormatted = perPair !== null ? format(perPair) : "";
-            const perPairCompareFormatted =
-              perPairCompare !== null && perPairCompare > (perPair ?? 0)
-                ? format(perPairCompare)
-                : "";
+            // Headline = exact Shopify bundle total (matches checkout to
+            // the cent). Per-pair is shown as a small secondary line on
+            // 2/3-pair cards only — it anchors the upgrade value without
+            // creating a mismatch between Step 1 and Step 3.
+            const totalFormatted = totals ? format(totals.total) : "";
+            const compareFormatted =
+              totals && totals.compare > totals.total ? format(totals.compare) : "";
+            const perPairFormatted =
+              totals && opt.qty > 1 ? format(totals.total / opt.qty) : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">
@@ -144,34 +141,37 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     </p>
                   </div>
 
-                  {/* Price column — per-pair is the headline anchor on
-                      Step 1 (funnel psychology). The exact Shopify bundle
-                      total is shown later (OrderSummary / sticky bar /
-                      checkout button). */}
+                  {/* Price column — headline is the exact Shopify bundle
+                      total so the number on this card matches Step 3 /
+                      checkout to the cent. A small per-pair sub-line is
+                      shown on 2/3-pair cards as the value anchor. */}
                   <div className="shrink-0 text-right">
-                    {perPairCompareFormatted ? (
+                    {compareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                        {perPairCompareFormatted}
+                        {compareFormatted}
                       </p>
                     ) : (
                       <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    {perPairFormatted ? (
+                    {totalFormatted ? (
                       <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                        {perPairFormatted}
+                        {totalFormatted}
                       </p>
                     ) : (
                       <p className="mt-1 h-[20px] w-20 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
-                      /pair
-                    </p>
+                    {perPairFormatted && (
+                      <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
+                        {perPairFormatted}/pair
+                      </p>
+                    )}
                   </div>
                 </button>
               </li>
             );
           })}
         </ul>
+
 
         <div className="mt-4">
           <YellowCta label="Select Your Color and Size" onClick={onContinue} />

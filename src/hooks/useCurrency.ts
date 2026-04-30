@@ -32,17 +32,33 @@ export function useCurrency() {
   const rate = localizedBase && localizedBase > 0 ? localizedBase / USD_BASE : 1;
   const isConverted = currency !== "USD" && !!localizedBase;
 
-  // Always render *something* so the page never appears blank. If Shopify's
-  // localized response hasn't arrived yet, fall back to USD — the price will
-  // re-render in the correct currency the moment the query resolves (and
-  // again if background geo re-validation discovers a different country).
+  // Avoid a wrong-currency flash for non-US visitors: while geo is still
+  // resolving OR Shopify's localized response hasn't arrived, return "" so
+  // the UI shows a skeleton instead of a USD price that then jumps to EUR/GBP.
+  // For US visitors the localized response IS USD, so they see prices instantly
+  // once the query resolves (sub-second).
   const format = useCallback(
     (amountUsd: number) => {
-      if (!product) return formatMoney(amountUsd, "USD");
+      if (geoLoading || !product) return "";
       return formatMoney(amountUsd * rate, currency);
     },
-    [product, rate, currency],
+    [geoLoading, product, rate, currency],
   );
+
+  // Dev-only: warn if Shopify silently fell back to USD for a non-US country
+  // (means that Market isn't enabled in Shopify Admin → Settings → Markets).
+  if (
+    import.meta.env.DEV &&
+    product &&
+    country &&
+    country.code !== "US" &&
+    currency === "USD"
+  ) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[currency] Shopify returned USD for country=${country.code}. Enable this market in Shopify Admin → Settings → Markets so prices localize correctly.`,
+    );
+  }
 
   const formatUsd = useCallback((amountUsd: number) => formatMoney(amountUsd, "USD"), []);
 

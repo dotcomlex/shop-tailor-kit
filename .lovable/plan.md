@@ -1,59 +1,59 @@
-## Goal
+## Audit results — currency auto-switching
 
-Polish the two new Shopify bundle products (2-pack & 3-pack) so checkout looks professional and shipping/currency works correctly across all markets.
+I traced the full path: **geo detection → Shopify `@inContext` query → `useCurrency.format()` → every visible price**. The architecture is correct, but I found **3 real risks** that can cause a visitor to see the wrong currency. Fixing them is fast.
 
-Bundle products identified:
-- **2-Pair Bundle** — Product ID `10087556088094` ($99.92, 80 variants)
-- **3-Pair Bundle** — Product ID `10087556284702` ($119.90, 80 variants)
-- **Source 1-Pair product** (image source) — `10083237298462` (handle `the-original-vitalwalk®-shoes-copy`)
+### What's working ✅
 
-## Step 1 — Rename bundle products with discount %
+- Server-side geo (Supabase edge function) reads `cf-ipcountry` first, then falls back to a server-to-server IP lookup — bypasses ad-blockers.
+- Client geo has a 4-provider chain (server geo → ipwho.is → geojs → ipapi) + 6h cache + background re-validation that re-fires `geo-changed` and re-renders prices if the cached country was wrong.
+- Shopify Storefront query uses `@inContext(country:)` so prices come back already converted by Shopify (same FX rate as checkout).
+- `?country=GB` URL override works for testing.
+- Live Shopify check (just ran): **US, CA, GB, AU, DE, FR, NL, IE, NZ, SE, CH, DK, JP all return correct localized currency.** Bundle prices are perfectly proportional too (e.g. GB: £45.13 / £75.21 / £90.25).
 
-Use `shopify--update_product` to rename:
-- 2-Pair → **"VitalWalk® Shoes — 2-Pair Bundle (75% OFF)"**
-- 3-Pair → **"VitalWalk® Shoes — 3-Pair Bundle (80% OFF)"**
+### Issues found ❌
 
-This way, customers see the discount baked into the product title at checkout.
+**1. Some markets are NOT enabled in Shopify and silently fall back to USD.**
+Live API test results:
+```text
+NO (Norway)  → 59.95 USD   ← should be NOK
+MX (Mexico)  → 59.95 USD   ← should be MXN
+BR (Brazil)  → 59.95 USD   ← should be BRL
+```
+A Norwegian visitor today sees `$59.95` with a 🇳🇴 flag chip — confusing, and almost certainly killing conversions for those visitors. **This must be fixed in Shopify Admin → Markets** (I cannot enable markets via the API tools available). I'll list exactly which markets to enable.
 
-## Step 2 — Add product images to bundles
+**2. USD price flash for non-US visitors on cold load.**
+`useCurrency.format()` falls back to USD while Shopify's localized response is in flight (~200–600ms). A French visitor sees `$59.95` for a moment, then `52,16 €`. That flash erodes trust on the most price-sensitive part of the page. The hook even comments "to avoid showing a USD price flash… returns ''" — but the implementation actually returns USD, contradicting the comment. **Fix:** return `""` (skeleton) until Shopify's localized response is in, exactly as the comment promises. The page will show a brief shimmer instead of a wrong-currency flash.
 
-The two bundle products were created without images, so checkout currently shows a blank thumbnail. Approach:
+**3. Background re-validation only invalidates the 1-pair query key.**
+`useGeo` calls `queryClient.invalidateQueries({ queryKey: ["vitalwalk-product"] })`, but the actual query key is `["vitalwalk-bundles", code]`. So if a VPN user's real country is detected late, **prices never re-fetch**. **Fix:** invalidate `["vitalwalk-bundles"]`.
 
-1. Fetch the source 1-Pair product's images via Storefront API (already public CDN URLs).
-2. Download each image to `/tmp/`.
-3. Call `shopify--update_product` on each bundle with the downloaded images via the `images[].file_path` parameter.
+### Plan
 
-Note: `update_product` replaces ALL existing images, which is fine since the bundles currently have none.
+**Code fixes** (small, surgical):
 
-## Step 3 — Ensure bundles are physical / require shipping
+1. **`src/hooks/useCurrency.ts`** — return `""` from `format()` while geo is loading or Shopify hasn't returned localized data yet. Keeps US visitors unchanged (their localized response = USD).
+2. **`src/hooks/useGeo.ts`** — fix the stale query key so background re-validation actually re-fetches prices: `["vitalwalk-bundles"]`.
+3. **`src/components/order/QuantityStep.tsx`** & any other price renderers — confirm they handle the empty-string skeleton case gracefully (the `tabular-nums` blocks already collapse cleanly; I'll add a min-height so the layout doesn't jump).
+4. **Add a tiny dev-only currency assertion** in `useCurrency`: if `currency !== "USD"` and rate is exactly 1 after product load, log a warning so we catch silent fallbacks early.
 
-Variants on Shopify default to `requires_shipping: true` when created without explicit `weight`, but the user reported wanting to confirm. I'll:
+**Verification** (I'll run after the edits):
 
-1. Run a verification script via Storefront API checking `requiresShipping` on a sample variant of each bundle.
-2. If `false`, set a small weight (`0.5 lb`) on each variant via `shopify--update_product_variant` to force `requires_shipping: true`. (160 variants — done in parallel batches.)
+- Re-run the multi-country Storefront API check and print a clean pass/fail table.
+- Open the preview with `?country=GB`, `?country=DE`, `?country=AU`, `?country=JP`, `?country=NO` and confirm the displayed prices match Shopify's `@inContext` response to the cent.
+- Confirm checkout opens in the matching currency (`buyerIdentity.countryCode` is already wired through `createCheckoutForLines`).
 
-Most likely already true since they were created without overrides; this step is a verification + conditional fix.
+**Manual action required from you (Shopify Admin):**
 
-## Step 4 — Verify multi-currency parity at checkout
+Go to **Settings → Markets** and enable these markets (or add them to an existing International market) so Shopify returns localized prices instead of USD:
+- 🇳🇴 Norway (NOK)
+- 🇲🇽 Mexico (MXN)
+- 🇧🇷 Brazil (BRL)
+- Optional but recommended for completeness: 🇨🇿, 🇵🇱, 🇭🇺, 🇿🇦, 🇸🇬, 🇦🇪, 🇮🇳, 🇰🇷
 
-Run a verification script that, for each market (**US, CA, GB, AU, DE, FR**):
+Until those markets are enabled, visitors from those countries will see USD with their flag — there is no way around that on the API side.
 
-1. Fetches the 2-pack and 3-pack variant prices via Storefront API with `@inContext(country: XX)` — this is the price the funnel displays.
-2. Creates a real test cart with `cartCreate` `@inContext(country: XX)` for that variant.
-3. Compares cart `cost.totalAmount` against the displayed variant price.
-4. Reports a pass/fail table.
+### Out of scope
 
-Since both display + checkout pull from the same Shopify-localized source, all markets should match exactly. The script confirms it and surfaces any rounding rule discrepancies.
-
-## Files / tools used
-
-- `shopify--update_product` (rename + add images, called twice)
-- `shopify--update_product_variant` (only if shipping flag is wrong)
-- `code--exec` (download images, run verification scripts)
-- No frontend code changes required — funnel already pulls localized prices from Shopify.
-
-## Out of scope
-
-- Changing pricing logic (already correct from last session)
-- Frontend UI changes
-- Discount code creation (bundles use baked-in pricing, no codes needed)
+- Changing pricing logic (already correct).
+- Touching checkout flow (already passes `countryCode` correctly).
+- Adding a manual currency switcher in the header (can do later if you want, but auto-detection should be the primary path).

@@ -23,7 +23,8 @@ export function useGeo() {
       const detail = (e as CustomEvent<DetectedCountry>).detail;
       if (!mounted || !detail) return;
       setCountry(detail);
-      queryClient.invalidateQueries({ queryKey: ["vitalwalk-product"] });
+      // Re-fetch all bundle products in the new country's currency.
+      queryClient.invalidateQueries({ queryKey: ["vitalwalk-bundles"] });
     };
     window.addEventListener(GEO_CHANGE_EVENT, handleChange);
 

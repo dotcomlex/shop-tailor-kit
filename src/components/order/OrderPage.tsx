@@ -17,7 +17,10 @@ export function OrderPage() {
   const { data: product } = useVitalWalkProduct();
   const { country } = useGeo();
 
-  const [quantity, setQuantity] = useState<Quantity>(1);
+  // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and
+  // the one we want most users to land on. Selections array auto-resizes
+  // via the useEffect below.
+  const [quantity, setQuantity] = useState<Quantity>(2);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);

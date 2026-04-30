@@ -1,17 +1,36 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { detectCountry, GEO_CHANGE_EVENT, type DetectedCountry } from "@/lib/geo";
+import {
+  detectCountry,
+  GEO_CHANGE_EVENT,
+  readCachedCountry,
+  type DetectedCountry,
+} from "@/lib/geo";
 
 export function useGeo() {
-  const [country, setCountry] = useState<DetectedCountry | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Hydrate synchronously from the localStorage cache so React Query can
+  // fire the bundle request on the very first render (no extra round-trip
+  // waiting for the geo promise to resolve). For brand-new visitors with
+  // no cache, country starts as null and we fall back to "US" downstream.
+  const [country, setCountry] = useState<DetectedCountry | null>(() =>
+    readCachedCountry(),
+  );
+  const [loading, setLoading] = useState(country === null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     let mounted = true;
     detectCountry().then((c) => {
       if (!mounted) return;
-      setCountry(c);
+      setCountry((prev) => {
+        // If the resolved country differs from what we hydrated from cache,
+        // invalidate the bundle query so prices re-render in the right
+        // currency. Same code → no-op (avoids a needless refetch).
+        if (prev?.code !== c?.code) {
+          queryClient.invalidateQueries({ queryKey: ["vitalwalk-bundles"] });
+        }
+        return c;
+      });
       setLoading(false);
     });
 
@@ -36,3 +55,4 @@ export function useGeo() {
 
   return { country, loading };
 }
+

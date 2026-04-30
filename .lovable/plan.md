@@ -1,37 +1,55 @@
-## Goal
-Boost AOV and bundle attach rate by making the 2-pair the obvious default, and make the "MOST POPULAR" badge stand out so it actually does its job.
+# Fix: 2-Pair & 3-Pair Bundles Skipping Shipping at Checkout
 
-## Changes
+## The Problem (Confirmed)
 
-### 1. Default quantity = 2 (auto-select the 2-pair bundle)
-**File:** `src/components/order/OrderPage.tsx`
+Checkout skips the shipping step for the 2-pair and 3-pair bundles because every variant on those bundle products has **"This is a physical product"** turned **OFF** (`requires_shipping = false`). When no line on a Shopify cart requires shipping, Shopify treats the order as digital and removes the entire shipping step.
 
-Currently the page initializes with `useState<Quantity>(1)`. Change the initial state to `2` so the 2-pair bundle is pre-selected when the page loads. The selections array auto-resizes via the existing `useEffect`, so no other state changes are needed — Step 1 will simply open with the 2-pair card highlighted, the radio filled, and the price column showing the 2-pair total.
+Affected products:
 
-This is the single biggest lever: defaults dominate user behavior. Many funnels see bundle attach jump 15–30% just from changing the default.
+| Product | Shopify ID | Variants |
+|---|---|---|
+| VitalWalk® Shoes — 2-Pair Bundle (75% OFF) | 10087556088094 | 80 |
+| VitalWalk® Shoes — 3-Pair Bundle (80% OFF) | 10087556284702 | 80 |
 
-### 2. "MOST POPULAR" badge — red, pill-shaped, more prominent
-**File:** `src/components/order/QuantityStep.tsx`
+The 1-pair product (`VitalWalk®`, ID 9839297102110) is correctly configured — that's why single-pair checkouts show shipping fine.
 
-Currently both ribbons (`popular` and `best`) use the same blue (`bg-[hsl(var(--order-blue))]`), which makes them visually identical and forgettable. The badge is also tiny (10px text, low padding).
+## What I Cannot Do (Important)
 
-Update so the two badges are clearly differentiated and the "popular" one is the loudest thing in Step 1:
+The Shopify tools available to me (`update_product_variant`, `update_product`) do **not expose** the `requires_shipping` field. There is no programmatic way for me to flip this flag from inside Lovable for the 160 affected variants. I tried — the schema has no parameter for it.
 
-- **MOST POPULAR (2-pair):** solid red background (`bg-red-600`), white text, slightly larger (`text-[11px]`), more padding (`px-2.5 py-1`), uppercase, subtle ring/shadow for lift. Position raised slightly so it sits cleanly above the card edge.
-- **BEST DEAL (3-pair):** keep the current blue but stays at the existing size — secondary to MOST POPULAR.
+So this needs **two minutes of clicking in your Shopify admin**. I'll give you the exact steps and verify the fix afterwards.
 
-This creates a clear visual hierarchy: red ribbon > blue ribbon > no ribbon, matching the conversion priority (we want 2-pair > 3-pair > 1-pair attach).
+## Fix Steps (Shopify Admin)
 
-### 3. Subtle highlight on the default card (optional polish)
-**File:** `src/components/order/QuantityStep.tsx`
+For **each** of the two bundle products:
 
-Since the 2-pair is now selected by default, the existing `border-order-blue` selected state will already make it stand out — no extra highlight needed. The red ribbon + blue selected border will give the 2-pair card two layers of visual weight, which is exactly what we want.
+1. Open Shopify Admin → Products
+2. Open **VitalWalk® Shoes — 2-Pair Bundle (75% OFF)**
+3. Scroll to the **Shipping** section (it's a product-level setting on Shopify's new variant model, not per-variant — one toggle covers all 80 variants)
+4. Check **"This is a physical product"**
+5. Set a weight (e.g. `1.4 kg` for 2 pairs, `2.1 kg` for 3 pairs — adjust to your actual ship weight)
+6. Save
+7. Repeat for **VitalWalk® Shoes — 3-Pair Bundle (80% OFF)**
 
-## Out of scope (intentionally)
-- No copy changes to the badge text ("MOST POPULAR" stays).
-- No changes to pricing, savings %, or the bundle products themselves.
-- No re-firing of `AddToCart` on quantity change (per earlier decision to leave the pixel logic alone for now).
+If your store still uses the legacy per-variant shipping toggle, the checkbox lives on each variant under "Shipping" — but on the 2024+ product model, the single product-level toggle propagates to all variants.
 
-## Files touched
-- `src/components/order/OrderPage.tsx` — change initial `quantity` state from `1` to `2`
-- `src/components/order/QuantityStep.tsx` — differentiate ribbon styles; make "MOST POPULAR" red and slightly larger
+## Verification (I'll Do This)
+
+Once you've toggled both, tell me and I'll:
+
+1. Re-fetch both bundle products via the Shopify API and confirm `requiresShipping: true` on every variant
+2. Run a test checkout for the 2-pair bundle to confirm the shipping step now appears
+3. Run a test checkout for the 3-pair bundle to confirm the same
+
+## Why Not Recreate the Products?
+
+I considered deleting and recreating the bundles via `create_product` (which defaults `requires_shipping` to true). Rejected because:
+- It would break the existing variant IDs hardcoded into pixel events, abandoned-cart links, and any in-flight orders
+- It would reset compare-at prices and the inventory configuration you've already dialed in
+- The handles `vitalwalk®-shoes-2-pair-bundle` and `vitalwalk®-shoes-3-pair-bundle` are referenced in `src/lib/shopify.ts` — recreating could change them
+
+A 30-second toggle in admin is safer than a recreate.
+
+## No App Code Changes Needed
+
+This is purely a Shopify product-configuration issue. `OrderPage.tsx`, `shopify.ts`, and the cart flow are all correct — they're sending the right variant IDs with the right buyer country. The fix is upstream in Shopify itself.

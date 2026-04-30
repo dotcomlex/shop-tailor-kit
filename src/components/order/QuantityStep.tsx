@@ -103,10 +103,13 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         <ul className="mt-3 space-y-2.5">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;
-            const ribbonClass =
-              opt.ribbon?.tone === "best"
-                ? "bg-[hsl(var(--order-blue))] text-white"
-                : "bg-[hsl(var(--order-blue))] text-white";
+            const isPopular = opt.ribbon?.tone === "popular";
+            const ribbonClass = isPopular
+              ? // MOST POPULAR — loud red, slightly larger, with a soft
+                // ring + drop shadow so it lifts off the card.
+                "bg-[hsl(0_84%_50%)] text-white text-[11px] px-2.5 py-[4px] ring-1 ring-[hsl(0_84%_40%)]/30 shadow-md"
+              : // BEST DEAL — secondary, calmer blue treatment.
+                "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty]);
             // Headline = exact Shopify bundle total (matches checkout to
@@ -124,7 +127,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 {opt.ribbon && (
                   <span
                     className={cn(
-                      "absolute right-3 top-0 z-10 rounded-md px-2 py-[3px] text-[10px] font-extrabold tracking-wider shadow-sm",
+                      "absolute right-3 top-0 z-10 rounded-md font-extrabold uppercase tracking-wider",
                       ribbonClass,
                     )}
                   >

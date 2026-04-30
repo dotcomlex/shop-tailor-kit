@@ -87,6 +87,20 @@ function readCache(): { value: DetectedCountry | null; fresh: boolean } | undefi
   }
 }
 
+/**
+ * Synchronous read used by `useGeo` to hydrate the very first render.
+ * Returns the cached country if available (even if slightly stale — we'll
+ * revalidate in the background), or the URL/localStorage override, or null.
+ */
+export function readCachedCountry(): DetectedCountry | null {
+  if (typeof window === "undefined") return null;
+  const override = readOverride();
+  if (override) return override;
+  const cached = readCache();
+  return cached?.value ?? null;
+}
+
+
 function writeCache(country: DetectedCountry | null) {
   if (typeof window === "undefined") return;
   try {

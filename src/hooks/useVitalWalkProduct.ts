@@ -23,10 +23,17 @@ export function useVitalWalkBundles() {
   return useQuery({
     queryKey: ["vitalwalk-bundles", code],
     queryFn: () => fetchVitalWalkBundles(code),
-    staleTime: 1000 * 60 * 5,
+    // Keep prices fresh: revalidate after 60s, on tab refocus, and on
+    // network reconnect so a customer who lingers never sees a stale
+    // total before checkout. The pre-checkout guard in OrderPage.tsx is
+    // the final safety net — this just makes that guard fire less often.
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     retry: 1,
   });
 }
+
 
 /**
  * Backwards-compatible hook returning just the 1-pair product. The rest of the

@@ -1,45 +1,55 @@
-# Restore per-pair as the headline price on Step 1
+## Recommendation
 
-## What went wrong
+For a high-converting funnel, the cleanest pattern (used by GoldenWear, BlendJet, Bombas-style funnels) is:
 
-In the last pass I changed `QuantityStep.tsx` to show the **bundle total** as the big headline price (e.g. "£74.67" for 2 pairs), with per-pair as a small secondary line. That broke the funnel psychology — the whole point of Step 1 is to anchor on the low **per-pair** number ("£37.34/ea") so the upgrade from 1→2→3 pairs feels like a no-brainer. The total belongs on Step 3 (Order Summary), not Step 1.
+- **Headline = bundle total** (the number that matches checkout exactly)
+- **Tiny secondary line below = per-pair breakdown** ("$37.34/pair") — only shown on 2-pair and 3-pair, since it's redundant on 1-pair
+- **Strike-through compare price = bundle compare-at total** (so the savings feel bigger and match the "Save 75%" badge)
 
-## What to change
+This way:
+1. The number on the card = the number at checkout = no sticker shock at Step 3
+2. The per-pair line still anchors the value ("only $37/pair if I get 2") without being the headline lie
+3. 1-pair card stays clean — no "/pair" clutter when qty is 1
 
-### `src/components/order/QuantityStep.tsx` — flip the price column back
-
-Restore the original layout per card:
+## Step 1 price column — final layout
 
 ```text
-£74.69    ← compareAtPriceRange per-pair (struck)
-£37.34    ← per-pair price (BIG headline)
-/pair     ← small label underneath
+1 Pair card:
+  £56.00          ← strike-through compare (bundle compare)
+  £41.45          ← bold headline (bundle total = checkout)
+                  (no per-pair line — redundant)
+
+2 Pair card:
+  £112.00         ← strike-through compare
+  £74.67          ← bold headline (bundle total)
+  £37.34/pair     ← tiny grey secondary line
+
+3 Pair card:
+  £168.00
+  £99.45
+  £33.15/pair
 ```
 
-Per-pair = `priceRange.minVariantPrice.amount / qty`, formatted via `useCurrency().format()` — same as before the recent change. Compare-at also divided by qty so the strike-through reads as a per-pair "was" price.
+## Changes
 
-No bundle total shown on Step 1. The customer sees the total for the first time on Step 3 (`OrderSummary`), which already pulls the exact Shopify total — unchanged.
+### `src/components/order/QuantityStep.tsx`
+- Switch headline back to `totals.total` (the authoritative Shopify bundle total) and strike-through to `totals.compare`
+- Compute per-pair as a small secondary label: `format(totals.total / opt.qty) + "/pair"`
+- **Only render the per-pair line when `opt.qty > 1`** (removes "/pair" clutter on the 1-pair card)
+- Tighten typography:
+  - Compare strike: `text-[13px]` muted
+  - Headline total: `text-[20px] font-extrabold` (unchanged size, just different value)
+  - Per-pair sub-line: `text-[11px] font-medium` muted, `mt-0.5`
+- Keep existing skeleton placeholders so layout doesn't jump while Shopify loads
 
-## What stays (do NOT touch)
+### Untouched (already correct)
+- `OrderPage.tsx` — `visibilitychange` refetch + pre-checkout sync guard stays
+- `OrderSummary`, `StickyCheckoutBar`, checkout button — all already use the exact Shopify bundle total
+- `useVitalWalkBundles` / `@inContext` currency sync — unchanged
 
-These are the sync/parity fixes from the last pass — they all live **outside** the visual price column and must remain:
+## Result
 
-1. **`OrderPage.tsx` — pre-checkout re-fetch + drift toast.** Still re-fetches `vitalwalk-bundles` right before `createCheckoutForLines` and shows the "Price updated — tap Checkout again" toast if Shopify's number moved.
-2. **`OrderPage.tsx` — `visibilitychange` listener.** Still invalidates the bundles query when the tab regains focus.
-3. **`useVitalWalkProduct.ts` — staleTime/refetch behavior.** Unchanged from the last pass.
-4. **`OrderSummary.tsx` / `StickyCheckoutBar.tsx` / `SavingsHero.tsx`.** Already use the live Shopify bundle total directly — no changes.
-5. **Geo + `buyerIdentity.countryCode` handoff to Shopify checkout.** Unchanged.
-6. **Parity verification report** at `.lovable/price-parity-report.txt` — kept as-is.
-
-## Why the "37.34 × 2 ≠ 74.67" optical issue is fine here
-
-The customer never sees both numbers side-by-side on Step 1 (no total displayed). They see the per-pair anchor on Step 1, then the **exact Shopify total** on Step 3 / sticky bar / checkout button — all of which already pull the authoritative Shopify number. So the 1p rounding artifact is invisible to the customer in the actual flow.
-
-## Files touched
-
-- `src/components/order/QuantityStep.tsx` — revert price column to per-pair-as-headline.
-- `.lovable/plan.md` — replace with this plan.
-
-## Out of scope
-
-- Any change to OrderSummary, StickyCheckoutBar, OrderPage sync logic, geo, or checkout handoff.
+- Step 1 → Step 3 price = identical (no surprise)
+- Per-pair value anchor still visible on 2/3-pair cards where it actually drives the upsell
+- 1-pair card is clean, no awkward "/pair" tag
+- Every currency stays cent-perfect with Shopify checkout

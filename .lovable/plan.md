@@ -1,86 +1,45 @@
-# Make displayed prices byte-identical to Shopify checkout
+# Restore per-pair as the headline price on Step 1
 
-## The actual bug (confirmed against live Shopify)
+## What went wrong
 
-I just queried Shopify for UK (`GB`) prices. Here's the truth vs. what the page shows:
+In the last pass I changed `QuantityStep.tsx` to show the **bundle total** as the big headline price (e.g. "£74.67" for 2 pairs), with per-pair as a small secondary line. That broke the funnel psychology — the whole point of Step 1 is to anchor on the low **per-pair** number ("£37.34/ea") so the upgrade from 1→2→3 pairs feels like a no-brainer. The total belongs on Step 3 (Order Summary), not Step 1.
 
-| Bundle | Shopify charges | Page shows `/ea` | Customer's mental math | Drift |
-|---|---|---|---|---|
-| 1 pair | **£44.80** | £44.80 | £44.80 | ✓ |
-| 2 pairs | **£74.67** | £37.34/ea | £37.34 × 2 = £74.68 | **+1p** |
-| 3 pairs | **£89.60** | £29.87/ea | £29.87 × 3 = £89.61 | **+1p** |
+## What to change
 
-### Root cause
+### `src/components/order/QuantityStep.tsx` — flip the price column back
 
-In `QuantityStep.tsx` we read the bundle total from Shopify (correct), then **divide by qty** to get a per-pair price, then `Intl.NumberFormat` rounds that to 2 decimals. £74.67 ÷ 2 = £37.335 → rounds to £37.34. The customer multiplies back and sees a different number than what Shopify charges. The "£45.13 vs £45.16" report is the same pattern in a different Market.
-
-A second contributing factor: when a Shopify Market repriced between the customer's first visit and checkout (Shopify Markets can adjust FX rates intra-day), the page never re-fetches, so the cached price flashes stale.
-
-## The fix
-
-### 1. Stop dividing — show the total, not the per-pair (`src/components/order/QuantityStep.tsx`)
-
-Each card will display **the exact Shopify total for that bundle** as the headline price, with `/ea` shown as a smaller secondary label that's also computed from Shopify (not from division — see step 2). This way the headline number = the checkout number, period.
-
-Layout per card (right-side price column):
+Restore the original layout per card:
 
 ```text
-£149.34   ← compareAtPriceRange.minVariantPrice (struck)
-£74.67    ← priceRange.minVariantPrice (BIG, exact)
-2× £37.34 ← derived for context only, prefixed so customer
-            never expects "× 2 = total"
+£74.69    ← compareAtPriceRange per-pair (struck)
+£37.34    ← per-pair price (BIG headline)
+/pair     ← small label underneath
 ```
 
-The `2×` prefix makes it obvious the per-pair is informational. No more "37.34 × 2 ≠ 74.67" confusion.
+Per-pair = `priceRange.minVariantPrice.amount / qty`, formatted via `useCurrency().format()` — same as before the recent change. Compare-at also divided by qty so the strike-through reads as a per-pair "was" price.
 
-### 2. Add a tiny "exact total" line wherever per-pair appears
+No bundle total shown on Step 1. The customer sees the total for the first time on Step 3 (`OrderSummary`), which already pulls the exact Shopify total — unchanged.
 
-Same treatment in any place we currently divide. Audit confirms only `QuantityStep.tsx` divides — `OrderPage.tsx`, `StickyCheckoutBar.tsx`, `OrderSummary.tsx`, `SavingsHero.tsx` already use the live bundle total directly.
+## What stays (do NOT touch)
 
-### 3. Re-fetch prices right before checkout (`src/components/order/OrderPage.tsx`)
+These are the sync/parity fixes from the last pass — they all live **outside** the visual price column and must remain:
 
-Before calling `createCheckoutForLines`, invalidate the `vitalwalk-bundles` query and `await` a fresh fetch in the user's country. If the new total differs from what's currently displayed by more than 0p, show a one-tap toast: *"Price updated to £X.XX — tap Checkout again to continue."* This guarantees the number on the button is the number on Shopify's checkout page, even if Shopify Markets revalued in the meantime.
+1. **`OrderPage.tsx` — pre-checkout re-fetch + drift toast.** Still re-fetches `vitalwalk-bundles` right before `createCheckoutForLines` and shows the "Price updated — tap Checkout again" toast if Shopify's number moved.
+2. **`OrderPage.tsx` — `visibilitychange` listener.** Still invalidates the bundles query when the tab regains focus.
+3. **`useVitalWalkProduct.ts` — staleTime/refetch behavior.** Unchanged from the last pass.
+4. **`OrderSummary.tsx` / `StickyCheckoutBar.tsx` / `SavingsHero.tsx`.** Already use the live Shopify bundle total directly — no changes.
+5. **Geo + `buyerIdentity.countryCode` handoff to Shopify checkout.** Unchanged.
+6. **Parity verification report** at `.lovable/price-parity-report.txt` — kept as-is.
 
-### 4. Re-fetch when the tab regains focus
+## Why the "37.34 × 2 ≠ 74.67" optical issue is fine here
 
-Add a `visibilitychange` listener that invalidates `vitalwalk-bundles` when the user returns to the tab after >2 minutes. Catches the case where someone leaves the tab open overnight and Shopify FX has moved.
-
-### 5. Re-fetch when geo changes (already done) — verify
-
-`useGeo.ts` already invalidates `["vitalwalk-bundles"]` on `GEO_CHANGE_EVENT`. ✓ No change needed; just confirming during implementation.
-
-### 6. Pass the same country to checkout (already done) — verify
-
-`OrderPage.handleCheckout` already passes `country?.code ?? "US"` to `createCheckoutForLines`, which sets `buyerIdentity.countryCode` so Shopify's checkout opens in the matching Market and currency. ✓ No change needed.
-
-### 7. Verification harness (dev-only script)
-
-Add `scripts/verify-price-parity.ts` that, for every Market we have enabled (US, GB, CA, AU, DE, FR, IT, ES, NL, IE, NZ, JP, SG, AE, SE, NO, DK, CH, MX, BR — pulled from existing `geo.ts`), does:
-
-1. Fetches the 3 bundle products via the same `@inContext` query the page uses.
-2. Calls `cartCreate` with each bundle's first variant + `buyerIdentity.countryCode`.
-3. Reads `cart.cost.totalAmount` from the response.
-4. Asserts `priceRange.minVariantPrice.amount === cart.cost.totalAmount` to the cent.
-5. Prints a green check or a red diff for every (country, qty).
-
-Run it once after the fix lands; commit the output to `.lovable/price-parity-report.txt` so it's auditable.
-
-## What this fixes
-
-- **45.13 vs 45.16** and the **74.67 vs 74.68** family of bugs disappear because nothing on the page is derived by division+rounding anymore — the headline price *is* the Shopify total.
-- **Stale-FX flashes** disappear because we re-fetch on tab focus and again right before checkout.
-- **Market mismatches** disappear because checkout already opens in the same `countryCode` we used for the displayed price.
+The customer never sees both numbers side-by-side on Step 1 (no total displayed). They see the per-pair anchor on Step 1, then the **exact Shopify total** on Step 3 / sticky bar / checkout button — all of which already pull the authoritative Shopify number. So the 1p rounding artifact is invisible to the customer in the actual flow.
 
 ## Files touched
 
-- `src/components/order/QuantityStep.tsx` — restructure price column; remove division-as-headline.
-- `src/components/order/OrderPage.tsx` — pre-checkout re-fetch + drift toast.
-- `src/hooks/useVitalWalkProduct.ts` — add `staleTime: 0` for the visibility-triggered refetch path; keep 5-min cache for normal browsing.
-- `src/App.tsx` (or a new `useBundlePriceSync` hook) — `visibilitychange` listener.
-- `scripts/verify-price-parity.ts` — new, dev-only verification script.
-- `.lovable/plan.md` — replaced with this plan for posterity.
+- `src/components/order/QuantityStep.tsx` — revert price column to per-pair-as-headline.
+- `.lovable/plan.md` — replace with this plan.
 
 ## Out of scope
 
-- Norway/Mexico/Brazil falling back to USD when those Markets aren't enabled in Shopify Admin → Settings → Markets (separate, already-known issue).
-- Adding new Markets — that's a Shopify Admin task, not code.
+- Any change to OrderSummary, StickyCheckoutBar, OrderPage sync logic, geo, or checkout handoff.

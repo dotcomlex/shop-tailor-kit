@@ -84,14 +84,18 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 : "bg-[hsl(var(--order-blue))] text-white";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty]);
-            // Per-pair is informational only (prefixed with "Nx" so the
-            // customer never expects multiplication to equal the total).
-            // Headline price is the EXACT Shopify total — no division, no
-            // rounding drift between this card and the checkout page.
+            // Step 1 is the per-pair anchor — the funnel relies on the low
+            // per-pair number to make the 2/3-pair upgrades feel obvious.
+            // The exact Shopify bundle total is shown later (OrderSummary,
+            // sticky bar, checkout button), where it's pulled directly from
+            // Shopify so checkout always matches to the cent.
             const perPair = totals ? totals.total / opt.qty : null;
-            const compareFormatted = totals ? format(totals.compare) : "";
-            const totalFormatted = totals ? format(totals.total) : "";
+            const perPairCompare = totals ? totals.compare / opt.qty : null;
             const perPairFormatted = perPair !== null ? format(perPair) : "";
+            const perPairCompareFormatted =
+              perPairCompare !== null && perPairCompare > (perPair ?? 0)
+                ? format(perPairCompare)
+                : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">

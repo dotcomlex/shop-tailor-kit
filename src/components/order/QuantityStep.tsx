@@ -84,8 +84,13 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 : "bg-[hsl(var(--order-blue))] text-white";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty]);
+            // Per-pair is informational only (prefixed with "Nx" so the
+            // customer never expects multiplication to equal the total).
+            // Headline price is the EXACT Shopify total — no division, no
+            // rounding drift between this card and the checkout page.
             const perPair = totals ? totals.total / opt.qty : null;
             const compareFormatted = totals ? format(totals.compare) : "";
+            const totalFormatted = totals ? format(totals.total) : "";
             const perPairFormatted = perPair !== null ? format(perPair) : "";
 
             return (

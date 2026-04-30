@@ -1,74 +1,86 @@
-## The Bug
+# Make displayed prices byte-identical to Shopify checkout
 
-User in UK sees **£45.13** for the 1-pair card, but Shopify checkout shows **£45.16** — a 3p mismatch that erodes trust right at the buy moment.
+## The actual bug (confirmed against live Shopify)
+
+I just queried Shopify for UK (`GB`) prices. Here's the truth vs. what the page shows:
+
+| Bundle | Shopify charges | Page shows `/ea` | Customer's mental math | Drift |
+|---|---|---|---|---|
+| 1 pair | **£44.80** | £44.80 | £44.80 | ✓ |
+| 2 pairs | **£74.67** | £37.34/ea | £37.34 × 2 = £74.68 | **+1p** |
+| 3 pairs | **£89.60** | £29.87/ea | £29.87 × 3 = £89.61 | **+1p** |
 
 ### Root cause
 
-Today, `useCurrency.format()` derives every displayed price from a USD constant:
+In `QuantityStep.tsx` we read the bundle total from Shopify (correct), then **divide by qty** to get a per-pair price, then `Intl.NumberFormat` rounds that to 2 decimals. £74.67 ÷ 2 = £37.335 → rounds to £37.34. The customer multiplies back and sees a different number than what Shopify charges. The "£45.13 vs £45.16" report is the same pattern in a different Market.
 
+A second contributing factor: when a Shopify Market repriced between the customer's first visit and checkout (Shopify Markets can adjust FX rates intra-day), the page never re-fetches, so the cached price flashes stale.
+
+## The fix
+
+### 1. Stop dividing — show the total, not the per-pair (`src/components/order/QuantityStep.tsx`)
+
+Each card will display **the exact Shopify total for that bundle** as the headline price, with `/ea` shown as a smaller secondary label that's also computed from Shopify (not from division — see step 2). This way the headline number = the checkout number, period.
+
+Layout per card (right-side price column):
+
+```text
+£149.34   ← compareAtPriceRange.minVariantPrice (struck)
+£74.67    ← priceRange.minVariantPrice (BIG, exact)
+2× £37.34 ← derived for context only, prefixed so customer
+            never expects "× 2 = total"
 ```
-display = usdAmount × (localizedBase / 59.95)
-```
 
-Where `localizedBase` is the **1-pair product's** `priceRange.minVariantPrice` from Shopify Markets.
+The `2×` prefix makes it obvious the per-pair is informational. No more "37.34 × 2 ≠ 74.67" confusion.
 
-This breaks because Shopify Markets applies **per-product, per-variant rounding rules** independently (e.g. "round to nearest 0.05", "psychological .99 endings", currency-specific rules). So:
+### 2. Add a tiny "exact total" line wherever per-pair appears
 
-- The **1-pair** product's localized base may round to £45.13
-- The **2-pair bundle** product's variants may round to a slightly different per-pair figure
-- The **3-pair bundle** product's variants again to another
-- Multiplying a USD ratio across all three products compounds the rounding drift
+Same treatment in any place we currently divide. Audit confirms only `QuantityStep.tsx` divides — `OrderPage.tsx`, `StickyCheckoutBar.tsx`, `OrderSummary.tsx`, `SavingsHero.tsx` already use the live bundle total directly.
 
-At checkout, Shopify uses the **actual variant's** localized price — which is the authoritative number. Our derived number is only an approximation.
+### 3. Re-fetch prices right before checkout (`src/components/order/OrderPage.tsx`)
 
-For the 1-pair case specifically, the displayed `format(59.95)` rounds the FX product down (e.g. `59.95 × 0.7528 = 45.1303 → £45.13`), while Shopify's variant has its own rounding rule producing £45.16.
+Before calling `createCheckoutForLines`, invalidate the `vitalwalk-bundles` query and `await` a fresh fetch in the user's country. If the new total differs from what's currently displayed by more than 0p, show a one-tap toast: *"Price updated to £X.XX — tap Checkout again to continue."* This guarantees the number on the button is the number on Shopify's checkout page, even if Shopify Markets revalued in the meantime.
 
-## The Fix
+### 4. Re-fetch when the tab regains focus
 
-Stop deriving prices from USD. **Read each price directly from the corresponding Shopify bundle product's localized response** — the same product/variant we send to checkout. This makes display = checkout by construction.
+Add a `visibilitychange` listener that invalidates `vitalwalk-bundles` when the user returns to the tab after >2 minutes. Catches the case where someone leaves the tab open overnight and Shopify FX has moved.
 
-### Changes
+### 5. Re-fetch when geo changes (already done) — verify
 
-**1. `src/components/order/QuantityStep.tsx`**
-- Remove the hard-coded USD `total` / `compare` / `perPair` numbers from `OPTIONS`. Keep only `qty`, `name`, `savePct`, `ribbon`.
-- Pull `bundles` from `useVitalWalkBundles()`.
-- For each option, read the **actual** localized numbers from Shopify:
-  - `total` = `bundles[qty].priceRange.minVariantPrice.amount`
-  - `compare` = `bundles[qty].compareAtPriceRange.minVariantPrice.amount`
-  - `perPair` = `total / qty`
-- Format with `formatMoney(amount, currencyCode)` directly (no FX math).
-- While `bundles` is loading, render skeleton placeholders for the price column.
+`useGeo.ts` already invalidates `["vitalwalk-bundles"]` on `GEO_CHANGE_EVENT`. ✓ No change needed; just confirming during implementation.
 
-**2. `src/components/order/OrderPage.tsx`**
-- Replace the `BUNDLE_OPTIONS` lookup in `bundleTotal` / `bundleCompare` (currently a USD constant) with the live `bundles[quantity]` localized totals. These flow into `UpgradeStep` and `StickyCheckoutBar`, so checkout summary shows the **same number** the user will pay.
-- Update the `fbTrack` calls to use the localized currency + value (already partly done; ensure `value` uses the live total, not `opt.total`).
+### 6. Pass the same country to checkout (already done) — verify
 
-**3. `src/hooks/useCurrency.ts`**
-- Deprecate the `format(usdAmount)` derivation path (still used by a few cosmetic spots if any). Replace its callers with direct `formatMoney(amount, currency)` from product data.
-- Keep `currency`, `countryFlag`, `loading`, `isConverted` for UI badges.
-- Remove the `USD_BASE = 59.95` constant and the rate calculation entirely.
+`OrderPage.handleCheckout` already passes `country?.code ?? "US"` to `createCheckoutForLines`, which sets `buyerIdentity.countryCode` so Shopify's checkout opens in the matching Market and currency. ✓ No change needed.
 
-**4. Audit other callers of `format()`** and switch each to read from product data:
-- `src/components/order/StickyCheckoutBar.tsx`
-- `src/components/order/OrderSummary.tsx`
-- `src/components/order/SavingsHero.tsx`
-- `src/components/order/ProductPanel.tsx`
-- `src/components/order/SizeTileGrid.tsx` (if it shows prices)
-- Anywhere else `useCurrency().format` appears.
+### 7. Verification harness (dev-only script)
 
-`useDisplayPrice()` in `useVitalWalkProduct.ts` already does the right thing (reads localized amount directly) — leave it alone, possibly extend for the bundle products.
+Add `scripts/verify-price-parity.ts` that, for every Market we have enabled (US, GB, CA, AU, DE, FR, IT, ES, NL, IE, NZ, JP, SG, AE, SE, NO, DK, CH, MX, BR — pulled from existing `geo.ts`), does:
 
-**5. Verification step**
-After implementation, run a script (in build mode) that:
-- Fetches `cartCreate` for each of the 3 bundles in `?country=GB`, `?country=DE`, `?country=AU`, etc.
-- Fetches the localized product prices via the same query the page uses
-- Asserts that for every (country, qty) pair, `pageDisplayed === checkoutTotal` to the cent.
+1. Fetches the 3 bundle products via the same `@inContext` query the page uses.
+2. Calls `cartCreate` with each bundle's first variant + `buyerIdentity.countryCode`.
+3. Reads `cart.cost.totalAmount` from the response.
+4. Asserts `priceRange.minVariantPrice.amount === cart.cost.totalAmount` to the cent.
+5. Prints a green check or a red diff for every (country, qty).
 
-## Why this fixes 45.13 vs 45.16
+Run it once after the fix lands; commit the output to `.lovable/price-parity-report.txt` so it's auditable.
 
-After the change, the 1-pair card reads £45.16 directly from `bundles[1].priceRange.minVariantPrice.amount` — the exact same field Shopify uses to charge the customer. No multiplication, no division, no rounding drift, no "USD source of truth."
+## What this fixes
 
-## Out of scope (separate issues already known)
+- **45.13 vs 45.16** and the **74.67 vs 74.68** family of bugs disappear because nothing on the page is derived by division+rounding anymore — the headline price *is* the Shopify total.
+- **Stale-FX flashes** disappear because we re-fetch on tab focus and again right before checkout.
+- **Market mismatches** disappear because checkout already opens in the same `countryCode` we used for the displayed price.
 
-- Norway / Mexico / Brazil falling back to USD — still requires you to enable those Markets in Shopify Admin → Settings → Markets.
-- The price-flash skeleton behavior is preserved (we still wait for the localized response before showing prices).
+## Files touched
+
+- `src/components/order/QuantityStep.tsx` — restructure price column; remove division-as-headline.
+- `src/components/order/OrderPage.tsx` — pre-checkout re-fetch + drift toast.
+- `src/hooks/useVitalWalkProduct.ts` — add `staleTime: 0` for the visibility-triggered refetch path; keep 5-min cache for normal browsing.
+- `src/App.tsx` (or a new `useBundlePriceSync` hook) — `visibilitychange` listener.
+- `scripts/verify-price-parity.ts` — new, dev-only verification script.
+- `.lovable/plan.md` — replaced with this plan for posterity.
+
+## Out of scope
+
+- Norway/Mexico/Brazil falling back to USD when those Markets aren't enabled in Shopify Admin → Settings → Markets (separate, already-known issue).
+- Adding new Markets — that's a Shopify Admin task, not code.

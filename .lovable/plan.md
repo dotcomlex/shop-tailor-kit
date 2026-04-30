@@ -1,25 +1,48 @@
-## What's broken
+## What I'm adding
 
-Current trust strip uses a single `flex-wrap` row with three items separated by dots. On 430px viewport "Free Shipping" wraps to its own line, leaving an orphan dot and the third pill alone — looks accidental.
+A third row to the trust block under the Step 1 CTA: the payment / security logo strip you uploaded (Visa, MasterCard, Cloudflare, PayPal, SSL). And a tightening pass on the whole block so it reads as one cohesive trust unit.
 
-## Fix: two clean stacked rows, no wrap orphans
+## Final layout
 
 ```text
-★★★★★  4.9 / 5  ·  2,847 reviews
-🛡 60-Day Guarantee  |  🚚 Free Shipping
+                ★★★★★  4.9 / 5  ·  2,847 reviews
+            🛡 60-Day Guarantee  |  🚚 Free Shipping
+            ──────────────────────────────────────────
+              [Visa] [MasterCard] [Cloudflare] [PayPal] [SSL]
 ```
 
-- **Row 1** — rating only. Stars + `4.9 / 5` + dot + `2,847 reviews`. One tight line that always fits.
-- **Row 2** — two badges separated by a thin vertical hairline divider (`h-3 w-px bg-hairline`) instead of a dot. Reads as deliberate.
-- Container becomes `flex flex-col items-center gap-1.5` — no `flex-wrap`, so nothing can ever orphan.
-- Same icons, same colors, same data source — only layout changes.
+- **Row 1** — star rating (unchanged).
+- **Row 2** — guarantee + free shipping badges (unchanged).
+- **Row 3 (NEW)** — payment/security logo strip, separated from rows 1–2 by a hairline rule so it reads as a dedicated "secure checkout" zone.
 
-## File
+## Files
 
-- `src/components/order/QuantityStep.tsx` — replace the trust-strip `<div>` block (lines 203–241) with the two-row version above. No new imports, no new tokens.
+### Asset
+- `src/assets/trust-badges.png` — the uploaded image (already copied into the project).
 
-## Why this is cleaner
+### `src/components/order/QuantityStep.tsx`
+- Add `import trustBadges from "@/assets/trust-badges.png";`
+- Append the new row below the existing two-row trust block:
 
-- Rating gets its own row → reads as the headline social proof, not as a label competing with the badges.
-- Two-item row 2 is symmetrical and balanced regardless of viewport width (320px → 430px → desktop).
-- Vertical hairline divider matches the design language already used elsewhere on the page (StepHeader uses the same `--hairline` token).
+```tsx
+<div className="mt-1 w-full border-t border-[hsl(var(--hairline))] pt-2.5">
+  <img
+    src={trustBadges}
+    alt="Secure checkout — Verified by Visa, MasterCard SecureCode, Cloudflare, PayPal Verified, SSL Secured"
+    loading="lazy"
+    decoding="async"
+    className="mx-auto block h-[18px] w-auto max-w-full opacity-70 sm:h-[22px]"
+  />
+</div>
+```
+
+- Bump the parent gap from `gap-1.5` → `gap-2` so the three rows breathe evenly.
+- `loading="lazy" decoding="async"` so the badges never block first paint.
+- `opacity-70` keeps the logos quiet (they're already grayscale) — they support the page, they don't shout over the CTA.
+- `h-[18px]` on mobile, `h-[22px]` on desktop — fits comfortably from 320px up.
+
+## What I will NOT touch
+
+- No new colors / tokens.
+- No changes to rows 1 or 2 styling beyond the parent gap.
+- Image is a single optimized PNG — no SVG conversion needed for the desired effect.

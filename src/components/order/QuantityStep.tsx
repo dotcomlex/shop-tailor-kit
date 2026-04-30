@@ -6,6 +6,8 @@ import { BundleThumb } from "./BundleThumb";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
 import type { ShopifyProductData } from "@/lib/shopify";
+import trustBadges from "@/assets/trust-badges.png";
+
 
 // Numbers mirrored EXACTLY from VerifiedReviewsBlock so the rating shown
 // here matches the full reviews section further down the page (no fabricated
@@ -203,7 +205,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         {/* Trust strip — two clean stacked rows so nothing ever orphans on
             wrap. Rating mirrors the full reviews block below; nothing here
             is fabricated. */}
-        <div className="mt-3 flex flex-col items-center gap-1.5">
+        <div className="mt-3 flex flex-col items-center gap-2">
           {/* Row 1: rating */}
           <div className="inline-flex items-center gap-1.5 text-[12px]">
             <TrustpilotMiniStars />
@@ -238,6 +240,19 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               />
               <span>Free Shipping</span>
             </span>
+          </div>
+
+          {/* Row 3: payment + security logos. Separated by a thin top
+              hairline so it reads as the dedicated "secure checkout" zone.
+              Lazy-loaded so it never blocks first paint. */}
+          <div className="mt-1 w-full border-t border-[hsl(var(--hairline))] pt-2.5">
+            <img
+              src={trustBadges}
+              alt="Secure checkout — Verified by Visa, MasterCard SecureCode, Cloudflare, PayPal Verified, SSL Secured"
+              loading="lazy"
+              decoding="async"
+              className="mx-auto block h-[18px] w-auto max-w-full opacity-70 sm:h-[22px]"
+            />
           </div>
         </div>
 

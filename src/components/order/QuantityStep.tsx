@@ -84,14 +84,18 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 : "bg-[hsl(var(--order-blue))] text-white";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty]);
-            // Per-pair is informational only (prefixed with "Nx" so the
-            // customer never expects multiplication to equal the total).
-            // Headline price is the EXACT Shopify total — no division, no
-            // rounding drift between this card and the checkout page.
+            // Step 1 is the per-pair anchor — the funnel relies on the low
+            // per-pair number to make the 2/3-pair upgrades feel obvious.
+            // The exact Shopify bundle total is shown later (OrderSummary,
+            // sticky bar, checkout button), where it's pulled directly from
+            // Shopify so checkout always matches to the cent.
             const perPair = totals ? totals.total / opt.qty : null;
-            const compareFormatted = totals ? format(totals.compare) : "";
-            const totalFormatted = totals ? format(totals.total) : "";
+            const perPairCompare = totals ? totals.compare / opt.qty : null;
             const perPairFormatted = perPair !== null ? format(perPair) : "";
+            const perPairCompareFormatted =
+              perPairCompare !== null && perPairCompare > (perPair ?? 0)
+                ? format(perPairCompare)
+                : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">
@@ -140,35 +144,28 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     </p>
                   </div>
 
-                  {/* Price column — headline is the EXACT Shopify total for
-                      the bundle (so it can never drift from checkout). The
-                      per-pair line is prefixed "Nx" to make clear it's
-                      informational, not a multiplier the customer should
-                      apply to reach the total. */}
+                  {/* Price column — per-pair is the headline anchor on
+                      Step 1 (funnel psychology). The exact Shopify bundle
+                      total is shown later (OrderSummary / sticky bar /
+                      checkout button). */}
                   <div className="shrink-0 text-right">
-                    {compareFormatted ? (
+                    {perPairCompareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                        {compareFormatted}
+                        {perPairCompareFormatted}
                       </p>
                     ) : (
                       <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    {totalFormatted ? (
+                    {perPairFormatted ? (
                       <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                        {totalFormatted}
+                        {perPairFormatted}
                       </p>
                     ) : (
                       <p className="mt-1 h-[20px] w-20 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    {opt.qty > 1 && perPairFormatted ? (
-                      <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
-                        {opt.qty}× {perPairFormatted}/ea
-                      </p>
-                    ) : opt.qty === 1 && perPairFormatted ? (
-                      <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
-                        per pair
-                      </p>
-                    ) : null}
+                    <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
+                      /pair
+                    </p>
                   </div>
                 </button>
               </li>

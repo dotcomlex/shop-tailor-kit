@@ -146,9 +146,9 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                       total is shown later (OrderSummary / sticky bar /
                       checkout button). */}
                   <div className="shrink-0 text-right">
-                    {perPairCompareFormatted ? (
+                    {compareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                        {perPairCompareFormatted}
+                        {compareFormatted}
                       </p>
                     ) : (
                       <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />

@@ -5,7 +5,7 @@ import { useGeo } from "@/hooks/useGeo";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { SiteHeader } from "./SiteHeader";
-import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
+import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 

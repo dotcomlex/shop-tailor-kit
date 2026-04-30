@@ -200,44 +200,45 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
           <YellowCta label="Select Your Color and Size" onClick={onContinue} />
         </div>
 
-        {/* Trust strip — sits directly under the Step 1 CTA where drop-off
-            is highest. Three signals only: rating (mirrors the full reviews
-            block below), guarantee, free shipping. No fabricated copy. */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-[11.5px] font-semibold text-[hsl(var(--text-body))]">
-          <span className="inline-flex items-center gap-1.5">
+        {/* Trust strip — two clean stacked rows so nothing ever orphans on
+            wrap. Rating mirrors the full reviews block below; nothing here
+            is fabricated. */}
+        <div className="mt-3 flex flex-col items-center gap-1.5">
+          {/* Row 1: rating */}
+          <div className="inline-flex items-center gap-1.5 text-[12px]">
             <TrustpilotMiniStars />
-            <span className="tabular-nums">
-              <span className="font-extrabold text-[hsl(var(--text-strong))]">
-                {TRUST_RATING}
-              </span>
-              <span className="text-[hsl(var(--text-mute))]">/5</span>
-              <span className="ml-1 text-[hsl(var(--text-mute))] font-medium">
-                ({TRUST_REVIEWS.toLocaleString()})
-              </span>
+            <span className="font-extrabold text-[hsl(var(--text-strong))] tabular-nums">
+              {TRUST_RATING}
             </span>
-          </span>
-          <span className="text-[hsl(var(--text-mute))]" aria-hidden>
-            ·
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <ShieldCheck
-              className="h-3.5 w-3.5 text-verified"
-              strokeWidth={2.5}
-              aria-hidden
-            />
-            <span>60-Day Guarantee</span>
-          </span>
-          <span className="text-[hsl(var(--text-mute))]" aria-hidden>
-            ·
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Truck
-              className="h-3.5 w-3.5 text-[hsl(var(--order-blue))]"
-              strokeWidth={2.5}
-              aria-hidden
-            />
-            <span>Free Shipping</span>
-          </span>
+            <span className="text-[hsl(var(--text-mute))] tabular-nums">/ 5</span>
+            <span className="text-[hsl(var(--text-mute))]" aria-hidden>
+              ·
+            </span>
+            <span className="font-semibold text-[hsl(var(--text-body))] tabular-nums">
+              {TRUST_REVIEWS.toLocaleString()} reviews
+            </span>
+          </div>
+
+          {/* Row 2: two equal-weight badges with a hairline divider */}
+          <div className="inline-flex items-center gap-3 text-[11.5px] font-semibold text-[hsl(var(--text-body))]">
+            <span className="inline-flex items-center gap-1">
+              <ShieldCheck
+                className="h-3.5 w-3.5 text-verified"
+                strokeWidth={2.5}
+                aria-hidden
+              />
+              <span>60-Day Guarantee</span>
+            </span>
+            <span className="h-3 w-px bg-[hsl(var(--hairline))]" aria-hidden />
+            <span className="inline-flex items-center gap-1">
+              <Truck
+                className="h-3.5 w-3.5 text-[hsl(var(--order-blue))]"
+                strokeWidth={2.5}
+                aria-hidden
+              />
+              <span>Free Shipping</span>
+            </span>
+          </div>
         </div>
 
       </div>

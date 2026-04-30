@@ -3,43 +3,29 @@ import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
+import type { ShopifyProductData } from "@/lib/shopify";
 
 export type Quantity = 1 | 2 | 3;
 
 interface BundleOption {
   qty: Quantity;
   name: string;
-  perPair: number;
-  total: number;
-  compare: number;
   savePct: number;
   ribbon?: { label: string; tone: "popular" | "best" };
 }
 
 const OPTIONS: BundleOption[] = [
-  {
-    qty: 1,
-    name: "1 Pair VitalWalk® Shoes",
-    perPair: 59.95,
-    total: 59.95,
-    compare: 199.83,
-    savePct: 70,
-  },
+  { qty: 1, name: "1 Pair VitalWalk® Shoes", savePct: 70 },
   {
     qty: 2,
     name: "2 Pairs VitalWalk® Shoes",
-    perPair: 49.96,
-    total: 99.92,
-    compare: 399.67,
     savePct: 75,
     ribbon: { label: "MOST POPULAR", tone: "popular" },
   },
   {
     qty: 3,
     name: "3 Pairs VitalWalk® Shoes",
-    perPair: 39.97,
-    total: 119.90,
-    compare: 599.50,
     savePct: 80,
     ribbon: { label: "BEST DEAL", tone: "best" },
   },
@@ -51,8 +37,25 @@ interface QuantityStepProps {
   onContinue: () => void;
 }
 
+/**
+ * Read the localized total/compare for a bundle product directly from the
+ * Shopify @inContext response. These are the EXACT same numbers Shopify
+ * will charge at checkout — no FX math, no rounding drift.
+ */
+function readLocalizedTotals(product: ShopifyProductData | null | undefined) {
+  if (!product) return null;
+  const total = parseFloat(product.priceRange.minVariantPrice.amount);
+  const compareRaw = parseFloat(product.compareAtPriceRange.minVariantPrice.amount);
+  if (!Number.isFinite(total)) return null;
+  // If compare is missing/zero, fall back to total so the strike-through hides.
+  const compare = Number.isFinite(compareRaw) && compareRaw > 0 ? compareRaw : total;
+  return { total, compare };
+}
+
 export function QuantityStep({ quantity, onQuantityChange, onContinue }: QuantityStepProps) {
   const { format } = useCurrency();
+  const { data: bundles } = useVitalWalkBundles();
+
   return (
     <section aria-labelledby="step-1-heading">
       <h2 id="step-1-heading" className="sr-only">
@@ -79,6 +82,12 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               opt.ribbon?.tone === "best"
                 ? "bg-[hsl(var(--order-blue))] text-white"
                 : "bg-[hsl(var(--order-blue))] text-white";
+
+            const totals = readLocalizedTotals(bundles?.[opt.qty]);
+            const perPair = totals ? totals.total / opt.qty : null;
+            const compareFormatted = totals ? format(totals.compare) : "";
+            const perPairFormatted = perPair !== null ? format(perPair) : "";
+
             return (
               <li key={opt.qty} className="relative pt-2.5">
                 {opt.ribbon && (
@@ -128,13 +137,21 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
 
                   {/* price — clean stack: struck → big price → /ea */}
                   <div className="shrink-0 text-right">
-                    <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                      {format(opt.compare)}
-                    </p>
-                    <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                      {format(opt.perPair)}
-                      <span className="ml-0.5 text-[12px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
-                    </p>
+                    {compareFormatted ? (
+                      <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
+                        {compareFormatted}
+                      </p>
+                    ) : (
+                      <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
+                    )}
+                    {perPairFormatted ? (
+                      <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
+                        {perPairFormatted}
+                        <span className="ml-0.5 text-[12px] font-medium text-[hsl(var(--text-mute))]">/ea</span>
+                      </p>
+                    ) : (
+                      <p className="mt-1 h-[20px] w-20 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
+                    )}
                   </div>
                 </button>
               </li>
@@ -150,4 +167,6 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
   );
 }
 
+// Backwards-compat export — kept as an empty array since pricing is now
+// fully sourced from Shopify. Existing imports won't break.
 export const BUNDLE_OPTIONS = OPTIONS;

@@ -5,7 +5,7 @@ import { useGeo } from "@/hooks/useGeo";
 import { createCheckoutForLines, findVariant } from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { SiteHeader } from "./SiteHeader";
-import { QuantityStep, BUNDLE_OPTIONS, type Quantity } from "./QuantityStep";
+import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 
@@ -68,19 +68,19 @@ export function OrderPage() {
     // Fire AddToCart once per session (user finished color+size selection).
     if (!addToCartFiredRef.current && product) {
       addToCartFiredRef.current = true;
-      const currency = product.priceRange.minVariantPrice.currencyCode;
+      const bundleForPixel = bundles?.[quantity] ?? product;
+      const currency = bundleForPixel.priceRange.minVariantPrice.currencyCode;
       const variantIds = selections
         .map((s) => (s.color && s.size ? findVariant(product, s.color, s.size) : undefined))
         .filter((v): v is NonNullable<ReturnType<typeof findVariant>> => !!v)
         .map((v) => variantNumericId(v.id));
-      const opt = BUNDLE_OPTIONS.find((o) => o.qty === quantity);
       fbTrack("AddToCart", {
         customData: {
           content_type: "product",
           content_ids: variantIds.length ? variantIds : [product.id.replace(/\D/g, "")],
           content_name: product.title,
           currency,
-          value: opt?.total ?? parseFloat(product.priceRange.minVariantPrice.amount),
+          value: parseFloat(bundleForPixel.priceRange.minVariantPrice.amount),
           num_items: quantity,
         },
       });
@@ -90,10 +90,20 @@ export function OrderPage() {
     });
   };
 
+  // Source of truth for the order summary + sticky bar: Shopify's localized
+  // bundle product price. This is the EXACT amount the customer will be
+  // charged at checkout — no FX math, no rounding drift.
   const { bundleTotal, bundleCompare } = useMemo(() => {
-    const opt = BUNDLE_OPTIONS.find((o) => o.qty === quantity);
-    return { bundleTotal: opt?.total ?? 0, bundleCompare: opt?.compare ?? 0 };
-  }, [quantity]);
+    const bp = bundles?.[quantity];
+    if (!bp) return { bundleTotal: 0, bundleCompare: 0 };
+    const total = parseFloat(bp.priceRange.minVariantPrice.amount);
+    const compareRaw = parseFloat(bp.compareAtPriceRange.minVariantPrice.amount);
+    const compare = Number.isFinite(compareRaw) && compareRaw > 0 ? compareRaw : total;
+    return {
+      bundleTotal: Number.isFinite(total) ? total : 0,
+      bundleCompare: compare,
+    };
+  }, [bundles, quantity]);
 
   const handleCheckout = async () => {
     if (!product) {

@@ -1,48 +1,23 @@
-## What I'm adding
+## Problem
 
-A third row to the trust block under the Step 1 CTA: the payment / security logo strip you uploaded (Visa, MasterCard, Cloudflare, PayPal, SSL). And a tightening pass on the whole block so it reads as one cohesive trust unit.
+On mobile the trust block is three rows + a hairline divider + a vertical pipe — too many visual elements stacked tightly under the CTA. It competes with the yellow button instead of supporting it.
 
-## Final layout
+## Fix: one calm block, no dividers
 
 ```text
-                ★★★★★  4.9 / 5  ·  2,847 reviews
-            🛡 60-Day Guarantee  |  🚚 Free Shipping
-            ──────────────────────────────────────────
-              [Visa] [MasterCard] [Cloudflare] [PayPal] [SSL]
+   ★★★★★  4.9  ·  60-Day Guarantee  ·  Free Shipping
+       [Visa]  [MC]  [Cloudflare]  [PayPal]  [SSL]
 ```
 
-- **Row 1** — star rating (unchanged).
-- **Row 2** — guarantee + free shipping badges (unchanged).
-- **Row 3 (NEW)** — payment/security logo strip, separated from rows 1–2 by a hairline rule so it reads as a dedicated "secure checkout" zone.
+- **Collapse rows 1 and 2 into a single line** — stars, rating number, then dot-separated `60-Day Guarantee · Free Shipping`. No icons on the badges (icons were doing the same job as the dots).
+- **Drop the "/ 5" and "(2,847 reviews)"** on mobile — the stars + "4.9" already say it. (Full review count still lives in the dedicated reviews section below.)
+- **Drop the hairline divider** above the payment logos. Use whitespace instead — `mt-2` between the text line and the logos.
+- **Drop the vertical pipe divider** that was between Guarantee and Free Shipping.
+- Logos stay at `opacity-60`, slightly smaller (`h-[16px]`) on mobile.
+- On `sm:` and up, the rating line expands to include `/ 5 · 2,847 reviews` again — desktop has the room.
 
-## Files
+Net result: 2 quiet visual elements instead of 5. Reads in one glance.
 
-### Asset
-- `src/assets/trust-badges.png` — the uploaded image (already copied into the project).
+## File
 
-### `src/components/order/QuantityStep.tsx`
-- Add `import trustBadges from "@/assets/trust-badges.png";`
-- Append the new row below the existing two-row trust block:
-
-```tsx
-<div className="mt-1 w-full border-t border-[hsl(var(--hairline))] pt-2.5">
-  <img
-    src={trustBadges}
-    alt="Secure checkout — Verified by Visa, MasterCard SecureCode, Cloudflare, PayPal Verified, SSL Secured"
-    loading="lazy"
-    decoding="async"
-    className="mx-auto block h-[18px] w-auto max-w-full opacity-70 sm:h-[22px]"
-  />
-</div>
-```
-
-- Bump the parent gap from `gap-1.5` → `gap-2` so the three rows breathe evenly.
-- `loading="lazy" decoding="async"` so the badges never block first paint.
-- `opacity-70` keeps the logos quiet (they're already grayscale) — they support the page, they don't shout over the CTA.
-- `h-[18px]` on mobile, `h-[22px]` on desktop — fits comfortably from 320px up.
-
-## What I will NOT touch
-
-- No new colors / tokens.
-- No changes to rows 1 or 2 styling beyond the parent gap.
-- Image is a single optimized PNG — no SVG conversion needed for the desired effect.
+- `src/components/order/QuantityStep.tsx` — replace the entire trust-block `<div>` (~37 lines). No new imports, no new tokens. The `Truck` and `ShieldCheck` lucide imports become unused — remove them too.

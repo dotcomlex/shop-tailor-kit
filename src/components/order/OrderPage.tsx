@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useGeo } from "@/hooks/useGeo";
-import { createCheckoutForLines, findVariant } from "@/lib/shopify";
+import { createCheckoutForLines, fetchVitalWalkBundles, findVariant } from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
+import { formatMoney } from "@/lib/money";
 import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 
 export function OrderPage() {
+  const queryClient = useQueryClient();
   const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
   const { country } = useGeo();

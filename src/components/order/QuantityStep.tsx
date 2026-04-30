@@ -166,6 +166,12 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                       </p>
                     )}
                   </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
 
         <div className="mt-4">
           <YellowCta label="Select Your Color and Size" onClick={onContinue} />

@@ -1,3 +1,4 @@
+import { ShieldCheck, Star, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
@@ -5,6 +6,28 @@ import { BundleThumb } from "./BundleThumb";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
 import type { ShopifyProductData } from "@/lib/shopify";
+
+// Numbers mirrored EXACTLY from VerifiedReviewsBlock so the rating shown
+// here matches the full reviews section further down the page (no fabricated
+// review counts — same source of truth).
+const TRUST_RATING = "4.9";
+const TRUST_REVIEWS = 2847;
+
+function TrustpilotMiniStars() {
+  return (
+    <span className="flex items-center gap-[2px]" aria-hidden>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span
+          key={i}
+          className="flex h-[13px] w-[13px] items-center justify-center bg-verified"
+        >
+          <Star className="h-[9px] w-[9px] fill-white" strokeWidth={0} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 
 export type Quantity = 1 | 2 | 3;
 

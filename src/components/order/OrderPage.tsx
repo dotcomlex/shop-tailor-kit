@@ -359,7 +359,7 @@ export function OrderPage() {
               <UpgradeStep
                 total={bundleTotal}
                 comparePrice={bundleCompare}
-                onCheckout={handleCheckout}
+                onCheckout={handleCompleteOrderClick}
                 isCheckingOut={isCheckingOut}
               />
             )}

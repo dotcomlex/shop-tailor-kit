@@ -45,7 +45,6 @@ const BENEFITS = [
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";
-const MAX_EXTRAS = 2;
 
 const SYSTEM_LABELS: Record<SizeSystem, string> = {
   usW: "Women's US",

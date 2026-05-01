@@ -11,10 +11,14 @@ import { useGeo } from "@/hooks/useGeo";
 import { defaultSizeSystem, regionFor, type SizeSystem } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
-import heroOrange from "@/assets/insole/hero-orange-action.png";
-import imgFeatures from "@/assets/insole/features.webp";
-import imgBenefits from "@/assets/insole/benefits.webp";
-import imgClinical from "@/assets/insole/clinically-tested.webp";
+import heroPoster from "@/assets/insole/hero-orange-action.png";
+import imgWalk from "@/assets/insole/feature-walk.png";
+import imgArch from "@/assets/insole/feature-arch.png";
+import imgMassage from "@/assets/insole/feature-massage.png";
+import imgFits from "@/assets/insole/feature-fits.png";
+import imgTrimmable from "@/assets/insole/feature-trimmable.png";
+
+const HERO_VIDEO_SRC = "/videos/insole-hero.mp4";
 
 interface ShoeSelectionLite {
   color: string | null;
@@ -31,11 +35,17 @@ interface InsoleUpsellModalProps {
   onDecline: () => void;
 }
 
-const GALLERY = [
-  { src: heroOrange, alt: "Orthopedic massage insoles" },
-  { src: imgFeatures, alt: "Insole features" },
-  { src: imgBenefits, alt: "Insole benefits" },
-  { src: imgClinical, alt: "Clinically tested" },
+type GalleryItem =
+  | { kind: "video"; src: string; poster: string; alt: string }
+  | { kind: "image"; src: string; alt: string };
+
+const GALLERY: GalleryItem[] = [
+  { kind: "video", src: HERO_VIDEO_SRC, poster: heroPoster, alt: "Insoles in action" },
+  { kind: "image", src: imgWalk, alt: "Walk in comfort" },
+  { kind: "image", src: imgArch, alt: "Arch support" },
+  { kind: "image", src: imgMassage, alt: "Massage" },
+  { kind: "image", src: imgFits, alt: "Fits any shoe" },
+  { kind: "image", src: imgTrimmable, alt: "Trim-to-fit" },
 ];
 
 const BENEFITS = [
@@ -177,7 +187,7 @@ export function InsoleUpsellModal({
   );
   const totalSaved = Math.max(0, totalCompare - totalPrice);
 
-  const heroImage = GALLERY[activeImg].src;
+  const activeItem = GALLERY[activeImg];
   const isMulti = shoeSelections.length > 1 || rows.length > 1;
 
   const handleDecline = () => {
@@ -255,31 +265,56 @@ export function InsoleUpsellModal({
             <div className="flex gap-3">
               <div className="shrink-0">
                 <div className="aspect-square h-[160px] w-[160px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
-                  <img
-                    src={heroImage}
-                    alt={GALLERY[activeImg].alt}
-                    className="h-full w-full object-cover transition-opacity duration-200"
-                    loading="eager"
-                  />
+                  {activeItem.kind === "video" ? (
+                    <video
+                      key={activeItem.src}
+                      src={activeItem.src}
+                      poster={activeItem.poster}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                      disableRemotePlayback
+                      className="h-full w-full object-cover"
+                      aria-label={activeItem.alt}
+                    />
+                  ) : (
+                    <img
+                      src={activeItem.src}
+                      alt={activeItem.alt}
+                      className="h-full w-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  )}
                 </div>
                 {/* Thumbnails under hero */}
                 <div className="mt-1.5 flex justify-between gap-1">
-                  {GALLERY.map((g, i) => (
-                    <button
-                      key={g.src}
-                      type="button"
-                      onClick={() => setActiveImg(i)}
-                      aria-label={`View image ${i + 1}`}
-                      className={cn(
-                        "h-8 w-8 overflow-hidden rounded-md border transition-all",
-                        i === activeImg
-                          ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
-                          : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
-                      )}
-                    >
-                      <img src={g.src} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    </button>
-                  ))}
+                  {GALLERY.map((g, i) => {
+                    const thumbSrc = g.kind === "video" ? g.poster : g.src;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveImg(i)}
+                        aria-label={`View ${g.alt}`}
+                        className={cn(
+                          "relative h-7 w-7 overflow-hidden rounded-md border transition-all",
+                          i === activeImg
+                            ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
+                            : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
+                        )}
+                      >
+                        <img src={thumbSrc} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                        {g.kind === "video" && (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                            <span className="block h-0 w-0 border-y-[4px] border-l-[6px] border-y-transparent border-l-white" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -349,6 +384,11 @@ export function InsoleUpsellModal({
                 </li>
               ))}
             </ul>
+
+            {/* Subtle reassurance */}
+            <p className="mt-2 text-center text-[10.5px] text-[hsl(var(--text-mute))]">
+              ✂ Trim-to-fit · works in any shoe
+            </p>
 
             {/* Per-pair insole sizes */}
             <div className="mt-3 space-y-1.5">

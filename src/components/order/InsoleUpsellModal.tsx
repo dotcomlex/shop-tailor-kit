@@ -11,10 +11,14 @@ import { useGeo } from "@/hooks/useGeo";
 import { defaultSizeSystem, regionFor, type SizeSystem } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
-import heroOrange from "@/assets/insole/hero-orange-action.png";
-import imgFeatures from "@/assets/insole/features.webp";
-import imgBenefits from "@/assets/insole/benefits.webp";
-import imgClinical from "@/assets/insole/clinically-tested.webp";
+import heroPoster from "@/assets/insole/hero-orange-action.png";
+import imgWalk from "@/assets/insole/feature-walk.png";
+import imgArch from "@/assets/insole/feature-arch.png";
+import imgMassage from "@/assets/insole/feature-massage.png";
+import imgFits from "@/assets/insole/feature-fits.png";
+import imgTrimmable from "@/assets/insole/feature-trimmable.png";
+
+const HERO_VIDEO_SRC = "/videos/insole-hero.mp4";
 
 interface ShoeSelectionLite {
   color: string | null;
@@ -31,11 +35,17 @@ interface InsoleUpsellModalProps {
   onDecline: () => void;
 }
 
-const GALLERY = [
-  { src: heroOrange, alt: "Orthopedic massage insoles" },
-  { src: imgFeatures, alt: "Insole features" },
-  { src: imgBenefits, alt: "Insole benefits" },
-  { src: imgClinical, alt: "Clinically tested" },
+type GalleryItem =
+  | { kind: "video"; src: string; poster: string; alt: string }
+  | { kind: "image"; src: string; alt: string };
+
+const GALLERY: GalleryItem[] = [
+  { kind: "video", src: HERO_VIDEO_SRC, poster: heroPoster, alt: "Insoles in action" },
+  { kind: "image", src: imgWalk, alt: "Walk in comfort" },
+  { kind: "image", src: imgArch, alt: "Arch support" },
+  { kind: "image", src: imgMassage, alt: "Massage" },
+  { kind: "image", src: imgFits, alt: "Fits any shoe" },
+  { kind: "image", src: imgTrimmable, alt: "Trim-to-fit" },
 ];
 
 const BENEFITS = [

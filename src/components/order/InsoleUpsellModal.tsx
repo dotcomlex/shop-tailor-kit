@@ -371,7 +371,7 @@ export function InsoleUpsellModal({
             </div>
 
             {/* Benefits */}
-            <ul className="mt-3 space-y-1">
+            <ul className="mt-4 space-y-1">
               {BENEFITS.map((b) => (
                 <li
                   key={b}

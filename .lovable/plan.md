@@ -1,70 +1,19 @@
-## MP4 received and optimized
+## Bug: 6 thumbnails overflow the 160px hero column → squeezes right column → title wraps to 3 lines
 
-Your video came through: **720×720, 2.0s, 790KB, with audio**. I've already re-encoded it for instant playback (the file is in place):
+The screenshot shows:
+- Title wrapping awkwardly to **3 lines** ("Orthopedic / Massage / Insoles")
+- Hero column visually dominates, right column is cramped
 
-- Stripped audio (not needed — autoplay is muted anyway)
-- Downscaled 720→480 (matches the 160px hero @ 2× DPR perfectly, no quality loss)
-- H.264 baseline + faststart (moov atom at front so it streams from byte 1)
-- **Final size: 202KB** (4× smaller than original)
+**Root cause**: 6 thumbnails at `w-7` (28px) with `gap-1` (4px) = `6×28 + 5×4 = 188px`, but the hero column is 160px. The thumbnails overflow horizontally, which combined with `flex justify-between` makes them stretch and visually expand the column. The right column ends up too narrow for "Massage" to fit on one line at 16px font-extrabold.
 
-Saved to `public/videos/insole-hero.mp4`.
+## Fix in `src/components/order/InsoleUpsellModal.tsx`
 
-## Changes to `src/components/order/InsoleUpsellModal.tsx`
+1. **Shrink hero from 160px → 150px** to give the right column ~10px more room — small enough that nobody notices the hero shrunk, big enough to let the title fit `Orthopedic Massage / Insoles` (2 lines).
+2. **Resize thumbnails to fit**: 22×22 with `gap-1` and `justify-between` across the 150px column. Math: `6×22 + 5×4 = 152` ≈ 150 (close enough; `justify-between` distributes evenly without overflow). Also add `w-full` on the thumb row so it locks to the hero width.
+3. **Lock the hero wrapper to a fixed `w-[150px]`** so it can never be widened by its children — eliminates any chance of the column blowing out again.
+4. Make video thumb's ▶ triangle slightly smaller to fit the new 22px size (`border-y-[3px] border-l-[5px]`).
 
-### 1. Hero is now a video (with poster fallback)
+## Files touched
+- `src/components/order/InsoleUpsellModal.tsx` — hero/thumb sizing only.
 
-```tsx
-<video
-  src="/videos/insole-hero.mp4"
-  poster={heroPoster}        // your existing PNG paints frame-1 instantly
-  autoPlay muted loop playsInline
-  preload="auto"
-  disableRemotePlayback
-  className="h-full w-full object-cover"
-/>
-```
-
-- `poster` = instant first paint (PNG already in JS bundle, zero network wait)
-- `muted` + `playsInline` = autoplay works on iOS
-- `preload="auto"` + faststart MP4 = video streams immediately on modal open
-- 202KB loads in <100ms on any 4G connection
-
-### 2. Replace gallery with your 5 new feature images
-
-Old `features.webp`, `benefits.webp`, `clinically-tested.webp` imports removed. New gallery (6 items, video first):
-
-| # | Hero content | Thumb |
-|---|---|---|
-| 1 | **MP4 video** (autoplay loop) | poster + ▶ play badge |
-| 2 | Walk in comfort | image-6 |
-| 3 | Arch support | image-7 |
-| 4 | Massage | image-8 |
-| 5 | Fits any shoe | image-9 |
-| 6 | Trim-to-fit | image-10 |
-
-Thumbnails shrink from 32×32 → **28×28** to fit 6 across in the 160px column. Video thumb gets a small white ▶ triangle overlay so it's obvious it's the playable one.
-
-### 3. Subtle "Trim-to-fit" microcopy
-
-A quiet line right under the benefits checklist (above the size pickers):
-
-```tsx
-<p className="mt-2 text-center text-[10.5px] text-[hsl(var(--text-mute))]">
-  ✂ Trim-to-fit · works in any shoe
-</p>
-```
-
-Muted gray, small, non-competing with the CTA. Reinforces the "Fits any shoe" image without being a loud badge.
-
-### 4. Performance hygiene
-
-- All 5 new images stored under `src/assets/insole/` → Vite hashes & long-term caches them.
-- `decoding="async"` + `loading="lazy"` on thumbnails so they don't block initial paint.
-- Video `preload="auto"` only fires when the modal mounts (modal lazy-mounts on upsell open), so site-wide page weight is unchanged.
-- Old unused image imports removed → smaller JS bundle.
-
-### Files touched
-- `src/components/order/InsoleUpsellModal.tsx` — gallery rewrite, video element, new thumbnails, trim-to-fit microcopy
-- `public/videos/insole-hero.mp4` — already created (202KB, optimized)
-
-No changes to Shopify, cart, checkout, pricing, or size-matching logic.
+No content, gallery order, video, pricing, or Shopify changes.

@@ -263,8 +263,8 @@ export function InsoleUpsellModal({
           <div className="px-4 py-3">
             {/* Two-column hero: image left, rating + title + price right */}
             <div className="flex gap-3">
-              <div className="w-[150px] shrink-0">
-                <div className="aspect-square w-[150px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
+              <div className="w-[170px] shrink-0">
+                <div className="aspect-square w-[170px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
                   {activeItem.kind === "video" ? (
                     <video
                       key={activeItem.src}

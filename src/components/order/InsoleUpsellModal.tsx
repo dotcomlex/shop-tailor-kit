@@ -11,7 +11,7 @@ import { useGeo } from "@/hooks/useGeo";
 import { defaultSizeSystem, regionFor, type SizeSystem } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
-import heroOrange from "@/assets/insole/hero-orange.webp";
+import heroOrange from "@/assets/insole/hero-orange-action.png";
 import imgFeatures from "@/assets/insole/features.webp";
 import imgBenefits from "@/assets/insole/benefits.webp";
 import imgClinical from "@/assets/insole/clinically-tested.webp";
@@ -254,7 +254,7 @@ export function InsoleUpsellModal({
             {/* Two-column hero: image left, rating + title + price right */}
             <div className="flex gap-3">
               <div className="shrink-0">
-                <div className="aspect-square h-[140px] w-[140px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
+                <div className="aspect-square h-[160px] w-[160px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
                   <img
                     src={heroImage}
                     alt={GALLERY[activeImg].alt}
@@ -271,7 +271,7 @@ export function InsoleUpsellModal({
                       onClick={() => setActiveImg(i)}
                       aria-label={`View image ${i + 1}`}
                       className={cn(
-                        "h-7 w-7 overflow-hidden rounded-md border transition-all",
+                        "h-8 w-8 overflow-hidden rounded-md border transition-all",
                         i === activeImg
                           ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
                           : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
@@ -460,7 +460,7 @@ export function InsoleUpsellModal({
             </div>
 
             {/* Trust + decline */}
-            <div className="mt-2 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))]">
+            <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))]">
               <ShieldCheck className="h-3 w-3" strokeWidth={2.5} />
               <span>Free shipping · 60-day money-back guarantee</span>
             </div>
@@ -468,7 +468,7 @@ export function InsoleUpsellModal({
             <button
               type="button"
               onClick={handleDecline}
-              className="mt-1.5 flex w-full items-center justify-center gap-1 text-center text-[11.5px] font-medium text-[hsl(var(--text-mute))] underline-offset-4 transition-colors hover:text-[hsl(var(--text-body))] hover:underline"
+              className="mt-3 flex w-full items-center justify-center gap-1 text-center text-[11.5px] font-medium text-[hsl(var(--text-mute))] underline-offset-4 transition-colors hover:text-[hsl(var(--text-body))] hover:underline"
             >
               <span>No thanks, continue without insoles</span>
               <ArrowRight className="h-3 w-3" strokeWidth={2.5} />

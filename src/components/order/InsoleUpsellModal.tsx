@@ -6,6 +6,9 @@ import { YellowCta } from "./YellowCta";
 import { formatMoney } from "@/lib/money";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { pickInsoleVariantForSize, type ShopifyProductData, type ShopifyVariant } from "@/lib/shopify";
+import { parseShopifySize, type SizeRow } from "@/data/sizeChart";
+import { useGeo } from "@/hooks/useGeo";
+import { defaultSizeSystem, regionFor, type SizeSystem } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 import heroOrange from "@/assets/insole/hero-orange.webp";

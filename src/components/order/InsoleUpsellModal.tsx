@@ -300,7 +300,7 @@ export function InsoleUpsellModal({
                         onClick={() => setActiveImg(i)}
                         aria-label={`View ${g.alt}`}
                         className={cn(
-                          "relative h-[22px] w-[22px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          "relative h-[26px] w-[26px] shrink-0 overflow-hidden rounded-md border transition-all",
                           i === activeImg
                             ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
                             : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
@@ -309,7 +309,7 @@ export function InsoleUpsellModal({
                         <img src={thumbSrc} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                         {g.kind === "video" && (
                           <span className="absolute inset-0 flex items-center justify-center bg-black/30">
-                            <span className="block h-0 w-0 border-y-[3px] border-l-[5px] border-y-transparent border-l-white" />
+                            <span className="block h-0 w-0 border-y-[4px] border-l-[6px] border-y-transparent border-l-white" />
                           </span>
                         )}
                       </button>

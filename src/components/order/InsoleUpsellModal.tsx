@@ -429,16 +429,6 @@ export function InsoleUpsellModal({
                           />
                         </span>
                       </button>
-                      {row.sourcePairIndex === null && (
-                        <button
-                          type="button"
-                          onClick={() => removeExtra(row.key)}
-                          aria-label="Remove extra pair"
-                          className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-mute))] transition-colors hover:border-[hsl(var(--save-red))] hover:text-[hsl(var(--save-red))]"
-                        >
-                          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        </button>
-                      )}
                     </div>
 
                     {isOpen && (

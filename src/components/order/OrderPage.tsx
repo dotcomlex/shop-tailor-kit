@@ -2,19 +2,29 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
+import { useInsoleProduct } from "@/hooks/useInsoleProduct";
 import { useGeo } from "@/hooks/useGeo";
-import { createCheckoutForLines, fetchVitalWalkBundles, findVariant } from "@/lib/shopify";
+import {
+  createCheckoutForLines,
+  fetchVitalWalkBundles,
+  findVariant,
+  pickInsoleVariant,
+  type CartLineInput,
+  type ShopifyVariant,
+} from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { formatMoney } from "@/lib/money";
 import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
+import { InsoleUpsellModal } from "./InsoleUpsellModal";
 
 export function OrderPage() {
   const queryClient = useQueryClient();
   const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
+  const { data: insoleProduct } = useInsoleProduct();
   const { country } = useGeo();
 
   // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and
@@ -24,6 +34,7 @@ export function OrderPage() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const viewContentFiredRef = useRef(false);
   const addToCartFiredRef = useRef(false);
 
@@ -125,7 +136,7 @@ export function OrderPage() {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [queryClient]);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (extraLines: CartLineInput[] = []) => {
     if (!product) {
       toast.error("Product is still loading. Please wait a moment and try again.");
       return;
@@ -176,17 +187,11 @@ export function OrderPage() {
       const freshTotal = freshBundle
         ? parseFloat(freshBundle.priceRange.minVariantPrice.amount)
         : NaN;
-      // Only block when the difference is >= 1 cent. Sub-cent differences
-      // can never happen with Shopify's 2-decimal currency amounts, so this
-      // is effectively "any change at all".
       if (
         Number.isFinite(freshTotal) &&
         Math.abs(freshTotal - bundleTotal) >= 0.01
       ) {
         const freshCurrency = freshBundle!.priceRange.minVariantPrice.currencyCode;
-        // Push the fresh data into the cache so the UI re-renders the new
-        // number immediately — the customer sees the change before clicking
-        // Checkout a second time.
         queryClient.setQueryData(
           ["vitalwalk-bundles", (country?.code ?? "US").toUpperCase()],
           fresh,
@@ -198,9 +203,6 @@ export function OrderPage() {
         return;
       }
     } catch (err) {
-      // If the live re-check fails (network blip), fall through and use the
-      // already-displayed total. Shopify's cartCreate will still localize
-      // correctly via buyerIdentity.countryCode below.
       console.warn("Pre-checkout price sync failed, continuing:", err);
     }
 
@@ -225,24 +227,38 @@ export function OrderPage() {
       ...selections.map((s, i) => `Pair ${i + 1}: ${s.color} / ${s.size}`),
     ].join("\n");
 
-    const lines = [
+    const lines: CartLineInput[] = [
       {
         variantId: pair1Variant.id,
         quantity: 1, // The bundle product itself is the unit.
         attributes,
       },
+      ...extraLines,
     ];
 
     // Fire InitiateCheckout right before redirecting to Shopify checkout.
+    // Bump the value by any upsell extras so server-side ROAS stays accurate.
     const currency = bundleProduct.priceRange.minVariantPrice.currencyCode;
+    const extrasValue = extraLines.reduce((sum, _l) => sum, 0); // placeholder; real value added below
+    const upsellValue = extraLines.length
+      ? extraLines.reduce((sum, l) => {
+          // For the insole upsell, look up its live price from insoleProduct.
+          const v = insoleProduct?.variants.find((vv) => vv.id === l.variantId);
+          return sum + (v ? parseFloat(v.price.amount) * l.quantity : 0);
+        }, 0)
+      : 0;
+    void extrasValue;
     fbTrack("InitiateCheckout", {
       customData: {
         content_type: "product",
-        content_ids: [variantNumericId(pair1Variant.id)],
+        content_ids: [
+          variantNumericId(pair1Variant.id),
+          ...extraLines.map((l) => variantNumericId(l.variantId)),
+        ],
         content_name: bundleProduct.title,
         currency,
-        value: bundleTotal,
-        num_items: quantity,
+        value: bundleTotal + upsellValue,
+        num_items: quantity + extraLines.reduce((s, l) => s + l.quantity, 0),
       },
     });
 
@@ -259,14 +275,54 @@ export function OrderPage() {
         setIsCheckingOut(false);
         return;
       }
-      // Same-tab navigation — avoids the iOS "Allow popups?" prompt entirely.
-      // Leave the spinner on while the browser navigates away.
       window.location.href = checkoutUrl;
     } catch (err) {
       console.error("Checkout failed:", err);
       toast.error("Something went wrong starting checkout. Please try again.");
       setIsCheckingOut(false);
     }
+  };
+
+  // Two-stage flow: customer clicks Complete Order → modal opens. If the
+  // insole product failed to load or has no available variant, skip the
+  // modal entirely so we never block a purchase on a non-essential upsell.
+  const handleCompleteOrderClick = () => {
+    const insoleVariant = pickInsoleVariant(insoleProduct ?? null);
+    if (!insoleVariant || !insoleVariant.availableForSale) {
+      void handleCheckout();
+      return;
+    }
+    setUpsellOpen(true);
+  };
+
+  const handleUpsellAccept = (variant: ShopifyVariant, qty: number) => {
+    setUpsellOpen(false);
+    // Fire AddToCart for the insole right before checkout.
+    fbTrack("AddToCart", {
+      customData: {
+        content_type: "product",
+        content_ids: [variantNumericId(variant.id)],
+        content_name: insoleProduct?.title ?? "Massage Insoles",
+        currency: variant.price.currencyCode,
+        value: parseFloat(variant.price.amount) * qty,
+        num_items: qty,
+      },
+    });
+    void handleCheckout([
+      {
+        variantId: variant.id,
+        quantity: qty,
+        attributes: [
+          { key: "Add-on", value: "Orthopedic Massage Insoles" },
+          { key: "Insole Pairs", value: String(qty) },
+        ],
+      },
+    ]);
+  };
+
+  const handleUpsellDecline = () => {
+    setUpsellOpen(false);
+    void handleCheckout();
   };
 
   return (
@@ -303,7 +359,7 @@ export function OrderPage() {
               <UpgradeStep
                 total={bundleTotal}
                 comparePrice={bundleCompare}
-                onCheckout={handleCheckout}
+                onCheckout={handleCompleteOrderClick}
                 isCheckingOut={isCheckingOut}
               />
             )}
@@ -316,6 +372,14 @@ export function OrderPage() {
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>
       </footer>
+
+      <InsoleUpsellModal
+        open={upsellOpen}
+        product={insoleProduct ?? null}
+        bundleQuantity={quantity}
+        onAccept={handleUpsellAccept}
+        onDecline={handleUpsellDecline}
+      />
     </div>
   );
 }

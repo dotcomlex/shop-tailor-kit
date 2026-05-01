@@ -17,6 +17,11 @@ export const VITALWALK_PRODUCT_HANDLES = {
   3: "vitalwalk®-shoes-3-pair-bundle",
 } as const;
 
+// VitalWalk Orthopedic Massage Insoles — used as the post-cart upsell.
+// Single product; we always pick the first available variant so the modal
+// stays a one-tap "Yes" with zero size/color picking required.
+export const INSOLE_PRODUCT_HANDLE = "insoles";
+
 // Backwards-compatible alias used elsewhere in the app for the 1-pair product
 // (it's still the source of truth for color/size option values + imagery).
 export const VITALWALK_PRODUCT_HANDLE = VITALWALK_PRODUCT_HANDLES[1];
@@ -173,6 +178,33 @@ export async function fetchVitalWalkProduct(country: string = "US"): Promise<Sho
     },
   );
   return normalizeProduct(result?.data?.product ?? null);
+}
+
+/**
+ * Fetch the orthopedic insole upsell product, localized for the given country.
+ */
+export async function fetchInsoleProduct(country: string = "US"): Promise<ShopifyProductData | null> {
+  const result = await storefrontApiRequest<{ product: RawProduct | null }>(
+    PRODUCT_BY_HANDLE_QUERY,
+    {
+      handle: INSOLE_PRODUCT_HANDLE,
+      country: (country || "US").toUpperCase(),
+    },
+  );
+  return normalizeProduct(result?.data?.product ?? null);
+}
+
+/**
+ * Pick the first available-for-sale variant on the insole product. The insole
+ * is single-color, multi-size — for the upsell modal we just need a valid
+ * line item; size match isn't critical because the customer is buying a
+ * generic accessory, not footwear.
+ */
+export function pickInsoleVariant(product: ShopifyProductData | null): ShopifyVariant | null {
+  if (!product) return null;
+  return (
+    product.variants.find((v) => v.availableForSale) ?? product.variants[0] ?? null
+  );
 }
 
 export interface BundleProducts {

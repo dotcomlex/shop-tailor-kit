@@ -408,8 +408,7 @@ export function OrderPage() {
       <InsoleUpsellModal
         open={upsellOpen}
         product={insoleProduct ?? null}
-        shoeSize={selections[0]?.size ?? null}
-        bundleQuantity={quantity}
+        shoeSelections={selections}
         onAccept={handleUpsellAccept}
         onDecline={handleUpsellDecline}
       />

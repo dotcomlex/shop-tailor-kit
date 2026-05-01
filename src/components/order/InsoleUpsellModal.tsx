@@ -180,8 +180,6 @@ export function InsoleUpsellModal({
 
   const heroImage = GALLERY[activeImg].src;
   const isMulti = shoeSelections.length > 1 || rows.length > 1;
-  const extrasCount = rows.filter((r) => r.sourcePairIndex === null).length;
-  const canAddExtra = extrasCount < MAX_EXTRAS;
 
   const handleDecline = () => {
     if (!armed) return;
@@ -192,10 +190,7 @@ export function InsoleUpsellModal({
     onAccept(
       resolvedRows.map(({ row, variant }) => ({
         variant,
-        label:
-          row.sourcePairIndex === null
-            ? "Extra"
-            : `Pair ${row.sourcePairIndex + 1}`,
+        label: `Pair ${(row.sourcePairIndex ?? 0) + 1}`,
       })),
     );
   };
@@ -203,19 +198,6 @@ export function InsoleUpsellModal({
   const setRowVariant = (key: string, variantId: string) => {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, variantId } : r)));
     setOpenPickerKey(null);
-  };
-
-  const addExtra = () => {
-    const seedId = rows[0]?.variantId ?? product.variants[0]?.id;
-    if (!seedId) return;
-    const newRow: Row = { key: nextKey(), sourcePairIndex: null, variantId: seedId };
-    setRows((prev) => [...prev, newRow]);
-    setOpenPickerKey(newRow.key);
-  };
-
-  const removeExtra = (key: string) => {
-    setRows((prev) => prev.filter((r) => r.key !== key));
-    setOpenPickerKey((k) => (k === key ? null : k));
   };
 
   return (

@@ -2,14 +2,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
+import { useInsoleProduct } from "@/hooks/useInsoleProduct";
 import { useGeo } from "@/hooks/useGeo";
-import { createCheckoutForLines, fetchVitalWalkBundles, findVariant } from "@/lib/shopify";
+import {
+  createCheckoutForLines,
+  fetchVitalWalkBundles,
+  findVariant,
+  pickInsoleVariant,
+  type CartLineInput,
+  type ShopifyVariant,
+} from "@/lib/shopify";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { formatMoney } from "@/lib/money";
 import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
+import { InsoleUpsellModal } from "./InsoleUpsellModal";
 
 export function OrderPage() {
   const queryClient = useQueryClient();

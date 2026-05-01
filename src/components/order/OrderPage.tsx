@@ -8,7 +8,7 @@ import {
   createCheckoutForLines,
   fetchVitalWalkBundles,
   findVariant,
-  pickInsoleVariant,
+  pickInsoleVariantForSize,
   type CartLineInput,
   type ShopifyVariant,
 } from "@/lib/shopify";
@@ -287,7 +287,8 @@ export function OrderPage() {
   // insole product failed to load or has no available variant, skip the
   // modal entirely so we never block a purchase on a non-essential upsell.
   const handleCompleteOrderClick = () => {
-    const insoleVariant = pickInsoleVariant(insoleProduct ?? null);
+    const firstSize = selections[0]?.size ?? null;
+    const insoleVariant = pickInsoleVariantForSize(insoleProduct ?? null, firstSize);
     if (!insoleVariant || !insoleVariant.availableForSale) {
       void handleCheckout();
       return;
@@ -376,6 +377,7 @@ export function OrderPage() {
       <InsoleUpsellModal
         open={upsellOpen}
         product={insoleProduct ?? null}
+        shoeSize={selections[0]?.size ?? null}
         bundleQuantity={quantity}
         onAccept={handleUpsellAccept}
         onDecline={handleUpsellDecline}

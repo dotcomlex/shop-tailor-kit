@@ -5,7 +5,7 @@ import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";
 import { formatMoney } from "@/lib/money";
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
-import { pickInsoleVariant, type ShopifyProductData, type ShopifyVariant } from "@/lib/shopify";
+import { pickInsoleVariantForSize, type ShopifyProductData, type ShopifyVariant } from "@/lib/shopify";
 import { cn } from "@/lib/utils";
 
 import heroOrange from "@/assets/insole/hero-orange.webp";
@@ -16,6 +16,8 @@ import imgClinical from "@/assets/insole/clinically-tested.webp";
 interface InsoleUpsellModalProps {
   open: boolean;
   product: ShopifyProductData | null;
+  /** Shoe size the customer picked for pair 1 — used to match the insole variant so the displayed price matches what's charged. */
+  shoeSize: string | null;
   /** Number of pairs of shoes the customer is buying — we match insole qty 1:1. */
   bundleQuantity: number;
   onAccept: (variant: ShopifyVariant, quantity: number) => void;
@@ -38,11 +40,12 @@ const BENEFITS = [
 export function InsoleUpsellModal({
   open,
   product,
+  shoeSize,
   bundleQuantity,
   onAccept,
   onDecline,
 }: InsoleUpsellModalProps) {
-  const variant = pickInsoleVariant(product);
+  const variant = pickInsoleVariantForSize(product, shoeSize);
   const viewFiredRef = useRef(false);
   const [armed, setArmed] = useState(false);
   const [activeImg, setActiveImg] = useState(0);

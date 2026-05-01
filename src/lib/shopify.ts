@@ -195,16 +195,65 @@ export async function fetchInsoleProduct(country: string = "US"): Promise<Shopif
 }
 
 /**
- * Pick the first available-for-sale variant on the insole product. The insole
- * is single-color, multi-size — for the upsell modal we just need a valid
- * line item; size match isn't critical because the customer is buying a
- * generic accessory, not footwear.
+ * Parse a Shopify size label like "US W 9 / US M 8 / UK 7" into its component
+ * numeric tokens (women/men/UK). Returns NaN for any token that's missing.
+ */
+function parseSizeTokens(raw: string): { w: number; m: number; uk: number } {
+  const parts = raw.split("/").map((p) => p.trim());
+  const w = parseFloat(parts.find((p) => /^US\s*W/i.test(p))?.replace(/^US\s*W\s*/i, "") ?? "");
+  const m = parseFloat(parts.find((p) => /^US\s*M/i.test(p))?.replace(/^US\s*M\s*/i, "") ?? "");
+  const uk = parseFloat(parts.find((p) => /^UK/i.test(p))?.replace(/^UK\s*/i, "") ?? "");
+  return { w, m, uk };
+}
+
+/**
+ * Pick the insole variant whose size matches the shopper's selected shoe size.
+ *
+ * The insole product has 1 option (Size). We match on US Women / US Men / UK
+ * tokens parsed from the shoe size string. If no exact match exists we fall
+ * back to the highest-priced available variant — never the first available
+ * one — so the modal can never silently surface a stale lower-priced variant.
+ */
+export function pickInsoleVariantForSize(
+  product: ShopifyProductData | null,
+  shoeSize: string | null,
+): ShopifyVariant | null {
+  if (!product) return null;
+  const variants = product.variants;
+  if (!variants.length) return null;
+
+  if (shoeSize) {
+    const target = parseSizeTokens(shoeSize);
+    const match = variants.find((v) => {
+      const sizeOpt = v.selectedOptions.find((o) =>
+        o.name.replace(/:$/, "").toLowerCase() === "size",
+      );
+      if (!sizeOpt) return false;
+      const t = parseSizeTokens(sizeOpt.value);
+      return (
+        (Number.isFinite(target.w) && Number.isFinite(t.w) && t.w === target.w) ||
+        (Number.isFinite(target.m) && Number.isFinite(t.m) && t.m === target.m) ||
+        (Number.isFinite(target.uk) && Number.isFinite(t.uk) && t.uk === target.uk)
+      );
+    });
+    if (match) return match;
+  }
+
+  // Fallback: highest-priced available variant (avoids accidentally showing
+  // a stale lower-priced variant if the catalog has mixed pricing).
+  const sorted = [...variants].sort(
+    (a, b) => parseFloat(b.price.amount) - parseFloat(a.price.amount),
+  );
+  return sorted.find((v) => v.availableForSale) ?? sorted[0] ?? null;
+}
+
+/**
+ * @deprecated Use {@link pickInsoleVariantForSize} so the displayed price
+ * matches the shoe size the customer actually picked. Kept for backwards
+ * compatibility with code paths that haven't threaded the size through yet.
  */
 export function pickInsoleVariant(product: ShopifyProductData | null): ShopifyVariant | null {
-  if (!product) return null;
-  return (
-    product.variants.find((v) => v.availableForSale) ?? product.variants[0] ?? null
-  );
+  return pickInsoleVariantForSize(product, null);
 }
 
 export interface BundleProducts {

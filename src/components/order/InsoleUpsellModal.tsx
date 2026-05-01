@@ -461,16 +461,6 @@ export function InsoleUpsellModal({
                 );
               })}
 
-              {canAddExtra && (
-                <button
-                  type="button"
-                  onClick={addExtra}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[hsl(var(--hairline))] bg-transparent px-3 py-1.5 text-[11.5px] font-bold text-[hsl(var(--text-mute))] transition-colors hover:border-[hsl(var(--save-red))] hover:text-[hsl(var(--save-red))]"
-                >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  Add another pair
-                </button>
-              )}
             </div>
 
             {/* Primary CTA */}

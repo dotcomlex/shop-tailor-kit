@@ -241,6 +241,73 @@ export function InsoleUpsellModal({
               </div>
             </div>
 
+            {/* Auto-matched size pill + override picker */}
+            {product.variants.length > 0 && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setSizePickerOpen((v) => !v)}
+                  aria-expanded={sizePickerOpen}
+                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-[hsl(var(--hairline))] bg-[hsl(var(--muted))]/40 px-3 py-2 text-left transition-colors hover:bg-[hsl(var(--muted))]/70"
+                >
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--text-mute))]">
+                      Insole size
+                    </span>
+                    <span className="truncate text-[13px] font-extrabold text-[hsl(var(--text-strong))]">
+                      {variant.title}
+                    </span>
+                    <span className="mt-0.5 text-[10.5px] leading-tight text-[hsl(var(--text-mute))]">
+                      {overrideVariantId
+                        ? "You picked this size"
+                        : shoeSize
+                          ? "Auto-matched to your shoes · trim-to-fit"
+                          : "Pick your size"}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[hsl(var(--order-blue))]">
+                    {sizePickerOpen ? "Done" : "Change"}
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 transition-transform",
+                        sizePickerOpen && "rotate-180",
+                      )}
+                      strokeWidth={2.75}
+                    />
+                  </span>
+                </button>
+
+                {sizePickerOpen && (
+                  <div className="mt-2 grid grid-cols-3 gap-1.5">
+                    {product.variants.map((v) => {
+                      const selected = v.id === variant.id;
+                      const disabled = !v.availableForSale;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => {
+                            setOverrideVariantId(v.id);
+                            setSizePickerOpen(false);
+                          }}
+                          className={cn(
+                            "rounded-lg border px-2 py-1.5 text-[10.5px] font-bold leading-tight transition-colors",
+                            selected
+                              ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
+                              : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
+                            disabled && "cursor-not-allowed opacity-40",
+                          )}
+                        >
+                          {v.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Benefits */}
             <ul className="mt-3 space-y-1">
               {BENEFITS.map((b) => (

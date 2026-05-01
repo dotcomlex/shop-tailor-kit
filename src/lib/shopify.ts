@@ -225,39 +225,65 @@ export function pickInsoleVariantForSize(
   if (shoeSize) {
     const target = parseSizeTokens(shoeSize);
 
-    // 1) Exact match on US Women / US Men / UK token.
-    const exact = variants.find((v) => {
+    // Build (variant, parsed-tokens) pairs once.
+    const parsed = variants.map((v) => {
       const sizeOpt = v.selectedOptions.find(
         (o) => o.name.replace(/:$/, "").toLowerCase() === "size",
       );
-      if (!sizeOpt) return false;
-      const t = parseSizeTokens(sizeOpt.value);
-      return (
-        (Number.isFinite(target.w) && Number.isFinite(t.w) && t.w === target.w) ||
-        (Number.isFinite(target.m) && Number.isFinite(t.m) && t.m === target.m) ||
-        (Number.isFinite(target.uk) && Number.isFinite(t.uk) && t.uk === target.uk)
-      );
+      const t = sizeOpt
+        ? parseSizeTokens(sizeOpt.value)
+        : { w: NaN, m: NaN, uk: NaN };
+      return { v, t };
     });
-    if (exact) return exact;
 
-    // 2) Round UP to the next available whole insole size (industry standard
-    // for trim-to-fit insoles — better to size up and trim than size down).
-    const ranked = variants
-      .map((v) => {
-        const sizeOpt = v.selectedOptions.find(
-          (o) => o.name.replace(/:$/, "").toLowerCase() === "size",
-        );
-        const t = sizeOpt ? parseSizeTokens(sizeOpt.value) : { w: NaN, m: NaN, uk: NaN };
-        return { v, t };
+    // 1) Exact match on US Women / US Men / UK token.
+    const exact = parsed.find(({ t }) =>
+      (Number.isFinite(target.w) && Number.isFinite(t.w) && t.w === target.w) ||
+      (Number.isFinite(target.m) && Number.isFinite(t.m) && t.m === target.m) ||
+      (Number.isFinite(target.uk) && Number.isFinite(t.uk) && t.uk === target.uk),
+    );
+    if (exact) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug("[insole-match] exact", { shoeSize, picked: exact.v.title });
+      }
+      return exact.v;
+    }
+
+    // 2) Nearest-neighbor across ALL three numbering systems.
+    // Tie-break: prefer the SMALLER (round-down) variant. Half-size shoes fit
+    // better inside a slightly smaller insole shell than one that's too large.
+    const scored = parsed
+      .map(({ v, t }) => {
+        const diffs: number[] = [];
+        if (Number.isFinite(target.w) && Number.isFinite(t.w)) diffs.push(Math.abs(t.w - target.w));
+        if (Number.isFinite(target.m) && Number.isFinite(t.m)) diffs.push(Math.abs(t.m - target.m));
+        if (Number.isFinite(target.uk) && Number.isFinite(t.uk)) diffs.push(Math.abs(t.uk - target.uk));
+        const diff = diffs.length ? Math.min(...diffs) : Infinity;
+        // Use US-Women as the canonical "size magnitude" for tie-breaks.
+        const magnitude = Number.isFinite(t.w) ? t.w : Number.isFinite(t.uk) ? t.uk : 0;
+        return { v, diff, magnitude };
       })
-      .filter(({ t }) => Number.isFinite(t.w));
+      .filter((x) => Number.isFinite(x.diff));
 
-    if (Number.isFinite(target.w) && ranked.length) {
-      const sortedAsc = [...ranked].sort((a, b) => a.t.w - b.t.w);
-      const roundedUp = sortedAsc.find(({ t }) => t.w >= target.w);
-      if (roundedUp) return roundedUp.v;
-      // Shoe size is bigger than every insole — return the largest.
-      return sortedAsc[sortedAsc.length - 1].v;
+    const available = scored.filter((x) => x.v.availableForSale);
+    const pool = available.length ? available : scored;
+
+    if (pool.length) {
+      pool.sort((a, b) => {
+        if (a.diff !== b.diff) return a.diff - b.diff;
+        return a.magnitude - b.magnitude; // round DOWN on ties
+      });
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug("[insole-match] nearest", {
+          shoeSize,
+          target,
+          picked: pool[0].v.title,
+          diff: pool[0].diff,
+        });
+      }
+      return pool[0].v;
     }
   }
 

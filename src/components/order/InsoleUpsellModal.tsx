@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, ShieldCheck, Star, X } from "lucide-react";
+import { Check, ChevronDown, Plus, ShieldCheck, Star, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";
@@ -16,14 +16,18 @@ import imgFeatures from "@/assets/insole/features.webp";
 import imgBenefits from "@/assets/insole/benefits.webp";
 import imgClinical from "@/assets/insole/clinically-tested.webp";
 
+interface ShoeSelectionLite {
+  color: string | null;
+  size: string | null;
+}
+
 interface InsoleUpsellModalProps {
   open: boolean;
   product: ShopifyProductData | null;
-  /** Shoe size the customer picked for pair 1 — used to match the insole variant so the displayed price matches what's charged. */
-  shoeSize: string | null;
-  /** Number of pairs of shoes the customer is buying — we match insole qty 1:1. */
-  bundleQuantity: number;
-  onAccept: (variant: ShopifyVariant, quantity: number) => void;
+  /** One entry per shoe pair the customer is buying — drives the per-pair size matching. */
+  shoeSelections: ShoeSelectionLite[];
+  /** Returns one entry per insole pair the customer wants (1:1 with shoe pairs + extras). */
+  onAccept: (rows: Array<{ variant: ShopifyVariant; label: string }>) => void;
   onDecline: () => void;
 }
 
@@ -41,6 +45,7 @@ const BENEFITS = [
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";
+const MAX_EXTRAS = 2;
 
 const SYSTEM_LABELS: Record<SizeSystem, string> = {
   usW: "Women's US",
@@ -69,21 +74,29 @@ function valueFor(parsed: SizeRow, system: SizeSystem): string {
   }
 }
 
+interface Row {
+  key: string;
+  /** Pair index from the shoe step (0-based) — null for user-added extras. */
+  sourcePairIndex: number | null;
+  variantId: string;
+}
+
+let rowKeyCounter = 0;
+const nextKey = () => `row-${++rowKeyCounter}`;
+
 export function InsoleUpsellModal({
   open,
   product,
-  shoeSize,
-  bundleQuantity,
+  shoeSelections,
   onAccept,
   onDecline,
 }: InsoleUpsellModalProps) {
-  const autoVariant = pickInsoleVariantForSize(product, shoeSize);
   const { country } = useGeo();
   const viewFiredRef = useRef(false);
   const [armed, setArmed] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
-  const [overrideVariantId, setOverrideVariantId] = useState<string | null>(null);
-  const [sizePickerOpen, setSizePickerOpen] = useState(false);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [openPickerKey, setOpenPickerKey] = useState<string | null>(null);
 
   // Match the size system the customer selected on the shoe step.
   const system: SizeSystem = useMemo(
@@ -91,60 +104,118 @@ export function InsoleUpsellModal({
     [country?.code],
   );
 
-  // Reset override + auto-match every time the modal reopens or shoe size changes.
+  // Build initial rows whenever the modal opens or the shoe selections change.
   useEffect(() => {
-    if (open) {
-      setArmed(false);
-      setActiveImg(0);
-      setOverrideVariantId(null);
-      setSizePickerOpen(false);
-      const t = setTimeout(() => setArmed(true), 500);
-      return () => clearTimeout(t);
-    }
-  }, [open, shoeSize]);
+    if (!open || !product) return;
+    setArmed(false);
+    setActiveImg(0);
+    setOpenPickerKey(null);
 
-  const variant = useMemo<ShopifyVariant | null>(() => {
-    if (overrideVariantId && product) {
-      const found = product.variants.find((v) => v.id === overrideVariantId);
-      if (found) return found;
-    }
-    return autoVariant;
-  }, [overrideVariantId, product, autoVariant]);
+    const initial: Row[] = shoeSelections.map((sel, i) => {
+      const v = pickInsoleVariantForSize(product, sel.size);
+      return {
+        key: nextKey(),
+        sourcePairIndex: i,
+        variantId: v?.id ?? product.variants[0]?.id ?? "",
+      };
+    });
+    setRows(initial.filter((r) => r.variantId));
 
+    const t = setTimeout(() => setArmed(true), 500);
+    return () => clearTimeout(t);
+  }, [open, product, shoeSelections]);
+
+  const variantById = useMemo(() => {
+    const m = new Map<string, ShopifyVariant>();
+    if (product) for (const v of product.variants) m.set(v.id, v);
+    return m;
+  }, [product]);
+
+  const resolvedRows = useMemo(
+    () =>
+      rows
+        .map((r) => ({ row: r, variant: variantById.get(r.variantId) }))
+        .filter((x): x is { row: Row; variant: ShopifyVariant } => Boolean(x.variant)),
+    [rows, variantById],
+  );
+
+  // Fire ViewContent once per open using the first row's variant.
   useEffect(() => {
     if (!open) {
       viewFiredRef.current = false;
       return;
     }
-    if (viewFiredRef.current || !product || !variant) return;
+    if (viewFiredRef.current || !product || resolvedRows.length === 0) return;
+    const first = resolvedRows[0].variant;
     viewFiredRef.current = true;
     fbTrack("ViewContent", {
       customData: {
         content_type: "product",
-        content_ids: [variantNumericId(variant.id)],
+        content_ids: [variantNumericId(first.id)],
         content_name: product.title,
-        currency: variant.price.currencyCode,
-        value: parseFloat(variant.price.amount),
+        currency: first.price.currencyCode,
+        value: parseFloat(first.price.amount),
       },
     });
-  }, [open, product, variant]);
+  }, [open, product, resolvedRows]);
 
-  if (!variant || !product) return null;
+  if (!product || resolvedRows.length === 0) return null;
 
-  const currency = variant.price.currencyCode;
-  const unitPrice = parseFloat(variant.price.amount);
-  const compareAt = parseFloat(variant.compareAtPrice?.amount ?? "0");
+  const firstVariant = resolvedRows[0].variant;
+  const currency = firstVariant.price.currencyCode;
+  const unitPrice = parseFloat(firstVariant.price.amount);
+  const compareAt = parseFloat(firstVariant.compareAtPrice?.amount ?? "0");
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
-  const totalPrice = unitPrice * bundleQuantity;
-  const totalCompare = compareAt * bundleQuantity;
+
+  const totalPrice = resolvedRows.reduce(
+    (sum, r) => sum + parseFloat(r.variant.price.amount),
+    0,
+  );
+  const totalCompare = resolvedRows.reduce(
+    (sum, r) => sum + parseFloat(r.variant.compareAtPrice?.amount ?? r.variant.price.amount),
+    0,
+  );
   const totalSaved = Math.max(0, totalCompare - totalPrice);
 
   const heroImage = GALLERY[activeImg].src;
+  const isMulti = shoeSelections.length > 1 || rows.length > 1;
+  const extrasCount = rows.filter((r) => r.sourcePairIndex === null).length;
+  const canAddExtra = extrasCount < MAX_EXTRAS;
 
   const handleDecline = () => {
     if (!armed) return;
     onDecline();
+  };
+
+  const handleAccept = () => {
+    onAccept(
+      resolvedRows.map(({ row, variant }) => ({
+        variant,
+        label:
+          row.sourcePairIndex === null
+            ? "Extra"
+            : `Pair ${row.sourcePairIndex + 1}`,
+      })),
+    );
+  };
+
+  const setRowVariant = (key: string, variantId: string) => {
+    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, variantId } : r)));
+    setOpenPickerKey(null);
+  };
+
+  const addExtra = () => {
+    const seedId = rows[0]?.variantId ?? product.variants[0]?.id;
+    if (!seedId) return;
+    const newRow: Row = { key: nextKey(), sourcePairIndex: null, variantId: seedId };
+    setRows((prev) => [...prev, newRow]);
+    setOpenPickerKey(newRow.key);
+  };
+
+  const removeExtra = (key: string) => {
+    setRows((prev) => prev.filter((r) => r.key !== key));
+    setOpenPickerKey((k) => (k === key ? null : k));
   };
 
   return (
@@ -271,6 +342,9 @@ export function InsoleUpsellModal({
                       {formatMoney(compareAt, currency)}
                     </span>
                   )}
+                  <span className="text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
+                    / pair
+                  </span>
                 </div>
                 {hasDiscount && (
                   <span className="mt-1 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
@@ -295,80 +369,138 @@ export function InsoleUpsellModal({
               ))}
             </ul>
 
-            {/* Auto-matched insole size + override picker */}
-            {product.variants.length > 0 && (
-              <div className="mt-3">
+            {/* Per-pair insole sizes */}
+            <div className="mt-3 space-y-1.5">
+              {isMulti && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--text-mute))]">
+                    Insole sizes · {SYSTEM_LABELS[system]}
+                  </span>
+                  <span className="text-[10px] font-semibold text-[hsl(var(--text-mute))]">
+                    {resolvedRows.length} pair{resolvedRows.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+              )}
+
+              {resolvedRows.map(({ row, variant }, idx) => {
+                const isOpen = openPickerKey === row.key;
+                const sourcePair =
+                  row.sourcePairIndex === null ? null : shoeSelections[row.sourcePairIndex];
+                const rowLabel = isMulti
+                  ? row.sourcePairIndex === null
+                    ? "Extra pair"
+                    : `Pair ${row.sourcePairIndex + 1}${sourcePair?.color ? ` · ${sourcePair.color}` : ""}`
+                  : SYSTEM_LABELS[system];
+                const sizeText = valueFor(parseShopifySize(variant.title), system);
+                const hint =
+                  row.sourcePairIndex === null
+                    ? "Tap to pick size"
+                    : sourcePair?.size
+                      ? "Auto-matched · trim-to-fit"
+                      : "Pick size";
+                return (
+                  <div key={row.key}>
+                    <div className="flex items-stretch gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setOpenPickerKey(isOpen ? null : row.key)}
+                        aria-expanded={isOpen}
+                        className="flex flex-1 items-center justify-between gap-2 rounded-xl border border-[hsl(var(--hairline))] bg-[hsl(var(--muted))]/40 px-3 py-2 text-left transition-colors hover:bg-[hsl(var(--muted))]/70"
+                      >
+                        <span className="flex min-w-0 flex-col">
+                          <span className="truncate text-[10px] font-bold uppercase tracking-[0.1em] text-[hsl(var(--text-mute))]">
+                            {rowLabel}
+                          </span>
+                          <span className="truncate text-[14px] font-extrabold leading-tight text-[hsl(var(--text-strong))]">
+                            {sizeText}
+                            {!isMulti && (
+                              <span className="ml-1 text-[10px] font-semibold text-[hsl(var(--text-mute))]">
+                                · {hint}
+                              </span>
+                            )}
+                          </span>
+                          {isMulti && (
+                            <span className="text-[10px] leading-tight text-[hsl(var(--text-mute))]">
+                              {hint}
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[hsl(var(--order-blue))]">
+                          {isOpen ? "Done" : "Change"}
+                          <ChevronDown
+                            className={cn(
+                              "h-3.5 w-3.5 transition-transform",
+                              isOpen && "rotate-180",
+                            )}
+                            strokeWidth={2.75}
+                          />
+                        </span>
+                      </button>
+                      {row.sourcePairIndex === null && (
+                        <button
+                          type="button"
+                          onClick={() => removeExtra(row.key)}
+                          aria-label="Remove extra pair"
+                          className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-mute))] transition-colors hover:border-[hsl(var(--save-red))] hover:text-[hsl(var(--save-red))]"
+                        >
+                          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        </button>
+                      )}
+                    </div>
+
+                    {isOpen && (
+                      <div className="mt-1.5 grid grid-cols-5 gap-1.5 sm:grid-cols-6">
+                        {product.variants.map((v) => {
+                          const selected = v.id === variant.id;
+                          const disabled = !v.availableForSale;
+                          const display = valueFor(parseShopifySize(v.title), system);
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => setRowVariant(row.key, v.id)}
+                              className={cn(
+                                "rounded-lg border py-2 text-[13px] font-extrabold tabular-nums leading-none transition-colors",
+                                selected
+                                  ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
+                                  : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
+                                disabled && "cursor-not-allowed opacity-40",
+                              )}
+                            >
+                              {display}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {canAddExtra && (
                 <button
                   type="button"
-                  onClick={() => setSizePickerOpen((v) => !v)}
-                  aria-expanded={sizePickerOpen}
-                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-[hsl(var(--hairline))] bg-[hsl(var(--muted))]/40 px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--muted))]/70"
+                  onClick={addExtra}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[hsl(var(--hairline))] bg-transparent px-3 py-1.5 text-[11.5px] font-bold text-[hsl(var(--text-mute))] transition-colors hover:border-[hsl(var(--save-red))] hover:text-[hsl(var(--save-red))]"
                 >
-                  <span className="flex min-w-0 flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--text-mute))]">
-                      Insole size · {SYSTEM_LABELS[system]}
-                    </span>
-                    <span className="truncate text-[15px] font-extrabold leading-tight text-[hsl(var(--text-strong))]">
-                      {valueFor(parseShopifySize(variant.title), system)}
-                    </span>
-                    <span className="mt-0.5 text-[10.5px] leading-tight text-[hsl(var(--text-mute))]">
-                      {overrideVariantId
-                        ? "You picked this size"
-                        : shoeSize
-                          ? "Auto-matched to your shoes · trim-to-fit"
-                          : "Pick your size"}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[hsl(var(--order-blue))]">
-                    {sizePickerOpen ? "Done" : "Change"}
-                    <ChevronDown
-                      className={cn(
-                        "h-3.5 w-3.5 transition-transform",
-                        sizePickerOpen && "rotate-180",
-                      )}
-                      strokeWidth={2.75}
-                    />
-                  </span>
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  Add another pair
                 </button>
-
-                {sizePickerOpen && (
-                  <div className="mt-2 grid grid-cols-5 gap-1.5 sm:grid-cols-6">
-                    {product.variants.map((v) => {
-                      const selected = v.id === variant.id;
-                      const disabled = !v.availableForSale;
-                      const display = valueFor(parseShopifySize(v.title), system);
-                      return (
-                        <button
-                          key={v.id}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => {
-                            setOverrideVariantId(v.id);
-                            setSizePickerOpen(false);
-                          }}
-                          className={cn(
-                            "rounded-lg border py-2 text-[13px] font-extrabold tabular-nums leading-none transition-colors",
-                            selected
-                              ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
-                              : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
-                            disabled && "cursor-not-allowed opacity-40",
-                          )}
-                        >
-                          {display}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Primary CTA */}
             <div className="mt-3">
               <YellowCta
                 label={`Yes, Add for ${formatMoney(totalPrice, currency)}`}
-                onClick={() => onAccept(variant, bundleQuantity)}
+                onClick={handleAccept}
               />
+              {totalSaved > 0 && (
+                <p className="mt-1 text-center text-[10.5px] font-semibold text-[hsl(var(--verified-green))]">
+                  You save {formatMoney(totalSaved, currency)} on insoles
+                </p>
+              )}
             </div>
 
             {/* Trust + decline */}

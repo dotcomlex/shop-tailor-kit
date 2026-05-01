@@ -1,38 +1,50 @@
-# Tighten the upsell modal: remove summary block, move size selector below bullets, clean up size labels
+## Goal
 
-## Changes
+Make the insole upsell handle 1, 2, or 3+ pair orders cleanly — one insole size per shoe pair, all auto-matched, easy to change, plus an optional "add an extra pair" for shoppers who want more insoles than shoes.
 
-**1. Delete the "Adding 1 pair to your order +$14.95" summary block.**
-The total is already on the CTA button (`Yes, Add for $14.95`), so this block is redundant noise.
+## Behavior
 
-**2. Move the insole size selector under the bullet points.**
-New order inside the modal: hero/price → bullets → **insole size** → CTA → trust strip → decline link.
+**Auto-match by default (the "smart" part)**
+- For every shoe pair the customer added, the modal pre-selects an insole of the same size automatically.
+- 1 shoe pair → 1 insole pre-matched. 2 pairs → 2 insoles pre-matched. Etc.
+- The CTA total ("Yes, Add for $X.XX") reflects all pairs, no math required from the customer.
 
-**3. Clean up the variant labels (no more mixed "US W 9 / US M 8 / UK 7").**
-Reuse the same `parseShopifySize` + region/system logic the shoe step already uses (`vitalwalk_size_system` in localStorage), so the modal shows a single clean number that matches whatever region the customer chose on step 2:
-- Women's US picker selected → "Women's US 9"
-- Men's US → "Men's US 8"
-- UK → "UK 7"
-- EU → "EU 40"
+**One row per pair, only when needed**
+- **1 pair ordered** → a single size row (same compact look it has now). No "Pair 1" label — unnecessary.
+- **2+ pairs ordered** → a stacked list, one row per pair, each labeled "Pair 1", "Pair 2", … with the matched shoe color shown as a tiny hint (e.g. "Pair 1 · Black"). Each row shows its insole size and a "Change" affordance that expands an inline size grid for just that row.
+- Rows stay collapsed by default so the modal doesn't get tall. Only the row being edited expands.
 
-The collapsed pill becomes a tidy 2-line block:
+**Optional extra insole pairs**
+- Below the per-pair list, a subtle "+ Add another pair" link (only shown after the per-pair list, max 2 extras so total insoles ≤ 5).
+- Each extra pair starts pre-selected to the same size as Pair 1 (best guess), is fully editable, and can be removed via a small × on the row.
+- Extras are labeled "Extra pair" so it's visually clear they're above the 1:1 match.
 
-```text
-INSOLE SIZE
-Women's US 9                              Change ▾
-Auto-matched to your shoes
-```
+**Pricing**
+- CTA total = $14.95 × (shoe pairs + extra pairs added in the modal). Updates live as extras are added/removed or sizes changed.
+- Strike-through compare-at scales the same way.
 
-The expanded picker becomes a 4–5 column grid of clean single-system numbers (e.g. `9`, `10`, `11`…) styled like the shoe size tiles, instead of long dense labels.
+**Layout cleanup**
+- Size section sits where it does today (under benefits, above CTA).
+- For multi-pair, the section becomes a tidy vertical list with consistent row height; no horizontal scroll, no nested modals.
+- Size labels keep the customer's preferred system (Women's US / Men's US / UK / EU) from the shoe step.
 
-**4. Keep size matching unchanged.**
-Round-up logic and the new US W 5 variant stay in place; only the visual labels change.
+## Edge cases
 
-## Technical details
+- If a shoe pair has no size selected yet, that row shows "Pick size" and the CTA stays enabled but that row's variant defaults to the largest available (current fallback).
+- If two pairs share the same shoe size, both rows still appear independently — customer can change one without affecting the other.
+- Out-of-stock insole sizes stay disabled in the picker grid (already handled).
 
-File to edit: `src/components/order/InsoleUpsellModal.tsx`
-- Import `parseShopifySize` from `@/data/sizeChart`, `useGeo`, and `defaultSizeSystem`/`regionFor` from `@/lib/geo`.
-- Read the user's stored size system from `localStorage` (`vitalwalk_size_system`), falling back to the geo default — same pattern as `SizeTileGrid`.
-- Render the variant label using only the chosen system (W/M/UK/EU number), not the full Shopify title.
-- Remove the entire "Quantity / total summary" `<div>` block.
-- Move the size pill + grid to sit between the benefits `<ul>` and the CTA.
+## Technical notes
+
+- `InsoleUpsellModal` props change: replace `shoeSize: string | null` with `shoeSelections: { color: string | null; size: string | null }[]` (passed straight from `OrderPage` `selections`). `bundleQuantity` stays for fallbacks.
+- Internal state becomes `rows: { key: string; sourcePairIndex: number | null; variantId: string }[]` — one entry per shoe pair (pre-filled via `pickInsoleVariantForSize`) plus any user-added extras (`sourcePairIndex: null`).
+- Override + size-picker state moves from a single `overrideVariantId` to a `Record<rowKey, boolean>` for which row's picker is open.
+- `onAccept` signature changes to `(lines: { variant: ShopifyVariant; quantity: 1 }[]) => void`. `OrderPage.handleUpsellAccept` aggregates them into Shopify cart lines (group identical variant IDs into one line with summed quantity to keep the cart tidy) and fires a single `AddToCart` event with `num_items` = total and `value` = total price.
+- Cart line attributes updated: `Insole Pairs` becomes total count; add `Pair Match` attribute per line (e.g. "Pair 1, Pair 2" or "Extra") for fulfillment clarity.
+- Pixel `ViewContent` keeps firing once per modal open using the first row's variant (current behavior preserved).
+- No changes to `pickInsoleVariantForSize` or `parseShopifySize` — reused as-is.
+
+## Files to change
+
+- `src/components/order/InsoleUpsellModal.tsx` — props, state, per-row UI, extra-pair add/remove.
+- `src/components/order/OrderPage.tsx` — pass `selections` instead of just first size; update `handleUpsellAccept` to accept multiple lines and aggregate.

@@ -296,29 +296,60 @@ export function OrderPage() {
     setUpsellOpen(true);
   };
 
-  const handleUpsellAccept = (variant: ShopifyVariant, qty: number) => {
+  const handleUpsellAccept = (
+    rows: Array<{ variant: ShopifyVariant; label: string }>,
+  ) => {
     setUpsellOpen(false);
-    // Fire AddToCart for the insole right before checkout.
+    if (rows.length === 0) {
+      void handleCheckout();
+      return;
+    }
+
+    // Aggregate identical variants into single cart lines so the cart stays tidy,
+    // but keep a per-variant label for fulfillment context.
+    const grouped = new Map<
+      string,
+      { variant: ShopifyVariant; quantity: number; labels: string[] }
+    >();
+    for (const r of rows) {
+      const existing = grouped.get(r.variant.id);
+      if (existing) {
+        existing.quantity += 1;
+        existing.labels.push(r.label);
+      } else {
+        grouped.set(r.variant.id, { variant: r.variant, quantity: 1, labels: [r.label] });
+      }
+    }
+
+    const totalQty = rows.length;
+    const totalValue = rows.reduce(
+      (sum, r) => sum + parseFloat(r.variant.price.amount),
+      0,
+    );
+    const currency = rows[0].variant.price.currencyCode;
+
     fbTrack("AddToCart", {
       customData: {
         content_type: "product",
-        content_ids: [variantNumericId(variant.id)],
+        content_ids: Array.from(grouped.values()).map((g) => variantNumericId(g.variant.id)),
         content_name: insoleProduct?.title ?? "Massage Insoles",
-        currency: variant.price.currencyCode,
-        value: parseFloat(variant.price.amount) * qty,
-        num_items: qty,
+        currency,
+        value: totalValue,
+        num_items: totalQty,
       },
     });
-    void handleCheckout([
-      {
-        variantId: variant.id,
-        quantity: qty,
-        attributes: [
-          { key: "Add-on", value: "Orthopedic Massage Insoles" },
-          { key: "Insole Pairs", value: String(qty) },
-        ],
-      },
-    ]);
+
+    const insoleLines: CartLineInput[] = Array.from(grouped.values()).map((g) => ({
+      variantId: g.variant.id,
+      quantity: g.quantity,
+      attributes: [
+        { key: "Add-on", value: "Orthopedic Massage Insoles" },
+        { key: "Insole Pairs", value: String(g.quantity) },
+        { key: "Pair Match", value: g.labels.join(", ") },
+      ],
+    }));
+
+    void handleCheckout(insoleLines);
   };
 
   const handleUpsellDecline = () => {
@@ -377,8 +408,7 @@ export function OrderPage() {
       <InsoleUpsellModal
         open={upsellOpen}
         product={insoleProduct ?? null}
-        shoeSize={selections[0]?.size ?? null}
-        bundleQuantity={quantity}
+        shoeSelections={selections}
         onAccept={handleUpsellAccept}
         onDecline={handleUpsellDecline}
       />

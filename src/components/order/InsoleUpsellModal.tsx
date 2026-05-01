@@ -263,8 +263,8 @@ export function InsoleUpsellModal({
           <div className="px-4 py-3">
             {/* Two-column hero: image left, rating + title + price right */}
             <div className="flex gap-3">
-              <div className="shrink-0">
-                <div className="aspect-square h-[160px] w-[160px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
+              <div className="w-[150px] shrink-0">
+                <div className="aspect-square w-[150px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
                   {activeItem.kind === "video" ? (
                     <video
                       key={activeItem.src}
@@ -289,8 +289,8 @@ export function InsoleUpsellModal({
                     />
                   )}
                 </div>
-                {/* Thumbnails under hero */}
-                <div className="mt-1.5 flex justify-between gap-1">
+                {/* Thumbnails under hero — sized to fit 150px column without overflow */}
+                <div className="mt-1.5 flex w-full items-center justify-between">
                   {GALLERY.map((g, i) => {
                     const thumbSrc = g.kind === "video" ? g.poster : g.src;
                     return (
@@ -300,7 +300,7 @@ export function InsoleUpsellModal({
                         onClick={() => setActiveImg(i)}
                         aria-label={`View ${g.alt}`}
                         className={cn(
-                          "relative h-7 w-7 overflow-hidden rounded-md border transition-all",
+                          "relative h-[22px] w-[22px] shrink-0 overflow-hidden rounded-md border transition-all",
                           i === activeImg
                             ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
                             : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
@@ -308,8 +308,8 @@ export function InsoleUpsellModal({
                       >
                         <img src={thumbSrc} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                         {g.kind === "video" && (
-                          <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                            <span className="block h-0 w-0 border-y-[4px] border-l-[6px] border-y-transparent border-l-white" />
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <span className="block h-0 w-0 border-y-[3px] border-l-[5px] border-y-transparent border-l-white" />
                           </span>
                         )}
                       </button>

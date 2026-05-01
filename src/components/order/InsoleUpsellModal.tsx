@@ -263,8 +263,8 @@ export function InsoleUpsellModal({
           <div className="px-4 py-3">
             {/* Two-column hero: image left, rating + title + price right */}
             <div className="flex gap-3">
-              <div className="w-[150px] shrink-0">
-                <div className="aspect-square w-[150px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
+              <div className="w-[170px] shrink-0">
+                <div className="aspect-square w-[170px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
                   {activeItem.kind === "video" ? (
                     <video
                       key={activeItem.src}
@@ -300,7 +300,7 @@ export function InsoleUpsellModal({
                         onClick={() => setActiveImg(i)}
                         aria-label={`View ${g.alt}`}
                         className={cn(
-                          "relative h-[22px] w-[22px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          "relative h-[26px] w-[26px] shrink-0 overflow-hidden rounded-md border transition-all",
                           i === activeImg
                             ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
                             : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
@@ -309,7 +309,7 @@ export function InsoleUpsellModal({
                         <img src={thumbSrc} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                         {g.kind === "video" && (
                           <span className="absolute inset-0 flex items-center justify-center bg-black/30">
-                            <span className="block h-0 w-0 border-y-[3px] border-l-[5px] border-y-transparent border-l-white" />
+                            <span className="block h-0 w-0 border-y-[4px] border-l-[6px] border-y-transparent border-l-white" />
                           </span>
                         )}
                       </button>
@@ -336,11 +336,11 @@ export function InsoleUpsellModal({
                 </div>
 
                 <DialogPrimitive.Title asChild>
-                  <h2 className="mt-1 text-balance text-[16px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="mt-1 text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Orthopedic Massage Insoles
                   </h2>
                 </DialogPrimitive.Title>
-                <p className="mt-0.5 text-[11.5px] leading-snug text-[hsl(var(--text-mute))]">
+                <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
                   Slip them in for instant arch support &amp; all-day relief.
                 </p>
 
@@ -371,7 +371,7 @@ export function InsoleUpsellModal({
             </div>
 
             {/* Benefits */}
-            <ul className="mt-3 space-y-1">
+            <ul className="mt-4 space-y-1">
               {BENEFITS.map((b) => (
                 <li
                   key={b}
@@ -386,12 +386,12 @@ export function InsoleUpsellModal({
             </ul>
 
             {/* Subtle reassurance */}
-            <p className="mt-2 text-center text-[10.5px] text-[hsl(var(--text-mute))]">
+            <p className="mt-3 text-center text-[10.5px] tracking-wide text-[hsl(var(--text-mute))]">
               ✂ Trim-to-fit · works in any shoe
             </p>
 
             {/* Per-pair insole sizes */}
-            <div className="mt-3 space-y-1.5">
+            <div className="mt-4 space-y-1.5">
               {isMulti && (
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--text-mute))]">

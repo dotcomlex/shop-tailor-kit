@@ -454,28 +454,37 @@ export function InsoleUpsellModal({
 
                     {isOpen && (
                       <div className="mt-1.5 grid grid-cols-5 gap-1.5 sm:grid-cols-6">
-                        {product.variants.map((v) => {
-                          const selected = v.id === variant.id;
-                          const disabled = !v.availableForSale;
-                          const display = valueFor(parseShopifySize(v.title), system);
-                          return (
-                            <button
-                              key={v.id}
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => setRowVariant(row.key, v.id)}
-                              className={cn(
-                                "rounded-lg border py-2 text-[13px] font-extrabold tabular-nums leading-none transition-colors",
-                                selected
-                                  ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
-                                  : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
-                                disabled && "cursor-not-allowed opacity-40",
-                              )}
-                            >
-                              {display}
-                            </button>
-                          );
-                        })}
+                        {[...product.variants]
+                          .map((v) => ({ v, display: valueFor(parseShopifySize(v.title), system) }))
+                          .sort((a, b) => {
+                            const na = parseFloat(a.display);
+                            const nb = parseFloat(b.display);
+                            if (Number.isNaN(na) && Number.isNaN(nb)) return a.display.localeCompare(b.display);
+                            if (Number.isNaN(na)) return 1;
+                            if (Number.isNaN(nb)) return -1;
+                            return na - nb;
+                          })
+                          .map(({ v, display }) => {
+                            const selected = v.id === variant.id;
+                            const disabled = !v.availableForSale;
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => setRowVariant(row.key, v.id)}
+                                className={cn(
+                                  "rounded-lg border py-2 text-[13px] font-extrabold tabular-nums leading-none transition-colors",
+                                  selected
+                                    ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
+                                    : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
+                                  disabled && "cursor-not-allowed opacity-40",
+                                )}
+                              >
+                                {display}
+                              </button>
+                            );
+                          })}
                       </div>
                     )}
                   </div>

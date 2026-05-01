@@ -280,21 +280,36 @@ export function InsoleUpsellModal({
               </div>
             </div>
 
-            {/* Auto-matched size pill + override picker */}
+            {/* Benefits */}
+            <ul className="mt-3 space-y-1">
+              {BENEFITS.map((b) => (
+                <li
+                  key={b}
+                  className="flex items-start gap-2 text-[12.5px] leading-snug font-medium text-[hsl(var(--text-body))]"
+                >
+                  <span className="mt-[2px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--verified-green))] text-white">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                  </span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Auto-matched insole size + override picker */}
             {product.variants.length > 0 && (
               <div className="mt-3">
                 <button
                   type="button"
                   onClick={() => setSizePickerOpen((v) => !v)}
                   aria-expanded={sizePickerOpen}
-                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-[hsl(var(--hairline))] bg-[hsl(var(--muted))]/40 px-3 py-2 text-left transition-colors hover:bg-[hsl(var(--muted))]/70"
+                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-[hsl(var(--hairline))] bg-[hsl(var(--muted))]/40 px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--muted))]/70"
                 >
                   <span className="flex min-w-0 flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--text-mute))]">
-                      Insole size
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--text-mute))]">
+                      Insole size · {SYSTEM_LABELS[system]}
                     </span>
-                    <span className="truncate text-[13px] font-extrabold text-[hsl(var(--text-strong))]">
-                      {variant.title}
+                    <span className="truncate text-[15px] font-extrabold leading-tight text-[hsl(var(--text-strong))]">
+                      {valueFor(parseShopifySize(variant.title), system)}
                     </span>
                     <span className="mt-0.5 text-[10.5px] leading-tight text-[hsl(var(--text-mute))]">
                       {overrideVariantId
@@ -317,10 +332,11 @@ export function InsoleUpsellModal({
                 </button>
 
                 {sizePickerOpen && (
-                  <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  <div className="mt-2 grid grid-cols-5 gap-1.5 sm:grid-cols-6">
                     {product.variants.map((v) => {
                       const selected = v.id === variant.id;
                       const disabled = !v.availableForSale;
+                      const display = valueFor(parseShopifySize(v.title), system);
                       return (
                         <button
                           key={v.id}
@@ -331,14 +347,14 @@ export function InsoleUpsellModal({
                             setSizePickerOpen(false);
                           }}
                           className={cn(
-                            "rounded-lg border px-2 py-1.5 text-[10.5px] font-bold leading-tight transition-colors",
+                            "rounded-lg border py-2 text-[13px] font-extrabold tabular-nums leading-none transition-colors",
                             selected
                               ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
                               : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
                             disabled && "cursor-not-allowed opacity-40",
                           )}
                         >
-                          {v.title}
+                          {display}
                         </button>
                       );
                     })}
@@ -346,42 +362,6 @@ export function InsoleUpsellModal({
                 )}
               </div>
             )}
-
-            {/* Benefits */}
-            <ul className="mt-3 space-y-1">
-              {BENEFITS.map((b) => (
-                <li
-                  key={b}
-                  className="flex items-start gap-2 text-[12.5px] leading-snug font-medium text-[hsl(var(--text-body))]"
-                >
-                  <span className="mt-[2px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--verified-green))] text-white">
-                    <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
-                  </span>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Quantity / total summary */}
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--hairline))] bg-[hsl(var(--muted))]/40 px-3 py-2">
-              <span className="text-[11.5px] leading-tight text-[hsl(var(--text-body))]">
-                Adding{" "}
-                <strong className="text-[hsl(var(--text-strong))]">
-                  {bundleQuantity} pair{bundleQuantity > 1 ? "s" : ""}
-                </strong>{" "}
-                to your order
-              </span>
-              <div className="text-right shrink-0">
-                <div className="tabular-nums text-[14px] font-extrabold leading-none text-[hsl(var(--text-strong))]">
-                  +{formatMoney(totalPrice, currency)}
-                </div>
-                {totalSaved > 0 && (
-                  <div className="mt-0.5 text-[10px] font-semibold tabular-nums text-[hsl(var(--verified-green))]">
-                    You save {formatMoney(totalSaved, currency)}
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Primary CTA */}
             <div className="mt-3">

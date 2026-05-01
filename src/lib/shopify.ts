@@ -180,6 +180,33 @@ export async function fetchVitalWalkProduct(country: string = "US"): Promise<Sho
   return normalizeProduct(result?.data?.product ?? null);
 }
 
+/**
+ * Fetch the orthopedic insole upsell product, localized for the given country.
+ */
+export async function fetchInsoleProduct(country: string = "US"): Promise<ShopifyProductData | null> {
+  const result = await storefrontApiRequest<{ product: RawProduct | null }>(
+    PRODUCT_BY_HANDLE_QUERY,
+    {
+      handle: INSOLE_PRODUCT_HANDLE,
+      country: (country || "US").toUpperCase(),
+    },
+  );
+  return normalizeProduct(result?.data?.product ?? null);
+}
+
+/**
+ * Pick the first available-for-sale variant on the insole product. The insole
+ * is single-color, multi-size — for the upsell modal we just need a valid
+ * line item; size match isn't critical because the customer is buying a
+ * generic accessory, not footwear.
+ */
+export function pickInsoleVariant(product: ShopifyProductData | null): ShopifyVariant | null {
+  if (!product) return null;
+  return (
+    product.variants.find((v) => v.availableForSale) ?? product.variants[0] ?? null
+  );
+}
+
 export interface BundleProducts {
   1: ShopifyProductData | null;
   2: ShopifyProductData | null;

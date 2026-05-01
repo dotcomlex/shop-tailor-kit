@@ -224,9 +224,11 @@ export function pickInsoleVariantForSize(
 
   if (shoeSize) {
     const target = parseSizeTokens(shoeSize);
-    const match = variants.find((v) => {
-      const sizeOpt = v.selectedOptions.find((o) =>
-        o.name.replace(/:$/, "").toLowerCase() === "size",
+
+    // 1) Exact match on US Women / US Men / UK token.
+    const exact = variants.find((v) => {
+      const sizeOpt = v.selectedOptions.find(
+        (o) => o.name.replace(/:$/, "").toLowerCase() === "size",
       );
       if (!sizeOpt) return false;
       const t = parseSizeTokens(sizeOpt.value);
@@ -236,15 +238,31 @@ export function pickInsoleVariantForSize(
         (Number.isFinite(target.uk) && Number.isFinite(t.uk) && t.uk === target.uk)
       );
     });
-    if (match) return match;
+    if (exact) return exact;
+
+    // 2) Round UP to the next available whole insole size (industry standard
+    // for trim-to-fit insoles — better to size up and trim than size down).
+    const ranked = variants
+      .map((v) => {
+        const sizeOpt = v.selectedOptions.find(
+          (o) => o.name.replace(/:$/, "").toLowerCase() === "size",
+        );
+        const t = sizeOpt ? parseSizeTokens(sizeOpt.value) : { w: NaN, m: NaN, uk: NaN };
+        return { v, t };
+      })
+      .filter(({ t }) => Number.isFinite(t.w));
+
+    if (Number.isFinite(target.w) && ranked.length) {
+      const sortedAsc = [...ranked].sort((a, b) => a.t.w - b.t.w);
+      const roundedUp = sortedAsc.find(({ t }) => t.w >= target.w);
+      if (roundedUp) return roundedUp.v;
+      // Shoe size is bigger than every insole — return the largest.
+      return sortedAsc[sortedAsc.length - 1].v;
+    }
   }
 
-  // Fallback: highest-priced available variant (avoids accidentally showing
-  // a stale lower-priced variant if the catalog has mixed pricing).
-  const sorted = [...variants].sort(
-    (a, b) => parseFloat(b.price.amount) - parseFloat(a.price.amount),
-  );
-  return sorted.find((v) => v.availableForSale) ?? sorted[0] ?? null;
+  // No shoe size hint at all — pick the first available variant.
+  return variants.find((v) => v.availableForSale) ?? variants[0] ?? null;
 }
 
 /**

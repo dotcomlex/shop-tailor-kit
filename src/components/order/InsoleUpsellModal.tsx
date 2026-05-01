@@ -221,7 +221,7 @@ export function InsoleUpsellModal({
           className={cn(
             "fixed left-1/2 top-1/2 z-50",
             "w-[calc(100%-1rem)] max-w-[400px]",
-            "max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain",
+            "max-h-[calc(100dvh-1rem)] overflow-y-auto overflow-x-hidden overscroll-contain",
             "-translate-x-1/2 -translate-y-1/2",
             "rounded-[20px] bg-background",
             "shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]",
@@ -301,7 +301,7 @@ export function InsoleUpsellModal({
                 </div>
 
                 <DialogPrimitive.Title asChild>
-                  <h2 className="mt-1 text-[16px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="mt-1 text-balance text-[16px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Orthopedic Massage Insoles
                   </h2>
                 </DialogPrimitive.Title>
@@ -314,12 +314,12 @@ export function InsoleUpsellModal({
                 </DialogPrimitive.Description>
 
                 {/* Price */}
-                <div className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="text-[24px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
+                <div className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                  <span className="text-[22px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
                     {formatMoney(unitPrice, currency)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-[13px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
+                    <span className="text-[12px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
                       {formatMoney(compareAt, currency)}
                     </span>
                   )}

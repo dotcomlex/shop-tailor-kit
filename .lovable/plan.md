@@ -1,48 +1,69 @@
-## Changes to `src/components/order/InsoleUpsellModal.tsx`
+## Two bugs to fix
 
-### 1. Replace the main hero image with the uploaded asset
-- Copy `user-uploads://image-5.png` → `src/assets/insole/hero-orange-action.webp` (re-encode as webp on copy isn't supported; we'll keep it as `.png` to preserve fidelity: `src/assets/insole/hero-orange-action.png`).
-- Swap it in as the **first** entry of the `GALLERY` array (replacing the current `heroOrange` import) so it's the default image users see when the modal opens. The remaining 3 thumbnails stay as is.
+### Bug 1 — Wrong size pre-selected in the upsell
 
-> Note: the file you uploaded is a **static `.png`** (`image-5.png`), not an animated GIF. If you actually have a `.gif` (or `.mp4`) you want auto-playing in the hero, please drop it in the chat and I'll wire it up as a `<video autoplay muted loop playsinline>` (best for performance + iOS Safari support — GIFs are heavy and can't be paused). For now I'll use the PNG as the static hero.
+**Root cause** (verified against live Shopify data):
 
-### 2. Fix mobile spacing — "No thanks" too close to trust line
-- Increase the gap between the trust line ("Free shipping · 60-day money-back guarantee") and the "No thanks, continue without insoles" link from `mt-1.5` → `mt-3` on the decline button.
-- Add a touch more breathing room above the trust line itself (`mt-2` → `mt-2.5`) so the CTA → trust → decline rhythm feels evenly spaced.
+- Shoes are sold in **half sizes** (e.g. `US W 11 / US M 10 / UK 9` AND `US W 11.5 / US M 10.5 / UK 9.5`).
+- Insoles are sold in **whole sizes only** (UK 4, 5, 6, 7, 8, 9, 10, 11, 12, 13).
+- Current matcher in `src/lib/shopify.ts` → `pickInsoleVariantForSize` works in two steps:
+  1. Exact match on US W / US M / UK token (OR'd) — works for whole-size shoes.
+  2. **Fallback for half-sizes**: round **up** to the next whole insole size, ranking only by `US W` token.
 
-### 3. Bump hero image size on mobile (without breaking layout)
-**Recommendation:** Grow the hero from a fixed `140×140` to a responsive `160×160` on mobile, keeping `140×140` on the slightly narrower edge case. The right column (rating/title/price) has enough room to flex because it uses `flex-1 min-w-0`, and text already truncates safely.
+For a shoe selection of `US W 11.5 / US M 10.5 / UK 9.5`:
+- target US W = 11.5 → rounds up to insole `US W 12 / US M 11 / UK 10`.
+- That's exactly what you saw: pre-selected UK 10 instead of UK 9.
 
-Specifically:
-- Change `aspect-square h-[140px] w-[140px]` → `aspect-square h-[160px] w-[160px] xs:h-[140px]` — actually simpler: just bump to `h-[160px] w-[160px]` across the board. The modal max-width is 400px and the right column still gets ~210px which comfortably fits the title/price/badge.
-- Bump thumbnails from `h-7 w-7` (28px) → `h-8 w-8` (32px) so they stay proportional under the larger hero.
-- Tighten the title slightly only if needed — testing shows current `text-[16px]` still fits.
+It also fails another way: it ignores `US M` and `UK` tokens entirely in the fallback path, so a shopper who entered the size in UK or US-Men won't get the closest UK/US-M neighbor — the round-up is always biased to US-Women's grid.
 
-This gives a noticeably more engaging product visual (~30% more pixel area) without any layout reflow risk.
+**Fix** — replace step 2 with a true **nearest-neighbor** match across all three numbering systems, with a tie-break that prefers rounding **down** for half-sizes (industry-correct for trim-to-fit insoles: a UK 9.5 foot fits inside a UK 9 insole shell better than getting a too-large UK 10 that bunches at the toe; the user can trim if needed).
 
-### Visual diff (mobile)
+Algorithm (all in `pickInsoleVariantForSize`):
 
 ```text
-Before                          After
-┌──────────────────┐            ┌──────────────────┐
-│ [140] ★★★★★ 4.8  │            │ [   ] ★★★★★ 4.8  │
-│ [img] Title      │            │ [160] Title      │
-│ [   ] $14.95     │    →       │ [img] $14.95     │
-│ ▫▫▫▫              │            │ [   ] Save 50%   │
-│                  │            │ ▫▫▫▫              │
-│ ✓ benefits...    │            │                  │
-│ [size pickers]   │            │ ✓ benefits...    │
-│ Save $X          │            │ [size pickers]   │
-│ [YES CTA]        │            │ Save $X          │
-│ 🛡 Free shipping │            │ [YES CTA]        │
-│ No thanks →      │  ← cramped │ 🛡 Free shipping │
-└──────────────────┘            │                  │ ← extra gap
-                                │ No thanks →      │
-                                └──────────────────┘
+For each insole variant:
+  parse {w, m, uk}
+  diff = min(
+    |t.w  - target.w |  (if both finite),
+    |t.m  - target.m |  (if both finite),
+    |t.uk - target.uk|  (if both finite),
+  )
+Pick the variant with the smallest diff.
+Tie-break (when two candidates are equally close, e.g. UK 9.5 → UK 9 vs UK 10
+  are both 0.5 away): prefer the SMALLER variant (round down).
+Filter to availableForSale first; if none available, fall back to all.
 ```
 
-### Files touched
-- `src/assets/insole/hero-orange-action.png` (new — copied from upload)
-- `src/components/order/InsoleUpsellModal.tsx` (import swap, GALLERY[0], hero size, thumbnail size, decline-button margin)
+This guarantees:
+- UK 9 shoe → UK 9 insole (exact).
+- UK 9.5 shoe → UK 9 insole (nearest, ties go down).
+- US W 11.5 shoe → UK 9 insole (still matches via US-M = 10.5 → 10 wins by 0.5 vs US-W = 11.5 → 12 by 0.5; tie → smaller).
+- US M 10 shoe → US M 10 insole (exact via M token).
 
-No logic, pricing, Shopify cart, or checkout flow changes.
+### Verification plan
+After the fix, mentally walk through all shoe variants and assert the predicted insole match. Add a small dev-only console log inside `pickInsoleVariantForSize` (gated on `import.meta.env.DEV`) so any future mismatch is visible during QA.
+
+---
+
+### Bug 2 — Modal causes horizontal page shift on mobile
+
+**Root cause** (from the screenshot you sent):
+- Right column of the hero contains `$14.95 $29.95 / pair` on one line. With the larger 160×160 hero we just shipped, the right column is tighter, so `$14.95 $29.95` plus `/ pair` overflows the column. The price `<div>` uses `flex items-baseline gap-1.5` with no `flex-wrap` and no `min-w-0`, so children push out and force horizontal scroll on the whole modal/page.
+- Title `Orthopedic Massage Insoles` is also fine wrapping but combined with the strikethrough price block, the column blows past its allotted width.
+
+**Fix** in `src/components/order/InsoleUpsellModal.tsx`:
+
+1. **Lock the modal against horizontal overflow** — add `overflow-x-hidden` to the `DialogPrimitive.Content` (alongside the existing `overflow-y-auto`) so nothing inside can ever push the page sideways.
+2. **Make the price row wrap safely**:
+   - Add `flex-wrap` to the price `<div>` so `/ pair` drops below if needed.
+   - Add `min-w-0` to the right column wrapper.
+3. **Tighten typography only on the narrowest hero**: drop the price from `text-[24px]` to `text-[22px]` on the smallest screens (still bold and dominant), and keep the strikethrough at `text-[12px]`. This prevents wrapping on 360-wide phones while staying punchy on 390+.
+4. **Trim the title to one balanced line where possible**: keep `text-[16px]` but add `text-balance` so "Orthopedic Massage Insoles" wraps as `Orthopedic Massage / Insoles` rather than `Orthopedic / Massage Insoles` — looks cleaner alongside the hero.
+5. **Constrain the page itself** as a belt-and-suspenders: add `overflow-x-hidden` to `<body>` via `index.css` so no future modal/component can ever introduce a horizontal scroll. (Vertical scrolling untouched.)
+
+### Files touched
+- `src/lib/shopify.ts` — rewrite step 2 of `pickInsoleVariantForSize` with nearest-neighbor + round-down tie-break, dev-only log.
+- `src/components/order/InsoleUpsellModal.tsx` — `overflow-x-hidden`, `flex-wrap`, `min-w-0`, slightly smaller price on small viewports, `text-balance` on title.
+- `src/index.css` — add `body { overflow-x: hidden; }`.
+
+No Shopify cart, checkout, currency, or pricing logic changes.

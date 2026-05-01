@@ -372,6 +372,14 @@ export function OrderPage() {
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>
       </footer>
+
+      <InsoleUpsellModal
+        open={upsellOpen}
+        product={insoleProduct ?? null}
+        bundleQuantity={quantity}
+        onAccept={handleUpsellAccept}
+        onDecline={handleUpsellDecline}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Check, ShieldCheck, Star, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, ShieldCheck, Star, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";
@@ -45,19 +45,32 @@ export function InsoleUpsellModal({
   onAccept,
   onDecline,
 }: InsoleUpsellModalProps) {
-  const variant = pickInsoleVariantForSize(product, shoeSize);
+  const autoVariant = pickInsoleVariantForSize(product, shoeSize);
   const viewFiredRef = useRef(false);
   const [armed, setArmed] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const [overrideVariantId, setOverrideVariantId] = useState<string | null>(null);
+  const [sizePickerOpen, setSizePickerOpen] = useState(false);
 
+  // Reset override + auto-match every time the modal reopens or shoe size changes.
   useEffect(() => {
     if (open) {
       setArmed(false);
       setActiveImg(0);
+      setOverrideVariantId(null);
+      setSizePickerOpen(false);
       const t = setTimeout(() => setArmed(true), 500);
       return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, shoeSize]);
+
+  const variant = useMemo<ShopifyVariant | null>(() => {
+    if (overrideVariantId && product) {
+      const found = product.variants.find((v) => v.id === overrideVariantId);
+      if (found) return found;
+    }
+    return autoVariant;
+  }, [overrideVariantId, product, autoVariant]);
 
   useEffect(() => {
     if (!open) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Plus, ShieldCheck, Star, X } from "lucide-react";
+import { Check, ChevronDown, ShieldCheck, Star, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";
@@ -45,7 +45,6 @@ const BENEFITS = [
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";
-const MAX_EXTRAS = 2;
 
 const SYSTEM_LABELS: Record<SizeSystem, string> = {
   usW: "Women's US",
@@ -180,8 +179,6 @@ export function InsoleUpsellModal({
 
   const heroImage = GALLERY[activeImg].src;
   const isMulti = shoeSelections.length > 1 || rows.length > 1;
-  const extrasCount = rows.filter((r) => r.sourcePairIndex === null).length;
-  const canAddExtra = extrasCount < MAX_EXTRAS;
 
   const handleDecline = () => {
     if (!armed) return;
@@ -192,10 +189,7 @@ export function InsoleUpsellModal({
     onAccept(
       resolvedRows.map(({ row, variant }) => ({
         variant,
-        label:
-          row.sourcePairIndex === null
-            ? "Extra"
-            : `Pair ${row.sourcePairIndex + 1}`,
+        label: `Pair ${(row.sourcePairIndex ?? 0) + 1}`,
       })),
     );
   };
@@ -203,19 +197,6 @@ export function InsoleUpsellModal({
   const setRowVariant = (key: string, variantId: string) => {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, variantId } : r)));
     setOpenPickerKey(null);
-  };
-
-  const addExtra = () => {
-    const seedId = rows[0]?.variantId ?? product.variants[0]?.id;
-    if (!seedId) return;
-    const newRow: Row = { key: nextKey(), sourcePairIndex: null, variantId: seedId };
-    setRows((prev) => [...prev, newRow]);
-    setOpenPickerKey(newRow.key);
-  };
-
-  const removeExtra = (key: string) => {
-    setRows((prev) => prev.filter((r) => r.key !== key));
-    setOpenPickerKey((k) => (k === key ? null : k));
   };
 
   return (
@@ -382,22 +363,15 @@ export function InsoleUpsellModal({
                 </div>
               )}
 
-              {resolvedRows.map(({ row, variant }, idx) => {
+              {resolvedRows.map(({ row, variant }) => {
                 const isOpen = openPickerKey === row.key;
                 const sourcePair =
                   row.sourcePairIndex === null ? null : shoeSelections[row.sourcePairIndex];
                 const rowLabel = isMulti
-                  ? row.sourcePairIndex === null
-                    ? "Extra pair"
-                    : `Pair ${row.sourcePairIndex + 1}${sourcePair?.color ? ` · ${sourcePair.color}` : ""}`
+                  ? `Pair ${(row.sourcePairIndex ?? 0) + 1}`
                   : SYSTEM_LABELS[system];
                 const sizeText = valueFor(parseShopifySize(variant.title), system);
-                const hint =
-                  row.sourcePairIndex === null
-                    ? "Tap to pick size"
-                    : sourcePair?.size
-                      ? "Auto-matched · trim-to-fit"
-                      : "Pick size";
+                const hint = sourcePair?.size ? "Matched to your shoe size" : "Pick size";
                 return (
                   <div key={row.key}>
                     <div className="flex items-stretch gap-1.5">
@@ -436,16 +410,6 @@ export function InsoleUpsellModal({
                           />
                         </span>
                       </button>
-                      {row.sourcePairIndex === null && (
-                        <button
-                          type="button"
-                          onClick={() => removeExtra(row.key)}
-                          aria-label="Remove extra pair"
-                          className="flex w-9 shrink-0 items-center justify-center rounded-xl border border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-mute))] transition-colors hover:border-[hsl(var(--save-red))] hover:text-[hsl(var(--save-red))]"
-                        >
-                          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        </button>
-                      )}
                     </div>
 
                     {isOpen && (
@@ -478,16 +442,6 @@ export function InsoleUpsellModal({
                 );
               })}
 
-              {canAddExtra && (
-                <button
-                  type="button"
-                  onClick={addExtra}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[hsl(var(--hairline))] bg-transparent px-3 py-1.5 text-[11.5px] font-bold text-[hsl(var(--text-mute))] transition-colors hover:border-[hsl(var(--save-red))] hover:text-[hsl(var(--save-red))]"
-                >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  Add another pair
-                </button>
-              )}
             </div>
 
             {/* Primary CTA */}

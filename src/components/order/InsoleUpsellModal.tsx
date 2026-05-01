@@ -9,6 +9,7 @@ import { pickInsoleVariantForSize, type ShopifyProductData, type ShopifyVariant 
 import { parseShopifySize, type SizeRow } from "@/data/sizeChart";
 import { useGeo } from "@/hooks/useGeo";
 import { defaultSizeSystem, regionFor, type SizeSystem } from "@/lib/geo";
+import { SIZE_SYSTEM_CHANGE_EVENT } from "./SizeTileGrid";
 import { cn } from "@/lib/utils";
 
 import heroPoster from "@/assets/insole/hero-orange-action.png";
@@ -108,10 +109,28 @@ export function InsoleUpsellModal({
   const [openPickerKey, setOpenPickerKey] = useState<string | null>(null);
 
   // Match the size system the customer selected on the shoe step.
-  const system: SizeSystem = useMemo(
+  // Reactive: re-read when the modal opens, when geo arrives, and when the
+  // shoe step broadcasts a change (or another tab updates localStorage).
+  const [system, setSystem] = useState<SizeSystem>(
     () => readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)),
-    [country?.code],
   );
+
+  useEffect(() => {
+    if (open) {
+      setSystem(readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)));
+    }
+  }, [open, country?.code]);
+
+  useEffect(() => {
+    const refresh = () =>
+      setSystem(readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)));
+    window.addEventListener(SIZE_SYSTEM_CHANGE_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(SIZE_SYSTEM_CHANGE_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, [country?.code]);
 
   // Build initial rows whenever the modal opens or the shoe selections change.
   useEffect(() => {

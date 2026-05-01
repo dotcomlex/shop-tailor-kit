@@ -13,6 +13,7 @@ interface SizeTileGridProps {
 }
 
 const STORAGE_KEY = "vitalwalk_size_system";
+export const SIZE_SYSTEM_CHANGE_EVENT = "vitalwalk:size-system-change";
 
 const SYSTEM_OPTIONS: Array<{ id: SizeSystem; label: string; short: string }> = [
   { id: "usW", label: "Women's US", short: "W US" },
@@ -45,6 +46,7 @@ function writeStoredSystem(s: SizeSystem) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(STORAGE_KEY, s);
+    window.dispatchEvent(new CustomEvent(SIZE_SYSTEM_CHANGE_EVENT, { detail: s }));
   } catch {
     /* noop */
   }

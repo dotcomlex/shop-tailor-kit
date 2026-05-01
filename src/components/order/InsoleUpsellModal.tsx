@@ -187,7 +187,7 @@ export function InsoleUpsellModal({
   );
   const totalSaved = Math.max(0, totalCompare - totalPrice);
 
-  const heroImage = GALLERY[activeImg].src;
+  const activeItem = GALLERY[activeImg];
   const isMulti = shoeSelections.length > 1 || rows.length > 1;
 
   const handleDecline = () => {

@@ -385,6 +385,11 @@ export function InsoleUpsellModal({
               ))}
             </ul>
 
+            {/* Subtle reassurance */}
+            <p className="mt-2 text-center text-[10.5px] text-[hsl(var(--text-mute))]">
+              ✂ Trim-to-fit · works in any shoe
+            </p>
+
             {/* Per-pair insole sizes */}
             <div className="mt-3 space-y-1.5">
               {isMulti && (

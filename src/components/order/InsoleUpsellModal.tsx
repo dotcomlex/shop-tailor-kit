@@ -78,11 +78,18 @@ export function InsoleUpsellModal({
   onDecline,
 }: InsoleUpsellModalProps) {
   const autoVariant = pickInsoleVariantForSize(product, shoeSize);
+  const { country } = useGeo();
   const viewFiredRef = useRef(false);
   const [armed, setArmed] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [overrideVariantId, setOverrideVariantId] = useState<string | null>(null);
   const [sizePickerOpen, setSizePickerOpen] = useState(false);
+
+  // Match the size system the customer selected on the shoe step.
+  const system: SizeSystem = useMemo(
+    () => readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)),
+    [country?.code],
+  );
 
   // Reset override + auto-match every time the modal reopens or shoe size changes.
   useEffect(() => {

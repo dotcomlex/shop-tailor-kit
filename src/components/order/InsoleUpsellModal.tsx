@@ -265,31 +265,56 @@ export function InsoleUpsellModal({
             <div className="flex gap-3">
               <div className="shrink-0">
                 <div className="aspect-square h-[160px] w-[160px] overflow-hidden rounded-2xl bg-[hsl(24_100%_50%)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.3)]">
-                  <img
-                    src={heroImage}
-                    alt={GALLERY[activeImg].alt}
-                    className="h-full w-full object-cover transition-opacity duration-200"
-                    loading="eager"
-                  />
+                  {activeItem.kind === "video" ? (
+                    <video
+                      key={activeItem.src}
+                      src={activeItem.src}
+                      poster={activeItem.poster}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                      disableRemotePlayback
+                      className="h-full w-full object-cover"
+                      aria-label={activeItem.alt}
+                    />
+                  ) : (
+                    <img
+                      src={activeItem.src}
+                      alt={activeItem.alt}
+                      className="h-full w-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  )}
                 </div>
                 {/* Thumbnails under hero */}
                 <div className="mt-1.5 flex justify-between gap-1">
-                  {GALLERY.map((g, i) => (
-                    <button
-                      key={g.src}
-                      type="button"
-                      onClick={() => setActiveImg(i)}
-                      aria-label={`View image ${i + 1}`}
-                      className={cn(
-                        "h-8 w-8 overflow-hidden rounded-md border transition-all",
-                        i === activeImg
-                          ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
-                          : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
-                      )}
-                    >
-                      <img src={g.src} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    </button>
-                  ))}
+                  {GALLERY.map((g, i) => {
+                    const thumbSrc = g.kind === "video" ? g.poster : g.src;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveImg(i)}
+                        aria-label={`View ${g.alt}`}
+                        className={cn(
+                          "relative h-7 w-7 overflow-hidden rounded-md border transition-all",
+                          i === activeImg
+                            ? "border-[hsl(var(--save-red))] ring-1 ring-[hsl(var(--save-red))]"
+                            : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
+                        )}
+                      >
+                        <img src={thumbSrc} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                        {g.kind === "video" && (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                            <span className="block h-0 w-0 border-y-[4px] border-l-[6px] border-y-transparent border-l-white" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

@@ -17,6 +17,11 @@ export const VITALWALK_PRODUCT_HANDLES = {
   3: "vitalwalk®-shoes-3-pair-bundle",
 } as const;
 
+// VitalWalk Orthopedic Massage Insoles — used as the post-cart upsell.
+// Single product; we always pick the first available variant so the modal
+// stays a one-tap "Yes" with zero size/color picking required.
+export const INSOLE_PRODUCT_HANDLE = "insoles";
+
 // Backwards-compatible alias used elsewhere in the app for the 1-pair product
 // (it's still the source of truth for color/size option values + imagery).
 export const VITALWALK_PRODUCT_HANDLE = VITALWALK_PRODUCT_HANDLES[1];

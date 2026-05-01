@@ -336,11 +336,11 @@ export function InsoleUpsellModal({
                 </div>
 
                 <DialogPrimitive.Title asChild>
-                  <h2 className="mt-1 text-balance text-[16px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="mt-1 text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Orthopedic Massage Insoles
                   </h2>
                 </DialogPrimitive.Title>
-                <p className="mt-0.5 text-[11.5px] leading-snug text-[hsl(var(--text-mute))]">
+                <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
                   Slip them in for instant arch support &amp; all-day relief.
                 </p>
 

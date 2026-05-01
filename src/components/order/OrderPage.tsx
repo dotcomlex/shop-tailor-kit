@@ -24,6 +24,7 @@ export function OrderPage() {
   const queryClient = useQueryClient();
   const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
+  const { data: insoleProduct } = useInsoleProduct();
   const { country } = useGeo();
 
   // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and
@@ -33,6 +34,7 @@ export function OrderPage() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
   const viewContentFiredRef = useRef(false);
   const addToCartFiredRef = useRef(false);
 

@@ -40,6 +40,35 @@ const BENEFITS = [
   "Fits perfectly inside your VitalWalk shoes",
 ];
 
+const SIZE_STORAGE_KEY = "vitalwalk_size_system";
+
+const SYSTEM_LABELS: Record<SizeSystem, string> = {
+  usW: "Women's US",
+  usM: "Men's US",
+  uk: "UK",
+  eu: "EU",
+};
+
+function readStoredSystem(): SizeSystem | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.localStorage.getItem(SIZE_STORAGE_KEY);
+    if (v === "usW" || v === "usM" || v === "uk" || v === "eu") return v;
+  } catch {
+    /* noop */
+  }
+  return null;
+}
+
+function valueFor(parsed: SizeRow, system: SizeSystem): string {
+  switch (system) {
+    case "usW": return parsed.usW;
+    case "usM": return parsed.usM;
+    case "uk": return parsed.uk;
+    case "eu": return parsed.eu;
+  }
+}
+
 export function InsoleUpsellModal({
   open,
   product,

@@ -382,22 +382,15 @@ export function InsoleUpsellModal({
                 </div>
               )}
 
-              {resolvedRows.map(({ row, variant }, idx) => {
+              {resolvedRows.map(({ row, variant }) => {
                 const isOpen = openPickerKey === row.key;
                 const sourcePair =
                   row.sourcePairIndex === null ? null : shoeSelections[row.sourcePairIndex];
                 const rowLabel = isMulti
-                  ? row.sourcePairIndex === null
-                    ? "Extra pair"
-                    : `Pair ${row.sourcePairIndex + 1}${sourcePair?.color ? ` · ${sourcePair.color}` : ""}`
+                  ? `Pair ${(row.sourcePairIndex ?? 0) + 1}`
                   : SYSTEM_LABELS[system];
                 const sizeText = valueFor(parseShopifySize(variant.title), system);
-                const hint =
-                  row.sourcePairIndex === null
-                    ? "Tap to pick size"
-                    : sourcePair?.size
-                      ? "Auto-matched · trim-to-fit"
-                      : "Pick size";
+                const hint = sourcePair?.size ? "Matched to your shoe size" : "Pick size";
                 return (
                   <div key={row.key}>
                     <div className="flex items-stretch gap-1.5">

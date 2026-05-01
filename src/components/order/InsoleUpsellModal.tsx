@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, ShieldCheck, Star, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ShieldCheck, Star, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";
@@ -444,31 +444,34 @@ export function InsoleUpsellModal({
 
             </div>
 
+            {/* Savings line — sits directly above the CTA so it's the last thing the eye catches */}
+            {totalSaved > 0 && (
+              <p className="mt-3 mb-1 text-center text-[11px] font-extrabold uppercase tracking-wider text-[hsl(var(--verified-green))]">
+                You save {formatMoney(totalSaved, currency)} on insoles
+              </p>
+            )}
+
             {/* Primary CTA */}
-            <div className="mt-3">
+            <div className={cn(totalSaved > 0 ? "mt-0" : "mt-3")}>
               <YellowCta
                 label={`Yes, Add for ${formatMoney(totalPrice, currency)}`}
                 onClick={handleAccept}
               />
-              {totalSaved > 0 && (
-                <p className="mt-1 text-center text-[10.5px] font-semibold text-[hsl(var(--verified-green))]">
-                  You save {formatMoney(totalSaved, currency)} on insoles
-                </p>
-              )}
             </div>
 
             {/* Trust + decline */}
             <div className="mt-2 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))]">
               <ShieldCheck className="h-3 w-3" strokeWidth={2.5} />
-              <span>Same shipping · 60-day money-back guarantee</span>
+              <span>Free shipping · 60-day money-back guarantee</span>
             </div>
 
             <button
               type="button"
               onClick={handleDecline}
-              className="mt-1.5 block w-full text-center text-[11.5px] font-medium text-[hsl(var(--text-mute))] underline-offset-4 transition-colors hover:text-[hsl(var(--text-body))] hover:underline"
+              className="mt-1.5 flex w-full items-center justify-center gap-1 text-center text-[11.5px] font-medium text-[hsl(var(--text-mute))] underline-offset-4 transition-colors hover:text-[hsl(var(--text-body))] hover:underline"
             >
-              No thanks, continue without insoles
+              <span>No thanks, continue without insoles</span>
+              <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
             </button>
           </div>
         </DialogPrimitive.Content>

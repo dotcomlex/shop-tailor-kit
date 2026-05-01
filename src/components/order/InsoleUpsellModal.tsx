@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Plus, ShieldCheck, Star, X } from "lucide-react";
+import { Check, ChevronDown, ShieldCheck, Star, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";

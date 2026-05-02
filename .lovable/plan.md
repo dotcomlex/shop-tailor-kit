@@ -1,98 +1,30 @@
-# Harden upsell size-system sync + final triple-check QA
+## Goal
+Add half-size variants to the **VitalWalk Orthopedic Massage Insoles** product in Shopify so the upsell modal can match the shopper's exact shoe size (e.g. US M 10.5) instead of rounding down to the nearest whole size.
 
-The "EU instead of M US" symptom you saw is most likely a stale browser cache, but the underlying code does have a real fragility that could reproduce it under the right conditions. I want to fix that root cause and then walk the whole funnel one more time.
+## Why
+Today the insole product only carries whole sizes. The matcher in `pickInsoleVariantForSize` (src/lib/shopify.ts) falls back to nearest-neighbor and rounds DOWN on ties, so a shopper selecting **US M 10.5** sees a **US M 10** insole in the modal. Adding the half sizes makes the displayed size match the selection 1:1.
 
-## Why it can still happen (root cause)
+## Steps
 
-In `src/components/order/InsoleUpsellModal.tsx` (lines 111–114):
+1. **Inspect current insole variants** — pull the `insoles` product from Shopify to confirm the existing size labels and the exact label format (e.g. `US W 10 / US M 9 / UK 8 / EU 41`). This becomes the template for the new half-size labels.
 
-```tsx
-const system: SizeSystem = useMemo(
-  () => readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)),
-  [country?.code],
-);
-```
+2. **Cross-reference shoe size chart** — check `src/data/sizeChart.ts` and the shoe product's size option values to get the canonical set of half-size labels we need to mirror (every half size that exists on the shoe product but not on the insole).
 
-`system` is captured once when the modal first mounts (as part of the order page) and only refreshes if `country?.code` changes. If a non-US shopper lands first → modal mounts with `system = "eu"` → they later switch to **M US** in the shoe step → `SizeTileGrid.writeStoredSystem` updates localStorage but never broadcasts → the modal still renders **EU** on open.
+3. **Create the missing half-size variants in Shopify** via `shopify--create_product_variant`, one per missing size, using:
+   - Same price as the existing whole-size variants ($7.95)
+   - Same compare-at price ($19.99)
+   - Same inventory policy / fulfillment as existing variants
+   - Size label following the exact format of the existing variants (just with the .5 sizes filled in)
 
-## Fix
+4. **Verify the matcher picks them correctly** — no code change should be required, because `pickInsoleVariantForSize` already does exact-token matching first (US W / US M / UK). Once the .5 variants exist, exact match wins and rounding is no longer triggered. I'll spot-check by re-reading the matcher logic against the new variant labels.
 
-### 1. `src/components/order/SizeTileGrid.tsx` — broadcast changes
-Dispatch a custom event whenever the user picks a system so other components in the same tab can react:
+5. **Quick smoke test** — confirm in the live preview that selecting US M 10.5 on the shoe step now shows a 10.5 insole in the upsell modal at $7.95.
 
-```tsx
-export const SIZE_SYSTEM_CHANGE_EVENT = "vitalwalk:size-system-change";
+## Technical notes
+- No frontend code changes expected — the matcher is already half-size aware (it parses floats).
+- No migration / no Lovable Cloud changes.
+- Pricing/compare-at is managed entirely in Shopify; the modal reads it live via the Storefront API with `@inContext(country:)` so multi-currency stays intact.
+- If any existing whole-size variant is set up with `inventory_management: "shopify"`, new variants will start at 0 stock — I'll flag this so you can bulk-set inventory in Shopify admin if needed.
 
-function writeStoredSystem(s: SizeSystem) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, s);
-    window.dispatchEvent(new CustomEvent(SIZE_SYSTEM_CHANGE_EVENT, { detail: s }));
-  } catch { /* noop */ }
-}
-```
-
-### 2. `src/components/order/InsoleUpsellModal.tsx` — make `system` reactive
-Replace the frozen `useMemo` with state that:
-- Re-reads localStorage every time the modal opens.
-- Subscribes to the broadcast event (and cross-tab `storage` events).
-- Falls back to the geo default only when nothing is stored.
-
-```tsx
-const [system, setSystem] = useState<SizeSystem>(
-  () => readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)),
-);
-
-useEffect(() => {
-  if (open) {
-    setSystem(readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)));
-  }
-}, [open, country?.code]);
-
-useEffect(() => {
-  const refresh = () =>
-    setSystem(readStoredSystem() ?? defaultSizeSystem(regionFor(country?.code)));
-  window.addEventListener(SIZE_SYSTEM_CHANGE_EVENT, refresh);
-  window.addEventListener("storage", refresh);
-  return () => {
-    window.removeEventListener(SIZE_SYSTEM_CHANGE_EVENT, refresh);
-    window.removeEventListener("storage", refresh);
-  };
-}, [country?.code]);
-```
-
-This guarantees the modal's header label, per-pair size text, and the expanded size grid all render in whatever system the customer is actively using on the shoe step — every time, regardless of geo or load order.
-
-## Triple-check QA pass (after the fix)
-
-Walked end-to-end on both an EU geo and a US geo, mobile + desktop:
-
-**Size system sync**
-- Switch through W US → M US → UK → EU on the shoe step.
-- Open the upsell modal each time and confirm:
-  - Header reads the matching system label (e.g. "Insole sizes · Men's US").
-  - Per-pair tile shows the size in that system (e.g. `10` for M US, not `42.5` or `7.5`).
-  - Expanded grid lists sizes in that system, sorted ascending (5, 5.5, 6, …).
-- The Shopify variant actually selected stays correct regardless of display system (matching is on the underlying variant, labels are purely cosmetic).
-
-**Currency parity (full funnel)**
-- Order page shoe price, savings hero, sticky checkout bar, upsell modal unit price + compare-at + "You save …" line + CTA total, and the final Shopify checkout total all match in the detected currency (USD on this preview, plus a spot-check on EUR and GBP).
-
-**Checkout integrity**
-- Cart is created via Storefront API `cartCreate` (no manual permalinks).
-- Generated checkout URL carries `channel=online_store`.
-- Opens in a new tab via `window.open(url, '_blank')`.
-- Final Shopify total = shoes + insoles (when accepted), shoes only (when declined).
-
-**Modal mechanics**
-- Hero video autoplays muted/looped on open.
-- Decline link is delayed until `armed` (no accidental dismissal).
-- Selected variant persists when switching size system mid-flow.
-- ESC / outside-click are blocked until `armed`.
-
-## Files touched
-
-- `src/components/order/SizeTileGrid.tsx` — broadcast custom event on system change.
-- `src/components/order/InsoleUpsellModal.tsx` — reactive `system` state + listeners.
-
-No schema changes, no new dependencies.
+## Open question
+Before I create the variants I'll list the exact set of new sizes (e.g. "US M 7.5, 8.5, 9.5, 10.5, 11.5, 12.5") so you can confirm the range before I push them to your live store.

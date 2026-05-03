@@ -116,12 +116,12 @@ const TIME_PHRASES = [
 
 const SESSION_COUNT_KEY = "vw_purchase_toast_count";
 const SESSION_DISMISSED_KEY = "vw_purchase_toast_dismissed";
-const MAX_PER_SESSION = 4;
-const FIRST_DELAY_MIN = 25_000;
-const FIRST_DELAY_MAX = 40_000;
-const NEXT_DELAY_MIN = 50_000;
-const NEXT_DELAY_MAX = 95_000;
-const VISIBLE_MS = 6_000;
+const MAX_PER_SESSION = 5;
+const FIRST_DELAY_MIN = 8_000;
+const FIRST_DELAY_MAX = 15_000;
+const NEXT_DELAY_MIN = 22_000;
+const NEXT_DELAY_MAX = 40_000;
+const VISIBLE_MS = 5_500;
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];

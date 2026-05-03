@@ -114,9 +114,7 @@ const TIME_PHRASES = [
   "12 min ago",
 ];
 
-const SESSION_COUNT_KEY = "vw_purchase_toast_count";
-const SESSION_DISMISSED_KEY = "vw_purchase_toast_dismissed";
-const MAX_PER_SESSION = 5;
+const MAX_PER_PAGEVIEW = 6;
 const FIRST_DELAY_MIN = 8_000;
 const FIRST_DELAY_MAX = 15_000;
 const NEXT_DELAY_MIN = 22_000;
@@ -148,20 +146,10 @@ export function RecentPurchaseToasts({ paused }: RecentPurchaseToastsProps) {
   const { country } = useGeo();
   const [active, setActive] = useState<ActiveToast | null>(null);
   const idRef = useRef(0);
+  const countRef = useRef(0);
   const showTimerRef = useRef<number | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const dismissedRef = useRef(false);
-
-  // Seed dismissed flag once on mount (client-only).
-  useEffect(() => {
-    try {
-      dismissedRef.current =
-        typeof window !== "undefined" &&
-        sessionStorage.getItem(SESSION_DISMISSED_KEY) === "1";
-    } catch {
-      /* noop */
-    }
-  }, []);
 
   useEffect(() => {
     const clearTimers = () => {
@@ -185,13 +173,7 @@ export function RecentPurchaseToasts({ paused }: RecentPurchaseToastsProps) {
 
       showTimerRef.current = window.setTimeout(() => {
         if (dismissedRef.current) return;
-        let count = 0;
-        try {
-          count = parseInt(sessionStorage.getItem(SESSION_COUNT_KEY) ?? "0", 10);
-        } catch {
-          /* noop */
-        }
-        if (count >= MAX_PER_SESSION) return;
+        if (countRef.current >= MAX_PER_PAGEVIEW) return;
 
         const pool = POOLS[country.code];
         const entry = pick(pool.pool);
@@ -205,21 +187,11 @@ export function RecentPurchaseToasts({ paused }: RecentPurchaseToastsProps) {
           emoji: prod.emoji,
           time: pick(TIME_PHRASES),
         });
-        try {
-          sessionStorage.setItem(SESSION_COUNT_KEY, String(count + 1));
-        } catch {
-          /* noop */
-        }
+        countRef.current += 1;
 
         hideTimerRef.current = window.setTimeout(() => {
           setActive(null);
-          let c = 0;
-          try {
-            c = parseInt(sessionStorage.getItem(SESSION_COUNT_KEY) ?? "0", 10);
-          } catch {
-            /* noop */
-          }
-          if (!dismissedRef.current && c < MAX_PER_SESSION) {
+          if (!dismissedRef.current && countRef.current < MAX_PER_PAGEVIEW) {
             scheduleNext(false);
           }
         }, VISIBLE_MS);
@@ -232,11 +204,6 @@ export function RecentPurchaseToasts({ paused }: RecentPurchaseToastsProps) {
 
   const handleDismiss = () => {
     dismissedRef.current = true;
-    try {
-      sessionStorage.setItem(SESSION_DISMISSED_KEY, "1");
-    } catch {
-      /* noop */
-    }
     setActive(null);
   };
 

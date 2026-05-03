@@ -19,6 +19,7 @@ import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 import { InsoleUpsellModal } from "./InsoleUpsellModal";
+import { RecentPurchaseToasts } from "./RecentPurchaseToasts";
 
 export function OrderPage() {
   const queryClient = useQueryClient();
@@ -412,6 +413,8 @@ export function OrderPage() {
         onAccept={handleUpsellAccept}
         onDecline={handleUpsellDecline}
       />
+
+      <RecentPurchaseToasts paused={currentStep >= 3} />
     </div>
   );
 }

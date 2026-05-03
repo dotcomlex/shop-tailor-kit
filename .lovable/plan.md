@@ -1,28 +1,38 @@
-## Goal
-Make the recent-purchase toasts feel more alive by showing the first one sooner and shortening the gap between toasts — without crossing into spammy territory.
+## Problem
 
-## Change
+The toasts "stop working" after a bit of testing because two pieces of state live in `sessionStorage` and survive every page reload inside the same tab:
 
-**Edit** `src/components/order/RecentPurchaseToasts.tsx` — adjust the timing constants only. No UI, no logic changes.
+1. **`vw_purchase_toast_count`** — once it reaches the per-session cap (currently 5), no more toasts ever fire until the tab is closed.
+2. **`vw_purchase_toast_dismissed`** — once you click the ✕ a single time, toasts are silenced for the rest of the tab session, even after a hard refresh.
 
-| Constant | Current | New |
-|---|---|---|
-| `FIRST_DELAY_MIN` | 25s | **8s** |
-| `FIRST_DELAY_MAX` | 40s | **15s** |
-| `NEXT_DELAY_MIN` | 50s | **22s** |
-| `NEXT_DELAY_MAX` | 95s | **40s** |
-| `VISIBLE_MS` | 6s | **5.5s** (slightly snappier) |
-| `MAX_PER_SESSION` | 4 | **5** (one extra, since they cycle faster) |
+That matches what we just saw: one toast appeared, you dismissed it, refreshed the page, and nothing came back.
 
-## Result
-- First toast: ~8–15s after page load (was 25–40s).
-- Following toasts: every ~22–40s (was 50–95s).
-- Still capped per session, still dismissible, still hidden on Step 3, still geo-aware to US/UK/AU/CA only.
+## Fix
 
-## What I will NOT change
-- Pool content, copy, icons, placement, animation
-- Geo gating
-- Dismiss / sessionStorage behavior
-- Step 3 pause
+Switch both counters from `sessionStorage` to in-memory refs scoped to the component mount. They still cap a single page view (so we can never spam) but reset cleanly on every reload — which is the behavior we actually want for a landing page funnel.
 
-If after testing it still feels slow (or now too fast), we can dial these numbers again — they're the only knobs that need to move.
+### Edit `src/components/order/RecentPurchaseToasts.tsx`
+
+- Remove `SESSION_COUNT_KEY`, `SESSION_DISMISSED_KEY`, and `MAX_PER_SESSION`.
+- Add `MAX_PER_PAGEVIEW = 6`.
+- Replace the `sessionStorage` reads/writes for the count with a `countRef = useRef(0)`.
+- The dismissed-flag already uses a ref (`dismissedRef`) — just stop seeding it from `sessionStorage` and stop persisting it. Dismiss now means "silence for this page view only".
+- Keep timing as-is (8–15s first, 22–40s subsequent, 5.5s visible).
+
+### Sanity-test plan after the change
+
+1. Hard refresh the order page → first toast appears within ~15s.
+2. Wait → 2nd toast appears within ~40s. Continue until cap (6).
+3. Dismiss one → no more toasts on that page view.
+4. Refresh → toasts work again from scratch (this is the regression we're fixing).
+5. Switch to `?country=DE` → no toasts (out-of-market gating still correct).
+6. Advance to Step 3 → toasts paused (still correct).
+
+## What stays the same
+
+- Geo gating to US/UK/AU/CA only
+- Bottom-left placement, animation, copy, icons
+- Pause on Step 3
+- Dismiss button behavior within the page view
+
+No other files change.

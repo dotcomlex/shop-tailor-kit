@@ -114,9 +114,7 @@ const TIME_PHRASES = [
   "12 min ago",
 ];
 
-const SESSION_COUNT_KEY = "vw_purchase_toast_count";
-const SESSION_DISMISSED_KEY = "vw_purchase_toast_dismissed";
-const MAX_PER_SESSION = 5;
+const MAX_PER_PAGEVIEW = 6;
 const FIRST_DELAY_MIN = 8_000;
 const FIRST_DELAY_MAX = 15_000;
 const NEXT_DELAY_MIN = 22_000;

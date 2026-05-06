@@ -144,6 +144,18 @@ const ALL_BUNDLES_QUERY = /* GraphQL */ `
   }
 `;
 
+// Fallback without @inContext — used when a bundle isn't included in the
+// customer's Market catalog and the localized query returns null. Prices
+// come back in the shop's base currency (USD) but the card renders.
+const ALL_BUNDLES_QUERY_NO_CONTEXT = /* GraphQL */ `
+  ${PRODUCT_FIELDS}
+  query AllBundlesNoContext($h1: String!, $h2: String!, $h3: String!) {
+    p1: product(handle: $h1) { ...ProductFields }
+    p2: product(handle: $h2) { ...ProductFields }
+    p3: product(handle: $h3) { ...ProductFields }
+  }
+`;
+
 interface RawProduct {
   id: string;
   handle: string;

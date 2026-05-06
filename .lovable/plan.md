@@ -1,26 +1,28 @@
-## Why prices are missing
+## What's actually broken
 
-The Quantity Step renders skeleton bars for the 2-Pair and 3-Pair cards because the Storefront API returns `null` for those two bundle products when queried with `@inContext(country: "US")`:
+The 2-Pair and 3-Pair bundle prices on the Quantity Step show as gray skeleton bars because the Storefront API returns `null` for those two products when queried with `@inContext(country: "US")`. The 1-Pair product is in the US Market catalog so it works; the two new bundle products aren't, so `@inContext` filters them out.
 
-- `p1` (1-Pair) → returns data ✅
-- `p2` (2-Pair Bundle) → `null` ❌
-- `p3` (3-Pair Bundle) → `null` ❌
+I confirmed via direct API call:
+- WITH `@inContext(country: US)` → `p2: null`, `p3: null`
+- WITHOUT `@inContext` → both products return correctly with prices ($58.29, $46.62)
 
-A direct query without `@inContext` returns the products, so they exist and are `active`. The `@inContext` directive enforces sales-channel publication — meaning the new bundle products were created but **not published to the "Headless / Online Store" sales channel** that the storefront token reads from. The 1-Pair product was published correctly, the new bundles were not.
+Cart/checkout still works because cart mutations don't apply the same Market filter.
 
-In `QuantityStep.tsx`, `readLocalizedTotals(bundles?.[opt.qty], ...)` returns `null` whenever the product is null, so `totalFormatted` / `compareFormatted` are empty and the fallback skeleton placeholders render instead of prices.
+## Fix (code only — no Shopify admin changes needed)
 
-## Fix
+Edit `src/lib/shopify.ts`, function `fetchVitalWalkBundles`:
 
-Republish the two new bundle products to the active sales channels via the Shopify admin tool, so the Storefront API can see them under `@inContext`.
+1. Run the existing `@inContext` query first (so localized currency keeps working when the product IS in the Market).
+2. If any of `p1`/`p2`/`p3` come back `null`, run a second query WITHOUT `@inContext` and merge in the missing products. Those will be in the shop's base currency (USD), but the price will render correctly instead of a skeleton.
+3. Remove the misleading dev-only "publish to Headless channel" warning I added — the real cause is Market catalog inclusion, not channel publication.
 
-1. Update `VitalWalk® Shoes — 2-Pair Bundle (75% OFF)` (id `10093966917918`) and republish it to all sales channels (online_store + headless).
-2. Update `VitalWalk® Shoes — 3-Pair Bundle (80% OFF)` (id `10093967180062`) the same way.
-3. Re-run the Storefront `AllBundles` query (with `@inContext(country: "US")`) and verify both `p2` and `p3` return non-null with their per-pair prices ($58.29 and $46.62).
-4. Reload the order page — the 2-Pair and 3-Pair cards should display the strikethrough compare price, the bundle total, and the per-pair sub-line.
+## Why this is safe
 
-## Defensive code change
+- 1-Pair product is unaffected — still localized via `@inContext`.
+- Bundle products fall back to USD pricing (which is what they're priced at anyway).
+- Checkout already works; only the display price was broken.
+- No changes to `QuantityStep.tsx`, `OrderPage.tsx`, or any Shopify products required.
 
-To prevent this kind of silent failure from looking like a "broken price" again, also add a small dev-only console warning in `fetchVitalWalkBundles` (in `src/lib/shopify.ts`) when any of `p1`/`p2`/`p3` come back as `null`. This makes future channel-publication issues immediately visible in the console instead of showing as a skeleton.
+## Follow-up (optional, you can do later)
 
-No other code changes are required — the pricing math in `QuantityStep.tsx` and the checkout wiring in `OrderPage.tsx` are correct; they're just being fed `null` for the bundle products.
+To get fully localized pricing on the bundles too, the 2-Pair and 3-Pair products need to be added to the same Market catalog as the 1-Pair product in Shopify admin (Settings → Markets → your active market → Catalog). Not urgent — the fallback handles it.

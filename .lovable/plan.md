@@ -1,38 +1,62 @@
-## Problem
+# Send each pair as its own variant in Shopify
 
-The toasts "stop working" after a bit of testing because two pieces of state live in `sessionStorage` and survive every page reload inside the same tab:
+## What you're seeing today
 
-1. **`vw_purchase_toast_count`** — once it reaches the per-session cap (currently 5), no more toasts ever fire until the tab is closed.
-2. **`vw_purchase_toast_dismissed`** — once you click the ✕ a single time, toasts are silenced for the rest of the tab session, even after a hard refresh.
+When a customer buys a 2-Pair or 3-Pair bundle, Shopify gets **one** line item:
 
-That matches what we just saw: one toast appeared, you dismissed it, refreshed the page, and nothing came back.
+- Variant: just Pair 1's color + size
+- Pair 2 / Pair 3 are written into a **note** at the bottom
 
-## Fix
+Your supplier's system doesn't read the note, so Pairs 2 and 3 are invisible to them.
 
-Switch both counters from `sessionStorage` to in-memory refs scoped to the component mount. They still cap a single page view (so we can never spam) but reset cleanly on every reload — which is the behavior we actually want for a landing page funnel.
+## What I'll change
 
-### Edit `src/components/order/RecentPurchaseToasts.tsx`
+After this fix, a 2-Pair order with Pair 1 = Black / W9 and Pair 2 = Sand / W8 will look like this in Shopify:
 
-- Remove `SESSION_COUNT_KEY`, `SESSION_DISMISSED_KEY`, and `MAX_PER_SESSION`.
-- Add `MAX_PER_PAGEVIEW = 6`.
-- Replace the `sessionStorage` reads/writes for the count with a `countRef = useRef(0)`.
-- The dismissed-flag already uses a ref (`dismissedRef`) — just stop seeding it from `sessionStorage` and stop persisting it. Dismiss now means "silence for this page view only".
-- Keep timing as-is (8–15s first, 22–40s subsequent, 5.5s visible).
+```text
+VitalWalk 2-Pair Bundle — Black / US W 9 / Pair 1     qty 1     $XX.XX
+VitalWalk 2-Pair Bundle — Sand  / US W 8 / Pair 2     qty 1     $0.00
+                                                       Total:    $XX.XX
+```
 
-### Sanity-test plan after the change
+Each pair is its own real variant with its own color and size. The supplier sees them directly — no notes, no setup on their end.
 
-1. Hard refresh the order page → first toast appears within ~15s.
-2. Wait → 2nd toast appears within ~40s. Continue until cap (6).
-3. Dismiss one → no more toasts on that page view.
-4. Refresh → toasts work again from scratch (this is the regression we're fixing).
-5. Switch to `?country=DE` → no toasts (out-of-market gating still correct).
-6. Advance to Step 3 → toasts paused (still correct).
+## Answers to your questions
 
-## What stays the same
+**"Is anything changing in the funnel?"**
+No. The customer sees the exact same thing — same prices, same total, same checkout, same Shopify-hosted payment page. The change is only in how Shopify records the order behind the scenes.
 
-- Geo gating to US/UK/AU/CA only
-- Bottom-left placement, animation, copy, icons
-- Pause on Step 3
-- Dismiss button behavior within the page view
+**"Are the variants going to be Pair 1 and Pair 2?"**
+Yes, exactly. I'll add a simple third option to each bundle product called **"Pair"** with values **"Pair 1"**, **"Pair 2"**, **"Pair 3"**. The customer never sees this option — it's only used by us when building the cart line.
 
-No other files change.
+**"Why did you add the hidden tag?"**
+Removed. Forget it. Not needed.
+
+## The setup, plain and simple
+
+On the **2-Pair Bundle** product:
+- Existing variants stay as they are, just labeled `Pair 1` (full bundle price).
+- I add matching `Pair 2` variants for every color + size, priced **$0.00**.
+
+On the **3-Pair Bundle** product:
+- Existing variants → `Pair 1` (full bundle price).
+- New `Pair 2` and `Pair 3` variants for every color + size, priced **$0.00**.
+
+The 1-Pair product is untouched.
+
+When a 2-pair order goes through:
+- Pair 1 line uses the `Pair 1` variant (carries the full bundle price)
+- Pair 2 line uses the `Pair 2` variant ($0)
+- Total = bundle price ✓
+- Supplier sees both pairs as real variants ✓
+
+## Steps I'll do
+
+1. Read all current variants on the 2-Pair and 3-Pair bundles.
+2. Add the `Pair` option and create the `Pair 2` (and `Pair 3` for the 3-pack) variants at $0 for every color + size.
+3. Update the cart-building code in `OrderPage.tsx` to send one line per pair using these variants.
+4. Keep the customer-side note for backwards readability — but it's no longer the source of truth.
+
+## Quick check after deploy
+
+Place a test 2-pair and a test 3-pair order with **different** colors and sizes per pair. Confirm Shopify shows one line per pair with the right color/size, and the order total matches the bundle price (not 2× or 3×).

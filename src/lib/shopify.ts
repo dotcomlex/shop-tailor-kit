@@ -309,10 +309,11 @@ function projectTier(
   tier: 1 | 2 | 3,
 ): ShopifyProductData | null {
   if (!product) return null;
-  const tierLabel = BUNDLE_TIER_LABEL[tier];
   const tierVariants = product.variants.filter((v) =>
     v.selectedOptions.some(
-      (o) => o.name.replace(/:$/, "").toLowerCase() === "bundle deal" && o.value === tierLabel,
+      (o) =>
+        o.name.replace(/:$/, "").toLowerCase() === "bundle deal" &&
+        tierFromBundleValue(o.value) === tier,
     ),
   );
   const first = tierVariants[0];

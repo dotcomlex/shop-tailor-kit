@@ -396,7 +396,7 @@ export function OrderPage() {
       <main
         className={`container-order flex-1 ${
           currentStep >= 3
-            ? "pt-3 pb-32 sm:pt-4 md:pb-16"
+            ? "pt-3 pb-24 sm:pt-4 md:pb-16"
             : "pt-3 pb-3 sm:pt-4 sm:pb-16"
         }`}
       >
@@ -426,13 +426,14 @@ export function OrderPage() {
                 quantity={quantity}
                 onCheckout={handleCompleteOrderClick}
                 isCheckingOut={isCheckingOut}
+                endRef={footerRef}
               />
             )}
           </div>
         </div>
       </main>
 
-      <footer className="border-t border-[hsl(var(--hairline))] bg-background py-3 sm:py-5">
+      <footer ref={footerRef} className="border-t border-[hsl(var(--hairline))] bg-background py-3 sm:py-5">
         <div className="container-edge text-center text-[12px] text-[hsl(var(--text-mute))]">
           © {new Date().getFullYear()} VitalWalk. All rights reserved.
         </div>

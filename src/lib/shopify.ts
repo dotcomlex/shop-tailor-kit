@@ -339,27 +339,34 @@ export async function fetchVitalWalkBundles(country: string = "US"): Promise<Bun
     country: (country || "US").toUpperCase(),
   });
 
-  const bundles = {
+  const bundles: BundleProducts = {
     1: normalizeProduct(result?.data?.p1 ?? null),
     2: normalizeProduct(result?.data?.p2 ?? null),
     3: normalizeProduct(result?.data?.p3 ?? null),
   };
 
-  // Dev-only safety net: if any bundle product comes back null under
-  // @inContext, it almost always means the product was created in Shopify
-  // admin but never published to the Headless / Online Store sales channel
-  // that this Storefront token reads from. The Quantity Step would
-  // otherwise silently render skeleton bars instead of prices.
-  if (import.meta.env.DEV) {
-    const missing = (Object.entries(bundles) as Array<[string, ShopifyProductData | null]>)
-      .filter(([, v]) => v === null)
-      .map(([k]) => `${k}-pair (${VITALWALK_PRODUCT_HANDLES[Number(k) as 1 | 2 | 3]})`);
-    if (missing.length) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[VitalWalk] Storefront API returned null for: ${missing.join(", ")}. ` +
-          `Publish these products to the Headless / Online Store sales channel in Shopify admin.`,
-      );
+  // If any bundle came back null (most often because it isn't included in
+  // the customer's Market catalog), refetch WITHOUT @inContext and merge
+  // in the missing ones. Falls back to base currency (USD) but ensures
+  // the price always renders instead of a skeleton bar.
+  const missingKeys = ([1, 2, 3] as const).filter((k) => bundles[k] === null);
+  if (missingKeys.length > 0) {
+    const fallback = await storefrontApiRequest<{
+      p1: RawProduct | null;
+      p2: RawProduct | null;
+      p3: RawProduct | null;
+    }>(ALL_BUNDLES_QUERY_NO_CONTEXT, {
+      h1: VITALWALK_PRODUCT_HANDLES[1],
+      h2: VITALWALK_PRODUCT_HANDLES[2],
+      h3: VITALWALK_PRODUCT_HANDLES[3],
+    });
+    const fb = {
+      1: normalizeProduct(fallback?.data?.p1 ?? null),
+      2: normalizeProduct(fallback?.data?.p2 ?? null),
+      3: normalizeProduct(fallback?.data?.p3 ?? null),
+    } as BundleProducts;
+    for (const k of missingKeys) {
+      if (fb[k]) bundles[k] = fb[k];
     }
   }
 

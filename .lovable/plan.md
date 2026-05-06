@@ -1,25 +1,36 @@
-## Goal
-Sync only the **color variant images** (Beige, Gray, Black, Blue) from the 1-pair VitalWalk product onto the 2-pair and 3-pair bundle products. No lifestyle/feature shots.
+## Problem
 
-## Source images (from 1-pair product `10083237298462`)
-1. `vitalwalk_color_1_compressed.jpg` — Beige
-2. `vitalwalk_color_2_compressed.jpg` — Gray
-3. `vitalwalk_color_3_compressed.jpg` — Black
-4. `vitalwalk_color_4_compressed.jpg` — Blue
+Step 3 "You save" shows **73% OFF** for the 2-pair and **75% OFF** for the 3-pair, but Step 1 advertises **75% OFF** and **80% OFF**. The badge and the math don't agree.
 
-## Steps
-1. **Resolve image source.** The Shopify CDN URLs are not directly fetchable by `update_product` (returned `GIT_FILE_UNREADABLE`). Approach: download each of the 4 color JPGs into the project (e.g. `public/shopify-bundle-images/`) via `curl`, then pass those local paths into `shopify--update_product`.
-2. **Update 2-Pair bundle (`10093966917918`)** — call `shopify--update_product` with exactly the 4 color images (alts: Beige / Gray / Black / Blue). This replaces the current empty/default media set.
-3. **Update 3-Pair bundle (`10093967180062`)** — same 4 images, same alts.
-4. **Verify** with `shopify--get_product` on both bundle IDs that exactly 4 images are present and the primary image is the Beige color shot.
-5. **Clean up** the temporary `public/shopify-bundle-images/` folder after Shopify has the assets, so they don't ship in the frontend bundle.
+## Cause
 
-## Important note on checkout thumbnail behavior
-Bundle variants are generic `Pair #1 / #2 / #3` (no Color option on the variant), so Shopify cannot auto-swap the line-item thumbnail to the customer's chosen color. The thumbnail at checkout will show the bundle product's primary image (Beige). The actual color + size chosen for each pair is already passed as **line-item properties** and in the **order note**, so you and your supplier see the correct selections per pair.
+In `OrderPage.tsx`, `bundleCompare` is computed as `1-pair compare-at × pack size` ($199.83 × N). With the new bundle prices ($54.95/pair and $49.99/pair), that formula yields ~73% and ~75% — not the advertised 75%/80%.
 
-If you later want the thumbnail itself to match the chosen color, we'd need to restructure the bundles so each variant is per-color (e.g. `Beige / Gray / Black / Blue` as the variant option) — a separate, larger change.
+`OrderSummary` then derives `savedPct = saved / compare`, so the displayed % is wrong.
 
-## Files / surfaces touched
-- Shopify product `10093966917918` (2-Pair Bundle) — images replaced
-- Shopify product `10093967180062` (3-Pair Bundle) — images replaced
-- No app code changes
+## Fix
+
+In `src/components/order/OrderPage.tsx`, derive `bundleCompare` from the advertised save percentage so the strike-through, the savings amount, and the badge always match:
+
+```ts
+const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.75, 3: 0.80 };
+const pct = SAVE_PCT[quantity] ?? 0;
+const compare = pct > 0 && total > 0 ? total / (1 - pct) : total;
+```
+
+Resulting Step 3 numbers (US):
+
+| Qty | Total | Compare | Saved | % shown |
+|---|---|---|---|---|
+| 1 | $59.95 | $199.83 | $139.88 | 70% OFF |
+| 2 | $109.90 | $439.60 | $329.70 | 75% OFF |
+| 3 | $149.97 | $749.85 | $599.88 | 80% OFF |
+
+This also keeps Step 1 cards consistent — I'll apply the same derivation to `QuantityStep.tsx` `readLocalizedTotals` so the strike on the bundle cards matches Step 3 to the cent.
+
+## Files
+
+- `src/components/order/OrderPage.tsx` — replace `bundleCompare` calc with SAVE_PCT-driven formula.
+- `src/components/order/QuantityStep.tsx` — same change in `readLocalizedTotals` (use SAVE_PCT lookup instead of `onePairRetail × qty`).
+
+No Shopify changes. No other components touched.

@@ -81,9 +81,21 @@ function readLocalizedTotals(
   const perPair = parseFloat(product.priceRange.minVariantPrice.amount);
   if (!Number.isFinite(perPair)) return null;
   const total = perPair * qty;
-  const onePairRetail = onePairProduct
+  // Strike-through baseline = the 1-pair product's REAL compare-at retail
+  // price (e.g. $232.83), multiplied by pack size. This is the "if you
+  // bought them individually at full retail" anchor — the same value the
+  // page used before bundles existed. Falls back to the 1-pair sale price
+  // only if compare-at is missing entirely so we never show a strike below
+  // the real total.
+  const onePairCompareRaw = onePairProduct
+    ? parseFloat(onePairProduct.compareAtPriceRange.minVariantPrice.amount)
+    : NaN;
+  const onePairSale = onePairProduct
     ? parseFloat(onePairProduct.priceRange.minVariantPrice.amount)
     : NaN;
+  const onePairRetail = Number.isFinite(onePairCompareRaw) && onePairCompareRaw > 0
+    ? onePairCompareRaw
+    : onePairSale;
   const compare = Number.isFinite(onePairRetail)
     ? Math.max(total, onePairRetail * qty)
     : total;

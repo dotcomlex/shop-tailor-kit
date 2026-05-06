@@ -1,28 +1,53 @@
-## What's actually broken
+## Plan
 
-The 2-Pair and 3-Pair bundle prices on the Quantity Step show as gray skeleton bars because the Storefront API returns `null` for those two products when queried with `@inContext(country: "US")`. The 1-Pair product is in the US Market catalog so it works; the two new bundle products aren't, so `@inContext` filters them out.
+I’ll restore the compare-price logic so the funnel uses the correct retail baseline again, then I’ll re-audit every pricing surface that depends on it.
 
-I confirmed via direct API call:
-- WITH `@inContext(country: US)` → `p2: null`, `p3: null`
-- WITHOUT `@inContext` → both products return correctly with prices ($58.29, $46.62)
+### What I’ll change
 
-Cart/checkout still works because cart mutations don't apply the same Market filter.
+1. Fix the 1-pair compare price source
+- Update the quantity-step pricing logic so the 1-pair card uses the product’s real compare-at price from Shopify, not the live sale price as the strike-through baseline.
+- This should restore the missing/incorrect struck-through value above the $69.95 option.
 
-## Fix (code only — no Shopify admin changes needed)
+2. Fix bundle compare prices for 2-pair and 3-pair
+- Change bundle compare calculations to derive from the 1-pair retail compare-at amount, multiplied by quantity.
+- Keep the live bundle total based on the real Shopify bundle prices already used for checkout.
+- This should replace the current too-low compare values like $139.90 with the higher retail values you had before.
 
-Edit `src/lib/shopify.ts`, function `fetchVitalWalkBundles`:
+3. Align all downstream pricing surfaces
+- Update any shared order-summary/sticky-checkout calculations that currently use the wrong baseline so Step 1, Step 3, savings, and the sticky bar all agree.
+- Make sure savings percentages are computed from the corrected compare totals.
 
-1. Run the existing `@inContext` query first (so localized currency keeps working when the product IS in the Market).
-2. If any of `p1`/`p2`/`p3` come back `null`, run a second query WITHOUT `@inContext` and merge in the missing products. Those will be in the shop's base currency (USD), but the price will render correctly instead of a skeleton.
-3. Remove the misleading dev-only "publish to Headless channel" warning I added — the real cause is Market catalog inclusion, not channel publication.
+4. Re-verify currency/localization behavior
+- Keep localized sale prices coming from Shopify’s country-aware responses.
+- Verify the compare-price logic uses the matching localized compare-at value when it exists.
+- Preserve the existing fallback behavior for bundle products when a market-localized bundle is unavailable, while avoiding mismatched compare calculations.
 
-## Why this is safe
+5. Final QA pass
+- Recheck:
+  - 1-pair, 2-pair, 3-pair cards
+  - compare price visibility
+  - savings amounts/percentages
+  - Step 3 order summary
+  - sticky checkout bar
+  - pre-checkout price sync behavior
+- If I find any remaining drift between display and checkout, I’ll correct that too.
 
-- 1-Pair product is unaffected — still localized via `@inContext`.
-- Bundle products fall back to USD pricing (which is what they're priced at anyway).
-- Checkout already works; only the display price was broken.
-- No changes to `QuantityStep.tsx`, `OrderPage.tsx`, or any Shopify products required.
+## Technical details
 
-## Follow-up (optional, you can do later)
+Files I expect to update:
+- `src/components/order/QuantityStep.tsx`
+- `src/components/order/OrderPage.tsx`
+- possibly `src/hooks/useVitalWalkProduct.ts` if a shared retail baseline helper is cleaner
 
-To get fully localized pricing on the bundles too, the 2-Pair and 3-Pair products need to be added to the same Market catalog as the 1-Pair product in Shopify admin (Settings → Markets → your active market → Catalog). Not urgent — the fallback handles it.
+Core logic change:
+- Current broken behavior:
+  - bundle compare = 1-pair sale price × quantity
+- Correct behavior:
+  - 1-pair compare = 1-pair compare-at price
+  - 2/3-pair compare = 1-pair compare-at price × quantity
+  - bundle total remains the actual localized Shopify selling price
+
+Expected outcome:
+- 1 Pair shows the correct compare price above `$69.95`
+- 2 Pair and 3 Pair show restored higher compare prices
+- savings and totals remain consistent with checkout and country/currency handling

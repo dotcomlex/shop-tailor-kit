@@ -9,10 +9,8 @@ interface StickyCheckoutBarProps {
   comparePrice?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
-  /** Ref to the main "Complete My Order" CTA — bar shows only when this is off-screen. */
-  observeRef: RefObject<HTMLElement | null>;
-  /** Ref to footer/end-of-content sentinel — bar hides once this enters view. */
-  hideAtRef?: RefObject<HTMLElement | null>;
+  /** Ref to a sentinel near the bottom of the page — bar appears only once this scrolls into view. */
+  showAtRef?: RefObject<HTMLElement | null>;
 }
 
 export function StickyCheckoutBar({
@@ -20,36 +18,25 @@ export function StickyCheckoutBar({
   comparePrice,
   onCheckout,
   isCheckingOut,
-  observeRef,
-  hideAtRef,
+  showAtRef,
 }: StickyCheckoutBarProps) {
   const { format } = useCurrency();
-  const [ctaOffscreen, setCtaOffscreen] = useState(false);
-  const [endReached, setEndReached] = useState(false);
+  const [reachedBottom, setReachedBottom] = useState(false);
 
   useEffect(() => {
-    const el = observeRef.current;
+    const el = showAtRef?.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const obs = new IntersectionObserver(
-      ([entry]) => setCtaOffscreen(!entry.isIntersecting),
-      { threshold: 0, rootMargin: "0px 0px -20px 0px" },
+      ([entry]) => {
+        if (entry.isIntersecting) setReachedBottom(true);
+      },
+      { threshold: 0, rootMargin: "0px 0px -10% 0px" },
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [observeRef]);
+  }, [showAtRef]);
 
-  useEffect(() => {
-    const el = hideAtRef?.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setEndReached(entry.isIntersecting),
-      { threshold: 0 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [hideAtRef]);
-
-  const visible = ctaOffscreen && !endReached;
+  const visible = reachedBottom;
   const showCompare = typeof comparePrice === "number" && comparePrice > total;
   const saved = showCompare ? (comparePrice as number) - total : 0;
 

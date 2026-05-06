@@ -1,62 +1,57 @@
-# Send each pair as its own variant in Shopify
+# Code changes to wire up the new Pair-based bundles
 
-## What you're seeing today
+## What's already done in Shopify ✅
 
-When a customer buys a 2-Pair or 3-Pair bundle, Shopify gets **one** line item:
+- **Old 2-Pair Bundle deleted** (had 80 color/size variants).
+- **New 2-Pair Bundle created** — handle `vitalwalk®-shoes-2-pair-bundle-75-off`, variants:
+  - `Pair #1` — $58.29
+  - `Pair #2` — $58.29
+- **Old 3-Pair Bundle deleted** (had 80 color/size variants).
+- **New 3-Pair Bundle created** — handle `vitalwalk®-shoes-3-pair-bundle-80-off`, variants:
+  - `Pair #1` — $46.62
+  - `Pair #2` — $46.62
+  - `Pair #3` — $46.62
+- 1-Pair product untouched (still drives color/size picker).
 
-- Variant: just Pair 1's color + size
-- Pair 2 / Pair 3 are written into a **note** at the bottom
+## What I need to change in code
 
-Your supplier's system doesn't read the note, so Pairs 2 and 3 are invisible to them.
+### 1. `src/lib/shopify.ts` — point to the new bundle handles
+Update `VITALWALK_PRODUCT_HANDLES`:
+- `2: "vitalwalk®-shoes-2-pair-bundle-75-off"`
+- `3: "vitalwalk®-shoes-3-pair-bundle-80-off"`
 
-## What I'll change
+### 2. `src/lib/shopify.ts` — add a `findPairVariant` helper
+Looks up `Pair #N` by index on a bundle product (since bundles no longer have color/size options).
 
-After this fix, a 2-Pair order with Pair 1 = Black / W9 and Pair 2 = Sand / W8 will look like this in Shopify:
+### 3. `src/components/order/OrderPage.tsx` — rebuild cart lines
+For a 2-pair or 3-pair order, send **one line per pair**:
 
-```text
-VitalWalk 2-Pair Bundle — Black / US W 9 / Pair 1     qty 1     $XX.XX
-VitalWalk 2-Pair Bundle — Sand  / US W 8 / Pair 2     qty 1     $0.00
-                                                       Total:    $XX.XX
+```ts
+Line 1: bundleProduct → "Pair #1" variant, qty 1
+        attributes: Color = Black, Size = US W 9 / US M 8 / UK 7
+Line 2: bundleProduct → "Pair #2" variant, qty 1
+        attributes: Color = Sand,  Size = US W 8 / US M 7 / UK 6
+[Line 3 if 3-pair]
 ```
 
-Each pair is its own real variant with its own color and size. The supplier sees them directly — no notes, no setup on their end.
+For a 1-pair order: unchanged (still uses the 1-pair color/size variant directly).
 
-## Answers to your questions
+### 4. Pricing math — bundle total = per-pair × quantity
+Bundle products' `priceRange.minVariantPrice` is now per-pair, not the full bundle total. Change the total calc in:
+- `OrderPage.tsx` `bundleTotal` — `perPair × quantity`
+- `OrderPage.tsx` price-sync guard — same formula
+- `QuantityStep.tsx` `readLocalizedTotals` — same formula
 
-**"Is anything changing in the funnel?"**
-No. The customer sees the exact same thing — same prices, same total, same checkout, same Shopify-hosted payment page. The change is only in how Shopify records the order behind the scenes.
+Compare-at: per your call, **no compare-at on the Pair variants** (no strikethrough at checkout). For the funnel-side strike-through (Step 1 cards, savings hero, order summary), use the 1-pair product's price × quantity as the "retail" reference (e.g., 2 × $69.95 = $139.90 vs bundle total $116.58).
 
-**"Are the variants going to be Pair 1 and Pair 2?"**
-Yes, exactly. I'll add a simple third option to each bundle product called **"Pair"** with values **"Pair 1"**, **"Pair 2"**, **"Pair 3"**. The customer never sees this option — it's only used by us when building the cart line.
+### 5. Pixel events
+Pair 1's variant ID now points at the new `Pair #1` variant — already handled by passing `pair1Variant.id` through. No code change needed beyond #3.
 
-**"Why did you add the hidden tag?"**
-Removed. Forget it. Not needed.
+## Verification after deploy
 
-## The setup, plain and simple
-
-On the **2-Pair Bundle** product:
-- Existing variants stay as they are, just labeled `Pair 1` (full bundle price).
-- I add matching `Pair 2` variants for every color + size, priced **$0.00**.
-
-On the **3-Pair Bundle** product:
-- Existing variants → `Pair 1` (full bundle price).
-- New `Pair 2` and `Pair 3` variants for every color + size, priced **$0.00**.
-
-The 1-Pair product is untouched.
-
-When a 2-pair order goes through:
-- Pair 1 line uses the `Pair 1` variant (carries the full bundle price)
-- Pair 2 line uses the `Pair 2` variant ($0)
-- Total = bundle price ✓
-- Supplier sees both pairs as real variants ✓
-
-## Steps I'll do
-
-1. Read all current variants on the 2-Pair and 3-Pair bundles.
-2. Add the `Pair` option and create the `Pair 2` (and `Pair 3` for the 3-pack) variants at $0 for every color + size.
-3. Update the cart-building code in `OrderPage.tsx` to send one line per pair using these variants.
-4. Keep the customer-side note for backwards readability — but it's no longer the source of truth.
-
-## Quick check after deploy
-
-Place a test 2-pair and a test 3-pair order with **different** colors and sizes per pair. Confirm Shopify shows one line per pair with the right color/size, and the order total matches the bundle price (not 2× or 3×).
+1. Reload the funnel — Step 1 should show:
+   - 1-Pair: $69.95
+   - 2-Pair: $116.58 (split as $58.29 × 2)
+   - 3-Pair: $139.86 (split as $46.62 × 3)
+2. Place a test 2-pair order with **different** colors/sizes per pair → Shopify order shows two `Pair #` lines, each with the right Color + Size properties, total $116.58.
+3. Same for 3-pair.

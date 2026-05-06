@@ -288,9 +288,10 @@ export function pickInsoleVariant(product: ShopifyProductData | null): ShopifyVa
 }
 
 /**
- * Compatibility shim: returns a `BundleProducts` map where every tier points
- * at the same single product. Lets QuantityStep/OrderPage keep their
- * `bundles[1|2|3]` indexing without tracking a refactor across files.
+ * Compatibility shim: returns a `BundleProducts` map where each tier points
+ * at the same single product, but with `priceRange.minVariantPrice`
+ * rewritten to that tier's per-pair price. Lets QuantityStep/OrderPage keep
+ * their `bundles[1|2|3]` indexing while still showing the right tier price.
  */
 export interface BundleProducts {
   1: ShopifyProductData | null;
@@ -298,10 +299,59 @@ export interface BundleProducts {
   3: ShopifyProductData | null;
 }
 
+function projectTier(
+  product: ShopifyProductData | null,
+  tier: 1 | 2 | 3,
+): ShopifyProductData | null {
+  if (!product) return null;
+  const tierLabel = BUNDLE_TIER_LABEL[tier];
+  const tierVariants = product.variants.filter((v) =>
+    v.selectedOptions.some(
+      (o) => o.name.replace(/:$/, "").toLowerCase() === "bundle deal" && o.value === tierLabel,
+    ),
+  );
+  const first = tierVariants[0];
+  if (!first) return product;
+  return {
+    ...product,
+    priceRange: { minVariantPrice: first.price },
+    compareAtPriceRange: {
+      minVariantPrice: first.compareAtPrice ?? product.compareAtPriceRange.minVariantPrice,
+    },
+  };
+}
+
 export async function fetchVitalWalkBundles(country: string = "US"): Promise<BundleProducts> {
   const product = await fetchVitalWalkProduct(country);
-  return { 1: product, 2: product, 3: product };
+  return {
+    1: projectTier(product, 1),
+    2: projectTier(product, 2),
+    3: projectTier(product, 3),
+  };
 }
+
+/**
+ * Find the variant matching a specific bundle tier + color + size.
+ */
+export function findBundleVariant(
+  product: ShopifyProductData,
+  tier: 1 | 2 | 3,
+  color: string,
+  size: string,
+): ShopifyVariant | undefined {
+  const tierLabel = BUNDLE_TIER_LABEL[tier];
+  return product.variants.find((v) => {
+    const opts = Object.fromEntries(
+      v.selectedOptions.map((o) => [o.name.replace(/:$/, "").toLowerCase(), o.value]),
+    );
+    return (
+      opts["bundle deal"] === tierLabel &&
+      opts.color === color &&
+      opts.size === size
+    );
+  });
+}
+
 
 
 // ─── Cart / Checkout ────────────────────────────────────────────────

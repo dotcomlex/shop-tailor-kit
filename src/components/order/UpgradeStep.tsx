@@ -86,13 +86,14 @@ export function UpgradeStep({
         <FaqBlock />
       </div>
 
-      {/* Sticky mobile checkout bar — appears only when the main CTA scrolls out of view */}
+      {/* Sticky mobile checkout bar — appears when main CTA scrolls out of view, hides at end */}
       <StickyCheckoutBar
         total={total}
         comparePrice={comparePrice}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}
         observeRef={ctaWrapperRef}
+        hideAtRef={endRef}
       />
     </section>
   );

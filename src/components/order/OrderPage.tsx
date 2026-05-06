@@ -8,7 +8,7 @@ import {
   createCheckoutForLines,
   fetchVitalWalkBundles,
   findVariant,
-  findPairVariant,
+  findBundleVariant,
   pickInsoleVariantForSize,
   type CartLineInput,
   type ShopifyVariant,

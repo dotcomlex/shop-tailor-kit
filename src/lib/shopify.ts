@@ -345,13 +345,14 @@ export function findBundleVariant(
   color: string,
   size: string,
 ): ShopifyVariant | undefined {
-  const tierLabel = BUNDLE_TIER_LABEL[tier];
   return product.variants.find((v) => {
     const opts = Object.fromEntries(
       v.selectedOptions.map((o) => [o.name.replace(/:$/, "").toLowerCase(), o.value]),
     );
+    const bundleValue = opts["bundle deal"];
     return (
-      opts["bundle deal"] === tierLabel &&
+      typeof bundleValue === "string" &&
+      tierFromBundleValue(bundleValue) === tier &&
       opts.color === color &&
       opts.size === size
     );

@@ -443,3 +443,20 @@ export function findVariant(
     return opts.color === color && opts.size === size;
   });
 }
+
+/**
+ * Find the "Pair #N" variant on a bundle product (1-indexed).
+ * Falls back to position order if the option label varies.
+ */
+export function findPairVariant(
+  product: ShopifyProductData,
+  pairIndex: number, // 1-based: 1, 2, 3
+): ShopifyVariant | undefined {
+  const label = `Pair #${pairIndex}`;
+  const byLabel = product.variants.find((v) =>
+    v.selectedOptions.some((o) => o.value.trim() === label),
+  );
+  if (byLabel) return byLabel;
+  // Fallback: rely on Shopify's variant order (Pair #1 is index 0, etc.)
+  return product.variants[pairIndex - 1];
+}

@@ -25,9 +25,6 @@ export const BUNDLE_TIER_LABEL: Record<1 | 2 | 3, string> = {
 // stays a one-tap "Yes" with zero size/color picking required.
 export const INSOLE_PRODUCT_HANDLE = "insoles";
 
-// Backwards-compatible alias used elsewhere in the app for the 1-pair product
-// (it's still the source of truth for color/size option values + imagery).
-export const VITALWALK_PRODUCT_HANDLE = VITALWALK_PRODUCT_HANDLES[1];
 
 export interface ShopifyImage {
   url: string;

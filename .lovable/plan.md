@@ -1,44 +1,39 @@
-## Goal
+## Fix: Sticky checkout bar appears too early
 
-Make the bottom of Step 3 feel intentional. Today on mobile:
+Right now the mobile sticky CTA pops in the moment the main "Complete My Order" button scrolls off screen — which happens immediately as the user starts reading reviews/FAQs. You want it to stay hidden through that content and only slide up once they've actually scrolled near the bottom.
 
-- The sticky checkout bar floats over the footer and big empty whitespace at the bottom of the page (`pb-32` clearance + the bar's own height).
-- The bar's price block has uneven gaps and no trust microline, so it reads as "stuck on" rather than designed.
-- There's no graceful exit — the bar stays visible even after the user has scrolled past all real content.
+## Change
 
-## Fixes
+**`src/components/order/StickyCheckoutBar.tsx`**
 
-### 1. Auto-hide the sticky bar at the end of the page
-Add a hide-when-footer-visible behavior using a second IntersectionObserver in `StickyCheckoutBar.tsx`. New optional `hideAtRef` prop tracks the footer (or end sentinel). Bar is visible only when:
-- Main in-page CTA is off-screen, AND
-- Footer/end sentinel is NOT yet in the viewport
+Flip the visibility model:
 
-Wire it from `OrderPage.tsx` by passing the existing footer ref (or adding one).
+- Remove the `observeRef` (main CTA) trigger — it's what's causing the early appearance.
+- Use a single `showAtRef` sentinel. The bar becomes visible only once that sentinel enters the viewport.
+- Keep the page actually scrollable past it — the bar stays visible from that point down to the true end of the page.
 
-### 2. Reduce wasted bottom padding
-Change Step 3 wrapper in `OrderPage.tsx` from `pb-32` to `pb-24` on mobile (the bar is ~78px tall + safe-area; 96px clearance is plenty and removes the awkward empty band above the footer).
+```ts
+// New logic
+const visible = nearBottom;
+```
 
-### 3. Refine the sticky bar visual
-Rebuild `StickyCheckoutBar.tsx` layout:
+**`src/components/order/UpgradeStep.tsx`**
 
-- **Single tighter row**: price block (compare strike inline with total, "Total · Free shipping" caption beneath) + yellow CTA with a lock icon.
-- **Trust microline below** ("Secure SSL checkout · 60-day guarantee · You save $X") — replaces the previous awkward whitespace and reinforces the value prop right at the tap point.
-- Softer entry: longer fade gradient (h-6 instead of h-4), opacity transition added to the slide.
-- Stronger but more diffuse shadow so the bar sits cleanly above content without a hard line.
-- Remove the vertical hairline divider — the spacing alone separates the two zones cleanly now.
+- Add a new `showAtRef` placed right before the FAQ block's last item (or just after the FAQ block, before payment badges section ends). This is the "user has consumed the page" marker.
+- Pass `showAtRef` to `StickyCheckoutBar` instead of `observeRef`.
+- Drop the `ctaWrapperRef` observation entirely.
 
-### 4. No price/logic changes
-Pricing math, currency formatting, checkout flow, upsell, pixels — all untouched.
+Concretely, place the sentinel just after `<FaqBlock />`:
 
-## Files
+```tsx
+<FaqBlock />
+<div ref={showAtRef} aria-hidden className="h-px w-full" />
+```
 
-- `src/components/order/StickyCheckoutBar.tsx` — rebuild layout, add `hideAtRef` prop + observer, integrated trust microline.
-- `src/components/order/UpgradeStep.tsx` — pass a footer/end ref through to `StickyCheckoutBar`.
-- `src/components/order/OrderPage.tsx` — reduce mobile bottom padding from `pb-32` to `pb-24`; if simplest, add an end-of-content sentinel `<div ref={endRef} />` right before the footer and pass it down. Otherwise reuse the footer's own ref.
+So the sticky bar appears once the user reaches the end of the FAQs — exactly the moment they're "done scrolling" and likely ready to checkout — and remains until they scroll back up.
 
 ## Result
 
-- Sticky bar appears once the user scrolls past the in-page CTA.
-- Bar shows a clean price + lock-icon CTA + trust microline.
-- Bar gracefully fades + slides away once the footer enters view, so the bottom of the page no longer has a floating element over empty space.
-- Less dead scroll between the trust blocks and the page bottom.
+- Sticky bar stays hidden through reviews + FAQs (no more premature flash).
+- Slides in cleanly near the bottom of the page as a final nudge.
+- No layout/whitespace changes; purely a trigger swap.

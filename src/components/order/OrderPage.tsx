@@ -171,31 +171,42 @@ export function OrderPage() {
       }
     }
 
-    // Pair 1 picks the actual variant on the bundle product.
-    const pair1 = selections[0];
-    const pair1Variant = findVariant(bundleProduct, pair1.color!, pair1.size!);
-    if (!pair1Variant) {
-      toast.error(`We couldn't find ${pair1.color} in size ${pair1.size}.`);
-      return;
-    }
-    if (!pair1Variant.availableForSale) {
-      toast.error(`${pair1.color} in size ${pair1.size} is currently sold out.`);
-      return;
+    // For 1-pair: use the actual color+size variant on the 1-pair product.
+    // For 2/3-pair bundles: each "Pair #N" is its own simple variant on the
+    // bundle product, priced at the per-pair share. Color + size are passed
+    // as line-item properties so they show up under each variant in the
+    // Shopify order — exactly how the supplier needs to see it.
+    let pair1Variant: ShopifyVariant | undefined;
+    if (quantity === 1) {
+      pair1Variant = findVariant(bundleProduct, selections[0].color!, selections[0].size!);
+      if (!pair1Variant) {
+        toast.error(`We couldn't find ${selections[0].color} in size ${selections[0].size}.`);
+        return;
+      }
+      if (!pair1Variant.availableForSale) {
+        toast.error(`${selections[0].color} in size ${selections[0].size} is currently sold out.`);
+        return;
+      }
+    } else {
+      pair1Variant = findPairVariant(bundleProduct, 1);
+      if (!pair1Variant) {
+        toast.error("Bundle is misconfigured. Please refresh and try again.");
+        return;
+      }
     }
 
-    // PRICE-SYNC GUARD: Before we hand the customer to Shopify, fetch the
-    // live bundle prices one more time using the exact same @inContext
-    // query the page renders from. If the displayed total no longer matches
-    // what Shopify will charge (because FX moved, the merchant updated the
-    // product, or the cache is stale), refresh the UI and ask the user to
-    // confirm the new price instead of silently sending them to a checkout
-    // with a different total than the one on the button.
+    // PRICE-SYNC GUARD: refetch live bundle prices and compare against the
+    // displayed total. Bundle products store PER-PAIR prices, so the live
+    // total is per-pair × quantity (1-pair products store the full price).
     setIsCheckingOut(true);
     try {
       const fresh = await fetchVitalWalkBundles(country?.code ?? "US");
       const freshBundle = fresh?.[quantity];
-      const freshTotal = freshBundle
+      const freshPerPair = freshBundle
         ? parseFloat(freshBundle.priceRange.minVariantPrice.amount)
+        : NaN;
+      const freshTotal = Number.isFinite(freshPerPair)
+        ? freshPerPair * (quantity === 1 ? 1 : quantity)
         : NaN;
       if (
         Number.isFinite(freshTotal) &&
@@ -216,35 +227,46 @@ export function OrderPage() {
       console.warn("Pre-checkout price sync failed, continuing:", err);
     }
 
-    // Every pair is attached to the single bundle line so fulfillment can see
-    // the full bundle breakdown directly in Shopify checkout, admin, and on
-    // packing slips. Pair 1 is encoded both in the selected variant and in the
-    // line-item properties for clarity; pairs 2+ live in properties only.
-    const attributes: Array<{ key: string; value: string }> = [
-      { key: "Bundle Type", value: `${quantity}-Pair Bundle` },
-      { key: "Total Pairs", value: String(quantity) },
-      { key: "Pair 1 Color", value: pair1.color! },
-      { key: "Pair 1 Size", value: pair1.size! },
-    ];
-    for (let i = 1; i < selections.length; i++) {
-      const s = selections[i];
-      attributes.push({ key: `Pair ${i + 1} Color`, value: s.color! });
-      attributes.push({ key: `Pair ${i + 1} Size`, value: s.size! });
-    }
-
+    // Build cart lines.
+    //   1-pair → single line on the 1-pair color/size variant.
+    //   2/3-pair → one line per pair on the matching Pair #N variant, with
+    //   color + size as line-item properties.
     const note = [
-      `Bundle: ${quantity} Pairs`,
+      `Bundle: ${quantity} Pair${quantity > 1 ? "s" : ""}`,
       ...selections.map((s, i) => `Pair ${i + 1}: ${s.color} / ${s.size}`),
     ].join("\n");
 
-    const lines: CartLineInput[] = [
-      {
+    const bundleLines: CartLineInput[] = [];
+    if (quantity === 1) {
+      bundleLines.push({
         variantId: pair1Variant.id,
-        quantity: 1, // The bundle product itself is the unit.
-        attributes,
-      },
-      ...extraLines,
-    ];
+        quantity: 1,
+        attributes: [
+          { key: "Color", value: selections[0].color! },
+          { key: "Size", value: selections[0].size! },
+        ],
+      });
+    } else {
+      for (let i = 0; i < selections.length; i++) {
+        const s = selections[i];
+        const pv = findPairVariant(bundleProduct, i + 1);
+        if (!pv) {
+          toast.error("Bundle is misconfigured. Please refresh and try again.");
+          setIsCheckingOut(false);
+          return;
+        }
+        bundleLines.push({
+          variantId: pv.id,
+          quantity: 1,
+          attributes: [
+            { key: "Color", value: s.color! },
+            { key: "Size", value: s.size! },
+          ],
+        });
+      }
+    }
+
+    const lines: CartLineInput[] = [...bundleLines, ...extraLines];
 
     // Fire InitiateCheckout right before redirecting to Shopify checkout.
     // Bump the value by any upsell extras so server-side ROAS stays accurate.

@@ -1,76 +1,55 @@
-## Goal
+## Bug found during E2E verification
 
-Migrate the funnel from 3 pack-products to your **single live product** — verified just now:
+The funnel renders, the upsell opens, geo + currency localize, sales toasts fire, and the FB pixel sends `ViewContent` / `AddToCart` / `InitiateCheckout`. **But the bundle-tier matching is broken** because you renamed the Shopify option values:
 
-- **Title:** VitalWalk® Shoes
-- **ID:** `10094360756510`
-- **Handle:** `official-vitalwalk®` ✅ (updated)
-- **Options:** `Bundle Deal` × `Color:` × `Size:` (240 variants)
-- **Live per-pair prices in Shopify (no edits needed):**
-  - 1x Pair – 70% OFF → **$59.95**
-  - 2x Pairs – 75% OFF → **$54.95**
-  - 3x Pairs – 80% OFF → **$49.95**
-- **Compare-at:** $199.83 already set on variants
-- **Per-color images** already synced to variants → checkout will show the right photo per pair automatically.
+- Code expects: `"1x Pair - 70% OFF"` / `"2x Pairs - 75% OFF"` / `"3x Pairs - 80% OFF"`
+- Shopify now has: `"1x Pair - (70% OFF)"` / `"2x Pairs - (75% OFF)"` / `"3x Pairs - (80% OFF)"`
 
-**Zero Shopify writes.** No products created, deleted, edited, repriced, or renamed. Frontend code only.
+Effects:
+- `findBundleVariant()` returns `undefined` → `projectTier()` falls back to the product's `priceRange.minVariantPrice`, which is **always $49.95** (cheapest variant across all tiers).
+- That's why during my E2E test the Step 3 total flipped from $109.90 to $99.90 after I touched the upsell modal — React Query refetched and overwrote my synthetic per-tier price with the global min.
+- Checkout would also fail at the resolve step: "We couldn't find Black in size US W 9 / US M 8 / UK 7."
 
-## Frontend changes
+**Fix is a label-tolerant matcher — no Shopify edits.**
 
-### 1. `src/lib/shopify.ts`
-- Replace the 3-handle map with a single constant: `VITALWALK_PRODUCT_HANDLE = "official-vitalwalk®"`.
-- Drop `fetchVitalWalkBundles`, `findPairVariant`, the no-context fallback, and the `BundleProducts` type.
-- `fetchVitalWalkProduct(country)` becomes the only product fetch (already localized via `@inContext`).
-- New `findBundleVariant(product, tier, color, size)` — matches on `Bundle Deal` + `Color`/`Color:` + `Size`/`Size:` (tolerant of trailing colons).
-- New `getTierPerPairPrice(product, tier)` — reads the localized per-pair price + currency from the first variant of that tier (so Markets FX still drives the displayed total).
-- Insole helpers untouched.
+## Fix
 
-### 2. `src/hooks/useVitalWalkProduct.ts`
-- `useVitalWalkProduct()` → single localized fetch (replaces `useVitalWalkBundles`).
-- `useDisplayPrice()` keeps showing the 1-pair price + $199.83 compare-at as today.
-- New `useTierPrice(quantity)` returning `{ perPair, currency }` for the active tier — used by Step 3 totals and the sticky bar.
+### `src/lib/shopify.ts`
 
-### 3. `src/components/order/OrderPage.tsx`
-- `bundleTotal = tierPerPair × quantity` (live, localized).
-- `bundleCompare` keeps your synthesized strikethrough (`total / (1 − SAVE_PCT[quantity])`) so the % OFF on Step 1 always agrees with the savings on Step 3.
-- Pre-checkout price-sync guard: refetch the single product, recompute `freshTotal`, same drift tolerance — currency converter behavior preserved.
-- Cart line construction:
-  - For every pair `i`, look up `findBundleVariant(product, tier, selections[i].color, selections[i].size)`.
-  - Push **one line per pair** (`quantity: 1`) with `attributes: [Pair: i+1]` so the supplier can read the pair order.
-  - Identical color+size pairs are merged into one line with bumped `quantity` (cleaner cart).
-- Order note kept (`Bundle: N Pairs / Pair 1: …`) as a backup for the supplier.
-- Insole upsell flow, FB pixel events (ViewContent / AddToCart / InitiateCheckout), and `channel=online_store` checkout redirect — all unchanged.
+1. Replace `BUNDLE_TIER_LABEL` with a regex matcher that extracts the leading `Nx` token, so any future label rewording (parens, emoji, "Pack of N", etc.) keeps working:
 
-### 4. Cleanup
-- Delete dead exports/types from `shopify.ts`.
-- No UI component edits (QuantityStep / ColorSizeStep / UpgradeStep / InsoleUpsellModal / sticky bar all stay).
+   ```ts
+   function tierFromValue(value: string): 1 | 2 | 3 | null {
+     const m = value.match(/^\s*([123])\s*x/i);
+     return m ? (Number(m[1]) as 1 | 2 | 3) : null;
+   }
+   ```
 
-## What the supplier sees in Shopify
+2. Rewrite `findBundleVariant(product, tier, color, size)` to use `tierFromValue` against the `Bundle Deal` option (still tolerant of `Color`/`Color:` and `Size`/`Size:` colon variants).
 
-```text
-VitalWalk® Shoes
-  2x Pairs - 75% OFF / Black / US W 9 / US M 8 / UK 7    × 1   $54.95   [black photo]
-  2x Pairs - 75% OFF / Beige / US W 8 / US M 7 / UK 6    × 1   $54.95   [beige photo]
-                                              Subtotal:  $109.90
-```
+3. Rewrite `projectTier(product, tier)` to find any variant whose `Bundle Deal` value resolves to that tier (instead of literal-string equality), so `bundles[1|2|3]` always carries the correct per-pair price.
 
-Real variant lines, real SKUs, real per-color images — nothing to interpret.
+4. Pre-checkout sync stays the same — it just consumes the corrected `projectTier`.
 
-## End-to-end smoke test (before declaring done)
+### Re-verify after fix (no code changes needed elsewhere)
 
-1. Step 1 → pick **2 Pairs**, badge reads "75% OFF".
-2. Step 2 → pick different colors/sizes for each pair.
-3. Step 3 → total = `$54.95 × 2 = $109.90`, strike-through ≈ `$439.60`.
-4. Click Complete Order → insole upsell modal opens with size matched.
-5. Decline / accept → Shopify checkout opens in same tab with `channel=online_store`, totals match exactly, each pair shows its color image.
-6. Repeat for 1-pair and 3-pair flows. Confirm currency-converter path (e.g. CA / GB) still localizes via `@inContext`.
+Walk the full flow in the preview browser and confirm:
 
-## Safety checklist (paid traffic is live)
+- **Step 1** — pack-size cards show $59.95 / $109.90 ($54.95/pair) / $149.85 ($49.95/pair).
+- **Step 2** — color + size selectable per pair (color comes from `Color:` option, size from `Size:` option).
+- **Step 3** — $54.95 × 2 = $109.90 with $439.60 strikethrough.
+- **Sticky bar / FAQs / scroll behavior** unchanged.
+- **Insole upsell** opens with size auto-matched per pair; Step 3 total **stays $109.90** after the modal closes (this is the regression I just caught).
+- **Cart create network call** — payload contains real Bundle×Color×Size variant IDs, one line per unique pair (or merged with `quantity: 2` if both pairs match). Inspect via `browser--list_network_requests` for the `cartCreate` POST.
+- **Currency converter / geo** — header pill still shows "USD" by IP; Markets `@inContext` still applies.
+- **Sales notifications** (`RecentPurchaseToasts`) still cycling on Steps 1–2, paused on Step 3.
+- **Checkout URL** ends with `?channel=online_store`, opens the real Shopify checkout, totals match to the cent.
 
-- ✅ Read-only Storefront API; no Admin API writes.
-- ✅ No Shopify product/variant/price/handle edits.
-- ✅ Existing checkout URL flow + `channel=online_store` preserved.
-- ✅ Pixel events keep firing with valid numeric variant IDs.
-- ✅ Pre-checkout price-sync guard preserved against FX drift.
+### Safety / paid-traffic checklist
 
-Approve and I'll implement + smoke-test.
+- ✅ Read-only Storefront API; **no Admin writes, no product/variant edits.**
+- ✅ Single product `official-vitalwalk®` (verified live).
+- ✅ Robust to future Shopify label rewording.
+- ✅ Pixel events + currency conversion + insole upsell preserved.
+
+Approve and I'll implement the matcher fix and re-run the full E2E.

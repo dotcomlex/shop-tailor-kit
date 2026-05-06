@@ -13,12 +13,17 @@ export const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}
 // correct SKU, no notes for the supplier to interpret).
 export const VITALWALK_PRODUCT_HANDLE = "official-vitalwalk®";
 
-// Tier label values for the "Bundle Deal" option, indexed by pack size.
-export const BUNDLE_TIER_LABEL: Record<1 | 2 | 3, string> = {
-  1: "1x Pair - 70% OFF",
-  2: "2x Pairs - 75% OFF",
-  3: "3x Pairs - 80% OFF",
-};
+// Resolve a "Bundle Deal" option value to its pack size (1, 2, or 3).
+// Tolerates label rewordings like "1x Pair - 70% OFF", "1x Pair - (70% OFF)",
+// "2 x Pairs", "Pack of 3", emoji prefixes, etc. — we only key on the leading
+// numeric token so cosmetic edits in Shopify never break checkout.
+export function tierFromBundleValue(value: string): 1 | 2 | 3 | null {
+  const m = value.match(/(?:^|[^0-9])([123])\s*x?\s*(?:pair|pack)/i)
+    || value.match(/^\s*([123])\b/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n === 1 || n === 2 || n === 3 ? n : null;
+}
 
 // VitalWalk Orthopedic Massage Insoles — used as the post-cart upsell.
 // Single product; we always pick the first available variant so the modal
@@ -304,10 +309,11 @@ function projectTier(
   tier: 1 | 2 | 3,
 ): ShopifyProductData | null {
   if (!product) return null;
-  const tierLabel = BUNDLE_TIER_LABEL[tier];
   const tierVariants = product.variants.filter((v) =>
     v.selectedOptions.some(
-      (o) => o.name.replace(/:$/, "").toLowerCase() === "bundle deal" && o.value === tierLabel,
+      (o) =>
+        o.name.replace(/:$/, "").toLowerCase() === "bundle deal" &&
+        tierFromBundleValue(o.value) === tier,
     ),
   );
   const first = tierVariants[0];
@@ -339,13 +345,14 @@ export function findBundleVariant(
   color: string,
   size: string,
 ): ShopifyVariant | undefined {
-  const tierLabel = BUNDLE_TIER_LABEL[tier];
   return product.variants.find((v) => {
     const opts = Object.fromEntries(
       v.selectedOptions.map((o) => [o.name.replace(/:$/, "").toLowerCase(), o.value]),
     );
+    const bundleValue = opts["bundle deal"];
     return (
-      opts["bundle deal"] === tierLabel &&
+      typeof bundleValue === "string" &&
+      tierFromBundleValue(bundleValue) === tier &&
       opts.color === color &&
       opts.size === size
     );

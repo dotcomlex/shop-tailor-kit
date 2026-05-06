@@ -7,20 +7,18 @@ export const SHOPIFY_STORE_PERMANENT_DOMAIN = "6cefa8-2.myshopify.com";
 export const SHOPIFY_STOREFRONT_TOKEN = "abed53c0d22333dd9e20bb528289533b";
 export const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
-// Three real Shopify products — Funnelish-style.
-//
-// The 1-pair product carries the real color + size variants (source of truth
-// for the picker + imagery). The 2-pair and 3-pair bundle products have
-// SIMPLE per-pair variants only ("Pair #1", "Pair #2", "Pair #3"), each
-// priced at the bundle's per-pair share. At checkout we send one line per
-// pair pointing at the matching Pair #N variant, with the customer's chosen
-// color + size attached as line-item properties — so suppliers see one real
-// variant line per pair instead of a single line + a note.
-export const VITALWALK_PRODUCT_HANDLES = {
-  1: "the-original-vitalwalk®-shoes-copy",
-  2: "vitalwalk®-shoes-2-pair-bundle-75-off",
-  3: "vitalwalk®-shoes-3-pair-bundle-80-off",
-} as const;
+// Single live VitalWalk® Shoes product — variants indexed on
+// Bundle Deal × Color × Size. Per-pair prices are baked into Shopify, so
+// at checkout we send one real variant line per pair (correct color image,
+// correct SKU, no notes for the supplier to interpret).
+export const VITALWALK_PRODUCT_HANDLE = "official-vitalwalk®";
+
+// Tier label values for the "Bundle Deal" option, indexed by pack size.
+export const BUNDLE_TIER_LABEL: Record<1 | 2 | 3, string> = {
+  1: "1x Pair - 70% OFF",
+  2: "2x Pairs - 75% OFF",
+  3: "3x Pairs - 80% OFF",
+};
 
 // VitalWalk Orthopedic Massage Insoles — used as the post-cart upsell.
 // Single product; we always pick the first available variant so the modal

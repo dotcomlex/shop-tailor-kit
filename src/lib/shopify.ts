@@ -185,7 +185,7 @@ export async function fetchVitalWalkProduct(country: string = "US"): Promise<Sho
   const result = await storefrontApiRequest<{ product: RawProduct | null }>(
     PRODUCT_BY_HANDLE_QUERY,
     {
-      handle: VITALWALK_PRODUCT_HANDLES[1],
+      handle: VITALWALK_PRODUCT_HANDLE,
       country: (country || "US").toUpperCase(),
     },
   );

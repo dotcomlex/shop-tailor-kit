@@ -1,36 +1,59 @@
-## Goal
+# Full Funnel QA Sweep
 
-Step 1 stays visually identical to today. Only one swap: the price headline becomes the **per-pair price** instead of the bundle total. The strike-through above it becomes the **per-pair retail** (no label, no extra text — just the struck number, exactly like today).
+I'll run a complete end-to-end test of the live funnel in the browser, covering every step, button, and the currency/geo behavior across the top 4 markets.
 
-## Card — before vs after
+## What I'll test
 
-```text
-BEFORE (2 pairs)         AFTER (2 pairs)
-─────────────────        ─────────────────
-$219.80     ← strike     $199.83     ← strike
-$109.90     ← headline   $54.95 /ea  ← headline
-$54.95/pair ← sub                    (sub-line removed)
-```
+### 1. Step 1 — Quantity selection
+- All three bundle cards render with correct per-pair pricing and strike-through
+- "MOST POPULAR" pill appears on the right card
+- Save % pills are correct
+- Selecting each option (1, 2, 3 pairs) advances correctly
+- Sticky CTA reflects selected bundle total
 
-- 1 pair → strike `$199.83`, headline `$59.95 /ea`
-- 2 pairs → strike `$199.83`, headline `$54.95 /ea`
-- 3 pairs → strike `$199.83`, headline `$49.95 /ea`
+### 2. Step 2 — Color & Size
+- All color swatches selectable, image updates
+- Size grid: each size selectable, sold-out states behave
+- Sizing dialog opens and closes
+- "True to size" meter renders
+- For 2-pair / 3-pair bundles: confirm extra pair color/size pickers appear and gate the CTA until filled
 
-The red `Save 70% / 75% / 80%` pill stays. MOST POPULAR / BEST DEAL ribbons stay. Spacing, fonts, colors stay. No new labels, no "if bought separately", no extra savings line.
+### 3. Insole upsell modal
+- Pops after Step 2 / before Step 3
+- "Yes, add" and "No thanks" both work
+- Insole price matches selected shoe size variant
+- Currency on insole matches localized currency
 
-## File touched
+### 4. Step 3 — Review & Checkout
+- Order summary totals match Step 1 selection
+- Insole line appears only if accepted
+- Scarcity bar, guarantee, checklist, reviews, FAQ all render
+- Sticky checkout bar appears after FAQ scroll
+- "Complete My Order" creates Shopify cart and redirects to checkout
 
-`src/components/order/QuantityStep.tsx` only.
+### 5. Checkout (Shopify)
+- Lands on Shopify checkout in correct currency
+- Line items show correct color/size attributes for each pair
+- Insole present if added
+- Totals match what Step 3 displayed (no drift)
 
-In `readLocalizedTotals`, add:
-- `perPair` = live tier per-pair price (already available).
-- `perPairCompare = perPair / (1 - savePct)` so the strike stays consistent across all three cards.
+### 6. Currency & Geo — top 4 markets
+For US, CA, AU, GB I'll verify:
+- Currency symbol/code on Steps 1–3
+- Insole modal price
+- Sticky bar price
+- Shopify checkout opens in matching currency with matching totals
 
-In the price column:
-- Strike line → `format(perPairCompare)`
-- Headline → `format(perPair)` + small muted `/ea` suffix
-- Delete the small `{perPair}/pair` sub-line
+I'll simulate each country by overriding the geo cache (localStorage) and reloading, then walk the funnel.
 
-## Out of scope
+### 7. Misc UI
+- Header / nav links
+- Recent purchase toasts
+- Support chat opens/sends a message
+- Mobile viewport (390x844) layout sanity check on each step
 
-Step 3, sticky bar, cart payload, currency/geo, pixels, sales toasts — all untouched.
+## Deliverable
+
+A pass/fail report per area with screenshots of any issues found, and (if I find a bug) a separate follow-up to fix it — no code changes will be made during this plan.
+
+Approve and I'll start the sweep.

@@ -30,7 +30,7 @@ export function UpgradeStep({
   endRef,
 }: UpgradeStepProps) {
   const saved = Math.max(0, comparePrice - total);
-  const ctaWrapperRef = useRef<HTMLDivElement | null>(null);
+  const showAtRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <section aria-labelledby="step-3-heading" className="animate-fade-in pb-28 md:pb-0">
@@ -48,7 +48,7 @@ export function UpgradeStep({
         <RiskFreeGuarantee />
       </div>
 
-      <div className="row-pad mt-4" ref={ctaWrapperRef}>
+      <div className="row-pad mt-4">
         <YellowCta
           label="Complete My Order"
           onClick={onCheckout}
@@ -86,14 +86,16 @@ export function UpgradeStep({
         <FaqBlock />
       </div>
 
-      {/* Sticky mobile checkout bar — appears when main CTA scrolls out of view, hides at end */}
+      {/* Sentinel: sticky bar appears once the user scrolls past the FAQs */}
+      <div ref={showAtRef} aria-hidden className="h-px w-full" />
+
+      {/* Sticky mobile checkout bar — appears only after the user reaches the end of the FAQs */}
       <StickyCheckoutBar
         total={total}
         comparePrice={comparePrice}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}
-        observeRef={ctaWrapperRef}
-        hideAtRef={endRef}
+        showAtRef={showAtRef}
       />
     </section>
   );

@@ -124,15 +124,15 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty], opt.qty, bundles?.[1]);
-            // Headline = exact Shopify bundle total (matches checkout to
-            // the cent). Per-pair is shown as a small secondary line on
-            // 2/3-pair cards only — it anchors the upgrade value without
-            // creating a mismatch between Step 1 and Step 3.
-            const totalFormatted = totals ? format(totals.total) : "";
-            const compareFormatted =
-              totals && totals.compare > totals.total ? format(totals.compare) : "";
-            const perPairFormatted =
-              totals && opt.qty > 1 ? format(totals.total / opt.qty) : "";
+            // Headline = per-pair price (same across all 3 cards in spirit:
+            // each card shows its own per-pair tier). Strike = per-pair
+            // retail derived from the advertised save % so the ribbon, the
+            // strike, and Step 3 always agree.
+            const perPair = totals ? totals.total / opt.qty : 0;
+            const perPairCompare = totals ? totals.compare / opt.qty : 0;
+            const perPairFormatted = totals ? format(perPair) : "";
+            const perPairCompareFormatted =
+              totals && perPairCompare > perPair ? format(perPairCompare) : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">

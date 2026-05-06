@@ -1,36 +1,44 @@
-## Problem
+## Goal
 
-Step 3 "You save" shows **73% OFF** for the 2-pair and **75% OFF** for the 3-pair, but Step 1 advertises **75% OFF** and **80% OFF**. The badge and the math don't agree.
+Make the bottom of Step 3 feel intentional. Today on mobile:
 
-## Cause
+- The sticky checkout bar floats over the footer and big empty whitespace at the bottom of the page (`pb-32` clearance + the bar's own height).
+- The bar's price block has uneven gaps and no trust microline, so it reads as "stuck on" rather than designed.
+- There's no graceful exit — the bar stays visible even after the user has scrolled past all real content.
 
-In `OrderPage.tsx`, `bundleCompare` is computed as `1-pair compare-at × pack size` ($199.83 × N). With the new bundle prices ($54.95/pair and $49.99/pair), that formula yields ~73% and ~75% — not the advertised 75%/80%.
+## Fixes
 
-`OrderSummary` then derives `savedPct = saved / compare`, so the displayed % is wrong.
+### 1. Auto-hide the sticky bar at the end of the page
+Add a hide-when-footer-visible behavior using a second IntersectionObserver in `StickyCheckoutBar.tsx`. New optional `hideAtRef` prop tracks the footer (or end sentinel). Bar is visible only when:
+- Main in-page CTA is off-screen, AND
+- Footer/end sentinel is NOT yet in the viewport
 
-## Fix
+Wire it from `OrderPage.tsx` by passing the existing footer ref (or adding one).
 
-In `src/components/order/OrderPage.tsx`, derive `bundleCompare` from the advertised save percentage so the strike-through, the savings amount, and the badge always match:
+### 2. Reduce wasted bottom padding
+Change Step 3 wrapper in `OrderPage.tsx` from `pb-32` to `pb-24` on mobile (the bar is ~78px tall + safe-area; 96px clearance is plenty and removes the awkward empty band above the footer).
 
-```ts
-const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.75, 3: 0.80 };
-const pct = SAVE_PCT[quantity] ?? 0;
-const compare = pct > 0 && total > 0 ? total / (1 - pct) : total;
-```
+### 3. Refine the sticky bar visual
+Rebuild `StickyCheckoutBar.tsx` layout:
 
-Resulting Step 3 numbers (US):
+- **Single tighter row**: price block (compare strike inline with total, "Total · Free shipping" caption beneath) + yellow CTA with a lock icon.
+- **Trust microline below** ("Secure SSL checkout · 60-day guarantee · You save $X") — replaces the previous awkward whitespace and reinforces the value prop right at the tap point.
+- Softer entry: longer fade gradient (h-6 instead of h-4), opacity transition added to the slide.
+- Stronger but more diffuse shadow so the bar sits cleanly above content without a hard line.
+- Remove the vertical hairline divider — the spacing alone separates the two zones cleanly now.
 
-| Qty | Total | Compare | Saved | % shown |
-|---|---|---|---|---|
-| 1 | $59.95 | $199.83 | $139.88 | 70% OFF |
-| 2 | $109.90 | $439.60 | $329.70 | 75% OFF |
-| 3 | $149.97 | $749.85 | $599.88 | 80% OFF |
-
-This also keeps Step 1 cards consistent — I'll apply the same derivation to `QuantityStep.tsx` `readLocalizedTotals` so the strike on the bundle cards matches Step 3 to the cent.
+### 4. No price/logic changes
+Pricing math, currency formatting, checkout flow, upsell, pixels — all untouched.
 
 ## Files
 
-- `src/components/order/OrderPage.tsx` — replace `bundleCompare` calc with SAVE_PCT-driven formula.
-- `src/components/order/QuantityStep.tsx` — same change in `readLocalizedTotals` (use SAVE_PCT lookup instead of `onePairRetail × qty`).
+- `src/components/order/StickyCheckoutBar.tsx` — rebuild layout, add `hideAtRef` prop + observer, integrated trust microline.
+- `src/components/order/UpgradeStep.tsx` — pass a footer/end ref through to `StickyCheckoutBar`.
+- `src/components/order/OrderPage.tsx` — reduce mobile bottom padding from `pb-32` to `pb-24`; if simplest, add an end-of-content sentinel `<div ref={endRef} />` right before the footer and pass it down. Otherwise reuse the footer's own ref.
 
-No Shopify changes. No other components touched.
+## Result
+
+- Sticky bar appears once the user scrolls past the in-page CTA.
+- Bar shows a clean price + lock-icon CTA + trust microline.
+- Bar gracefully fades + slides away once the footer enters view, so the bottom of the page no longer has a floating element over empty space.
+- Less dead scroll between the trust blocks and the page bottom.

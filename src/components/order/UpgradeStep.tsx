@@ -17,6 +17,8 @@ interface UpgradeStepProps {
   quantity: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
+  /** Footer/end-of-content sentinel — sticky bar tucks away when this is in view. */
+  endRef?: React.RefObject<HTMLElement | null>;
 }
 
 export function UpgradeStep({
@@ -25,6 +27,7 @@ export function UpgradeStep({
   quantity,
   onCheckout,
   isCheckingOut,
+  endRef,
 }: UpgradeStepProps) {
   const saved = Math.max(0, comparePrice - total);
   const ctaWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -83,13 +86,14 @@ export function UpgradeStep({
         <FaqBlock />
       </div>
 
-      {/* Sticky mobile checkout bar — appears only when the main CTA scrolls out of view */}
+      {/* Sticky mobile checkout bar — appears when main CTA scrolls out of view, hides at end */}
       <StickyCheckoutBar
         total={total}
         comparePrice={comparePrice}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}
         observeRef={ctaWrapperRef}
+        hideAtRef={endRef}
       />
     </section>
   );

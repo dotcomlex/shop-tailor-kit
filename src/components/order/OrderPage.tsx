@@ -123,9 +123,18 @@ export function OrderPage() {
     if (!bp) return { bundleTotal: 0, bundleCompare: 0 };
     const perPair = parseFloat(bp.priceRange.minVariantPrice.amount);
     const total = Number.isFinite(perPair) ? perPair * quantity : 0;
-    const onePairRetail = product
+    // Strike-through baseline mirrors QuantityStep: the 1-pair product's
+    // REAL compare-at retail × pack size, with a graceful fallback to the
+    // 1-pair sale price if compare-at isn't set on Shopify.
+    const onePairCompareRaw = product
+      ? parseFloat(product.compareAtPriceRange.minVariantPrice.amount)
+      : NaN;
+    const onePairSale = product
       ? parseFloat(product.priceRange.minVariantPrice.amount)
       : NaN;
+    const onePairRetail = Number.isFinite(onePairCompareRaw) && onePairCompareRaw > 0
+      ? onePairCompareRaw
+      : onePairSale;
     const compare = Number.isFinite(onePairRetail)
       ? Math.max(total, onePairRetail * quantity)
       : total;

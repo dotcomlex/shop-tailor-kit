@@ -7,29 +7,24 @@ export const SHOPIFY_STORE_PERMANENT_DOMAIN = "6cefa8-2.myshopify.com";
 export const SHOPIFY_STOREFRONT_TOKEN = "abed53c0d22333dd9e20bb528289533b";
 export const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
-// Three real Shopify products — Funnelish-style.
-//
-// The 1-pair product carries the real color + size variants (source of truth
-// for the picker + imagery). The 2-pair and 3-pair bundle products have
-// SIMPLE per-pair variants only ("Pair #1", "Pair #2", "Pair #3"), each
-// priced at the bundle's per-pair share. At checkout we send one line per
-// pair pointing at the matching Pair #N variant, with the customer's chosen
-// color + size attached as line-item properties — so suppliers see one real
-// variant line per pair instead of a single line + a note.
-export const VITALWALK_PRODUCT_HANDLES = {
-  1: "the-original-vitalwalk®-shoes-copy",
-  2: "vitalwalk®-shoes-2-pair-bundle-75-off",
-  3: "vitalwalk®-shoes-3-pair-bundle-80-off",
-} as const;
+// Single live VitalWalk® Shoes product — variants indexed on
+// Bundle Deal × Color × Size. Per-pair prices are baked into Shopify, so
+// at checkout we send one real variant line per pair (correct color image,
+// correct SKU, no notes for the supplier to interpret).
+export const VITALWALK_PRODUCT_HANDLE = "official-vitalwalk®";
+
+// Tier label values for the "Bundle Deal" option, indexed by pack size.
+export const BUNDLE_TIER_LABEL: Record<1 | 2 | 3, string> = {
+  1: "1x Pair - 70% OFF",
+  2: "2x Pairs - 75% OFF",
+  3: "3x Pairs - 80% OFF",
+};
 
 // VitalWalk Orthopedic Massage Insoles — used as the post-cart upsell.
 // Single product; we always pick the first available variant so the modal
 // stays a one-tap "Yes" with zero size/color picking required.
 export const INSOLE_PRODUCT_HANDLE = "insoles";
 
-// Backwards-compatible alias used elsewhere in the app for the 1-pair product
-// (it's still the source of truth for color/size option values + imagery).
-export const VITALWALK_PRODUCT_HANDLE = VITALWALK_PRODUCT_HANDLES[1];
 
 export interface ShopifyImage {
   url: string;
@@ -106,7 +101,7 @@ const PRODUCT_FIELDS = /* GraphQL */ `
     images(first: 20) {
       edges { node { url altText } }
     }
-    variants(first: 100) {
+    variants(first: 250) {
       edges {
         node {
           id
@@ -130,31 +125,6 @@ const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
   }
 `;
 
-const ALL_BUNDLES_QUERY = /* GraphQL */ `
-  ${PRODUCT_FIELDS}
-  query AllBundles(
-    $h1: String!
-    $h2: String!
-    $h3: String!
-    $country: CountryCode!
-  ) @inContext(country: $country) {
-    p1: product(handle: $h1) { ...ProductFields }
-    p2: product(handle: $h2) { ...ProductFields }
-    p3: product(handle: $h3) { ...ProductFields }
-  }
-`;
-
-// Fallback without @inContext — used when a bundle isn't included in the
-// customer's Market catalog and the localized query returns null. Prices
-// come back in the shop's base currency (USD) but the card renders.
-const ALL_BUNDLES_QUERY_NO_CONTEXT = /* GraphQL */ `
-  ${PRODUCT_FIELDS}
-  query AllBundlesNoContext($h1: String!, $h2: String!, $h3: String!) {
-    p1: product(handle: $h1) { ...ProductFields }
-    p2: product(handle: $h2) { ...ProductFields }
-    p3: product(handle: $h3) { ...ProductFields }
-  }
-`;
 
 interface RawProduct {
   id: string;
@@ -190,7 +160,7 @@ export async function fetchVitalWalkProduct(country: string = "US"): Promise<Sho
   const result = await storefrontApiRequest<{ product: RawProduct | null }>(
     PRODUCT_BY_HANDLE_QUERY,
     {
-      handle: VITALWALK_PRODUCT_HANDLES[1],
+      handle: VITALWALK_PRODUCT_HANDLE,
       country: (country || "US").toUpperCase(),
     },
   );
@@ -317,61 +287,72 @@ export function pickInsoleVariant(product: ShopifyProductData | null): ShopifyVa
   return pickInsoleVariantForSize(product, null);
 }
 
+/**
+ * Compatibility shim: returns a `BundleProducts` map where each tier points
+ * at the same single product, but with `priceRange.minVariantPrice`
+ * rewritten to that tier's per-pair price. Lets QuantityStep/OrderPage keep
+ * their `bundles[1|2|3]` indexing while still showing the right tier price.
+ */
 export interface BundleProducts {
   1: ShopifyProductData | null;
   2: ShopifyProductData | null;
   3: ShopifyProductData | null;
 }
 
-/**
- * Fetch all three pack products (1-pair, 2-pair bundle, 3-pair bundle) in
- * one round-trip, all localized for the given country.
- */
-export async function fetchVitalWalkBundles(country: string = "US"): Promise<BundleProducts> {
-  const result = await storefrontApiRequest<{
-    p1: RawProduct | null;
-    p2: RawProduct | null;
-    p3: RawProduct | null;
-  }>(ALL_BUNDLES_QUERY, {
-    h1: VITALWALK_PRODUCT_HANDLES[1],
-    h2: VITALWALK_PRODUCT_HANDLES[2],
-    h3: VITALWALK_PRODUCT_HANDLES[3],
-    country: (country || "US").toUpperCase(),
-  });
-
-  const bundles: BundleProducts = {
-    1: normalizeProduct(result?.data?.p1 ?? null),
-    2: normalizeProduct(result?.data?.p2 ?? null),
-    3: normalizeProduct(result?.data?.p3 ?? null),
+function projectTier(
+  product: ShopifyProductData | null,
+  tier: 1 | 2 | 3,
+): ShopifyProductData | null {
+  if (!product) return null;
+  const tierLabel = BUNDLE_TIER_LABEL[tier];
+  const tierVariants = product.variants.filter((v) =>
+    v.selectedOptions.some(
+      (o) => o.name.replace(/:$/, "").toLowerCase() === "bundle deal" && o.value === tierLabel,
+    ),
+  );
+  const first = tierVariants[0];
+  if (!first) return product;
+  return {
+    ...product,
+    priceRange: { minVariantPrice: first.price },
+    compareAtPriceRange: {
+      minVariantPrice: first.compareAtPrice ?? product.compareAtPriceRange.minVariantPrice,
+    },
   };
-
-  // If any bundle came back null (most often because it isn't included in
-  // the customer's Market catalog), refetch WITHOUT @inContext and merge
-  // in the missing ones. Falls back to base currency (USD) but ensures
-  // the price always renders instead of a skeleton bar.
-  const missingKeys = ([1, 2, 3] as const).filter((k) => bundles[k] === null);
-  if (missingKeys.length > 0) {
-    const fallback = await storefrontApiRequest<{
-      p1: RawProduct | null;
-      p2: RawProduct | null;
-      p3: RawProduct | null;
-    }>(ALL_BUNDLES_QUERY_NO_CONTEXT, {
-      h1: VITALWALK_PRODUCT_HANDLES[1],
-      h2: VITALWALK_PRODUCT_HANDLES[2],
-      h3: VITALWALK_PRODUCT_HANDLES[3],
-    });
-    const fb = {
-      1: normalizeProduct(fallback?.data?.p1 ?? null),
-      2: normalizeProduct(fallback?.data?.p2 ?? null),
-      3: normalizeProduct(fallback?.data?.p3 ?? null),
-    } as BundleProducts;
-    for (const k of missingKeys) {
-      if (fb[k]) bundles[k] = fb[k];
-    }
-  }
-
-  return bundles;
 }
+
+export async function fetchVitalWalkBundles(country: string = "US"): Promise<BundleProducts> {
+  const product = await fetchVitalWalkProduct(country);
+  return {
+    1: projectTier(product, 1),
+    2: projectTier(product, 2),
+    3: projectTier(product, 3),
+  };
+}
+
+/**
+ * Find the variant matching a specific bundle tier + color + size.
+ */
+export function findBundleVariant(
+  product: ShopifyProductData,
+  tier: 1 | 2 | 3,
+  color: string,
+  size: string,
+): ShopifyVariant | undefined {
+  const tierLabel = BUNDLE_TIER_LABEL[tier];
+  return product.variants.find((v) => {
+    const opts = Object.fromEntries(
+      v.selectedOptions.map((o) => [o.name.replace(/:$/, "").toLowerCase(), o.value]),
+    );
+    return (
+      opts["bundle deal"] === tierLabel &&
+      opts.color === color &&
+      opts.size === size
+    );
+  });
+}
+
+
 
 // ─── Cart / Checkout ────────────────────────────────────────────────
 
@@ -483,19 +464,3 @@ export function findVariant(
   });
 }
 
-/**
- * Find the "Pair #N" variant on a bundle product (1-indexed).
- * Falls back to position order if the option label varies.
- */
-export function findPairVariant(
-  product: ShopifyProductData,
-  pairIndex: number, // 1-based: 1, 2, 3
-): ShopifyVariant | undefined {
-  const label = `Pair #${pairIndex}`;
-  const byLabel = product.variants.find((v) =>
-    v.selectedOptions.some((o) => o.value.trim() === label),
-  );
-  if (byLabel) return byLabel;
-  // Fallback: rely on Shopify's variant order (Pair #1 is index 0, etc.)
-  return product.variants[pairIndex - 1];
-}

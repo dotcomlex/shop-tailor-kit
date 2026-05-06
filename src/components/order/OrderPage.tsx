@@ -8,7 +8,7 @@ import {
   createCheckoutForLines,
   fetchVitalWalkBundles,
   findVariant,
-  findPairVariant,
+  findBundleVariant,
   pickInsoleVariantForSize,
   type CartLineInput,
   type ShopifyVariant,
@@ -172,33 +172,28 @@ export function OrderPage() {
       }
     }
 
-    // For 1-pair: use the actual color+size variant on the 1-pair product.
-    // For 2/3-pair bundles: each "Pair #N" is its own simple variant on the
-    // bundle product, priced at the per-pair share. Color + size are passed
-    // as line-item properties so they show up under each variant in the
-    // Shopify order — exactly how the supplier needs to see it.
-    let pair1Variant: ShopifyVariant | undefined;
-    if (quantity === 1) {
-      pair1Variant = findVariant(bundleProduct, selections[0].color!, selections[0].size!);
-      if (!pair1Variant) {
-        toast.error(`We couldn't find ${selections[0].color} in size ${selections[0].size}.`);
+    // Resolve a real Bundle×Color×Size variant for every selected pair.
+    // The supplier sees one real variant line per pair (with the correct
+    // per-color image already synced in Shopify), no notes to interpret.
+    const resolved: Array<{ variant: ShopifyVariant; selection: { color: string; size: string }; pairIndex: number }> = [];
+    for (let i = 0; i < selections.length; i++) {
+      const s = selections[i];
+      const v = findBundleVariant(bundleProduct, quantity, s.color!, s.size!);
+      if (!v) {
+        toast.error(`We couldn't find ${s.color} in size ${s.size}.`);
         return;
       }
-      if (!pair1Variant.availableForSale) {
-        toast.error(`${selections[0].color} in size ${selections[0].size} is currently sold out.`);
+      if (!v.availableForSale) {
+        toast.error(`${s.color} in size ${s.size} is currently sold out.`);
         return;
       }
-    } else {
-      pair1Variant = findPairVariant(bundleProduct, 1);
-      if (!pair1Variant) {
-        toast.error("Bundle is misconfigured. Please refresh and try again.");
-        return;
-      }
+      resolved.push({ variant: v, selection: { color: s.color!, size: s.size! }, pairIndex: i + 1 });
     }
+    const pair1Variant = resolved[0].variant;
 
-    // PRICE-SYNC GUARD: refetch live bundle prices and compare against the
-    // displayed total. Bundle products store PER-PAIR prices, so the live
-    // total is per-pair × quantity (1-pair products store the full price).
+    // PRICE-SYNC GUARD: refetch live tier price and compare against displayed
+    // total (per-pair × quantity). Catches Markets FX drift while the tab
+    // sat in the background.
     setIsCheckingOut(true);
     try {
       const fresh = await fetchVitalWalkBundles(country?.code ?? "US");
@@ -206,9 +201,7 @@ export function OrderPage() {
       const freshPerPair = freshBundle
         ? parseFloat(freshBundle.priceRange.minVariantPrice.amount)
         : NaN;
-      const freshTotal = Number.isFinite(freshPerPair)
-        ? freshPerPair * (quantity === 1 ? 1 : quantity)
-        : NaN;
+      const freshTotal = Number.isFinite(freshPerPair) ? freshPerPair * quantity : NaN;
       if (
         Number.isFinite(freshTotal) &&
         Math.abs(freshTotal - bundleTotal) >= 0.01
@@ -228,44 +221,29 @@ export function OrderPage() {
       console.warn("Pre-checkout price sync failed, continuing:", err);
     }
 
-    // Build cart lines.
-    //   1-pair → single line on the 1-pair color/size variant.
-    //   2/3-pair → one line per pair on the matching Pair #N variant, with
-    //   color + size as line-item properties.
+    // Build cart lines: one line per pair (real variant with correct color
+    // image). Identical color+size pairs are merged so the cart stays tidy
+    // — supplier still sees a real variant line, just with quantity > 1.
     const note = [
       `Bundle: ${quantity} Pair${quantity > 1 ? "s" : ""}`,
       ...selections.map((s, i) => `Pair ${i + 1}: ${s.color} / ${s.size}`),
     ].join("\n");
 
-    const bundleLines: CartLineInput[] = [];
-    if (quantity === 1) {
-      bundleLines.push({
-        variantId: pair1Variant.id,
-        quantity: 1,
-        attributes: [
-          { key: "Color", value: selections[0].color! },
-          { key: "Size", value: selections[0].size! },
-        ],
-      });
-    } else {
-      for (let i = 0; i < selections.length; i++) {
-        const s = selections[i];
-        const pv = findPairVariant(bundleProduct, i + 1);
-        if (!pv) {
-          toast.error("Bundle is misconfigured. Please refresh and try again.");
-          setIsCheckingOut(false);
-          return;
-        }
-        bundleLines.push({
-          variantId: pv.id,
-          quantity: 1,
-          attributes: [
-            { key: "Color", value: s.color! },
-            { key: "Size", value: s.size! },
-          ],
-        });
+    const grouped = new Map<string, { variant: ShopifyVariant; quantity: number; pairs: number[] }>();
+    for (const r of resolved) {
+      const existing = grouped.get(r.variant.id);
+      if (existing) {
+        existing.quantity += 1;
+        existing.pairs.push(r.pairIndex);
+      } else {
+        grouped.set(r.variant.id, { variant: r.variant, quantity: 1, pairs: [r.pairIndex] });
       }
     }
+    const bundleLines: CartLineInput[] = Array.from(grouped.values()).map((g) => ({
+      variantId: g.variant.id,
+      quantity: g.quantity,
+      attributes: [{ key: "Pair", value: g.pairs.join(", ") }],
+    }));
 
     const lines: CartLineInput[] = [...bundleLines, ...extraLines];
 

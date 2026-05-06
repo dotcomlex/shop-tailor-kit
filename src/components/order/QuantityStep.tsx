@@ -124,15 +124,15 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                 "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty], opt.qty, bundles?.[1]);
-            // Headline = exact Shopify bundle total (matches checkout to
-            // the cent). Per-pair is shown as a small secondary line on
-            // 2/3-pair cards only — it anchors the upgrade value without
-            // creating a mismatch between Step 1 and Step 3.
-            const totalFormatted = totals ? format(totals.total) : "";
-            const compareFormatted =
-              totals && totals.compare > totals.total ? format(totals.compare) : "";
-            const perPairFormatted =
-              totals && opt.qty > 1 ? format(totals.total / opt.qty) : "";
+            // Headline = per-pair price (same across all 3 cards in spirit:
+            // each card shows its own per-pair tier). Strike = per-pair
+            // retail derived from the advertised save % so the ribbon, the
+            // strike, and Step 3 always agree.
+            const perPair = totals ? totals.total / opt.qty : 0;
+            const perPairCompare = totals ? totals.compare / opt.qty : 0;
+            const perPairFormatted = totals ? format(perPair) : "";
+            const perPairCompareFormatted =
+              totals && perPairCompare > perPair ? format(perPairCompare) : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">
@@ -186,24 +186,20 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                       checkout to the cent. A small per-pair sub-line is
                       shown on 2/3-pair cards as the value anchor. */}
                   <div className="shrink-0 text-right">
-                    {compareFormatted ? (
+                    {perPairCompareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
-                        {compareFormatted}
+                        {perPairCompareFormatted}
                       </p>
                     ) : (
                       <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
-                    {totalFormatted ? (
+                    {perPairFormatted ? (
                       <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
-                        {totalFormatted}
+                        {perPairFormatted}
+                        <span className="ml-1 text-[12px] font-semibold text-[hsl(var(--text-mute))]">/ea</span>
                       </p>
                     ) : (
                       <p className="mt-1 h-[20px] w-20 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
-                    )}
-                    {perPairFormatted && (
-                      <p className="mt-1 text-[11px] font-medium tabular-nums text-[hsl(var(--text-mute))]">
-                        {perPairFormatted}/pair
-                      </p>
                     )}
                   </div>
                 </button>

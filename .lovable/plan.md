@@ -1,57 +1,26 @@
-# Code changes to wire up the new Pair-based bundles
+## Why prices are missing
 
-## What's already done in Shopify ✅
+The Quantity Step renders skeleton bars for the 2-Pair and 3-Pair cards because the Storefront API returns `null` for those two bundle products when queried with `@inContext(country: "US")`:
 
-- **Old 2-Pair Bundle deleted** (had 80 color/size variants).
-- **New 2-Pair Bundle created** — handle `vitalwalk®-shoes-2-pair-bundle-75-off`, variants:
-  - `Pair #1` — $58.29
-  - `Pair #2` — $58.29
-- **Old 3-Pair Bundle deleted** (had 80 color/size variants).
-- **New 3-Pair Bundle created** — handle `vitalwalk®-shoes-3-pair-bundle-80-off`, variants:
-  - `Pair #1` — $46.62
-  - `Pair #2` — $46.62
-  - `Pair #3` — $46.62
-- 1-Pair product untouched (still drives color/size picker).
+- `p1` (1-Pair) → returns data ✅
+- `p2` (2-Pair Bundle) → `null` ❌
+- `p3` (3-Pair Bundle) → `null` ❌
 
-## What I need to change in code
+A direct query without `@inContext` returns the products, so they exist and are `active`. The `@inContext` directive enforces sales-channel publication — meaning the new bundle products were created but **not published to the "Headless / Online Store" sales channel** that the storefront token reads from. The 1-Pair product was published correctly, the new bundles were not.
 
-### 1. `src/lib/shopify.ts` — point to the new bundle handles
-Update `VITALWALK_PRODUCT_HANDLES`:
-- `2: "vitalwalk®-shoes-2-pair-bundle-75-off"`
-- `3: "vitalwalk®-shoes-3-pair-bundle-80-off"`
+In `QuantityStep.tsx`, `readLocalizedTotals(bundles?.[opt.qty], ...)` returns `null` whenever the product is null, so `totalFormatted` / `compareFormatted` are empty and the fallback skeleton placeholders render instead of prices.
 
-### 2. `src/lib/shopify.ts` — add a `findPairVariant` helper
-Looks up `Pair #N` by index on a bundle product (since bundles no longer have color/size options).
+## Fix
 
-### 3. `src/components/order/OrderPage.tsx` — rebuild cart lines
-For a 2-pair or 3-pair order, send **one line per pair**:
+Republish the two new bundle products to the active sales channels via the Shopify admin tool, so the Storefront API can see them under `@inContext`.
 
-```ts
-Line 1: bundleProduct → "Pair #1" variant, qty 1
-        attributes: Color = Black, Size = US W 9 / US M 8 / UK 7
-Line 2: bundleProduct → "Pair #2" variant, qty 1
-        attributes: Color = Sand,  Size = US W 8 / US M 7 / UK 6
-[Line 3 if 3-pair]
-```
+1. Update `VitalWalk® Shoes — 2-Pair Bundle (75% OFF)` (id `10093966917918`) and republish it to all sales channels (online_store + headless).
+2. Update `VitalWalk® Shoes — 3-Pair Bundle (80% OFF)` (id `10093967180062`) the same way.
+3. Re-run the Storefront `AllBundles` query (with `@inContext(country: "US")`) and verify both `p2` and `p3` return non-null with their per-pair prices ($58.29 and $46.62).
+4. Reload the order page — the 2-Pair and 3-Pair cards should display the strikethrough compare price, the bundle total, and the per-pair sub-line.
 
-For a 1-pair order: unchanged (still uses the 1-pair color/size variant directly).
+## Defensive code change
 
-### 4. Pricing math — bundle total = per-pair × quantity
-Bundle products' `priceRange.minVariantPrice` is now per-pair, not the full bundle total. Change the total calc in:
-- `OrderPage.tsx` `bundleTotal` — `perPair × quantity`
-- `OrderPage.tsx` price-sync guard — same formula
-- `QuantityStep.tsx` `readLocalizedTotals` — same formula
+To prevent this kind of silent failure from looking like a "broken price" again, also add a small dev-only console warning in `fetchVitalWalkBundles` (in `src/lib/shopify.ts`) when any of `p1`/`p2`/`p3` come back as `null`. This makes future channel-publication issues immediately visible in the console instead of showing as a skeleton.
 
-Compare-at: per your call, **no compare-at on the Pair variants** (no strikethrough at checkout). For the funnel-side strike-through (Step 1 cards, savings hero, order summary), use the 1-pair product's price × quantity as the "retail" reference (e.g., 2 × $69.95 = $139.90 vs bundle total $116.58).
-
-### 5. Pixel events
-Pair 1's variant ID now points at the new `Pair #1` variant — already handled by passing `pair1Variant.id` through. No code change needed beyond #3.
-
-## Verification after deploy
-
-1. Reload the funnel — Step 1 should show:
-   - 1-Pair: $69.95
-   - 2-Pair: $116.58 (split as $58.29 × 2)
-   - 3-Pair: $139.86 (split as $46.62 × 3)
-2. Place a test 2-pair order with **different** colors/sizes per pair → Shopify order shows two `Pair #` lines, each with the right Color + Size properties, total $116.58.
-3. Same for 3-pair.
+No other code changes are required — the pricing math in `QuantityStep.tsx` and the checkout wiring in `OrderPage.tsx` are correct; they're just being fed `null` for the bundle products.

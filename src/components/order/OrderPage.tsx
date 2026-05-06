@@ -42,6 +42,7 @@ export function OrderPage() {
 
   const step2Ref = useRef<HTMLDivElement | null>(null);
   const step3Ref = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLElement | null>(null);
 
   // Fire ViewContent once when product data is available.
   useEffect(() => {

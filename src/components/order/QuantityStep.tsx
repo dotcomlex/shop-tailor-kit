@@ -124,7 +124,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               : // BEST DEAL — secondary, calmer blue treatment.
                 "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 
-            const totals = readLocalizedTotals(bundles?.[opt.qty]);
+            const totals = readLocalizedTotals(bundles?.[opt.qty], opt.qty, bundles?.[1]);
             // Headline = exact Shopify bundle total (matches checkout to
             // the cent). Per-pair is shown as a small secondary line on
             // 2/3-pair cards only — it anchors the upgrade value without

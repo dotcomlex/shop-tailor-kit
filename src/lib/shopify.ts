@@ -101,7 +101,7 @@ const PRODUCT_FIELDS = /* GraphQL */ `
     images(first: 20) {
       edges { node { url altText } }
     }
-    variants(first: 100) {
+    variants(first: 250) {
       edges {
         node {
           id

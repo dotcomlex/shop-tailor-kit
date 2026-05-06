@@ -63,17 +63,30 @@ interface QuantityStepProps {
 }
 
 /**
- * Read the localized total/compare for a bundle product directly from the
- * Shopify @inContext response. These are the EXACT same numbers Shopify
- * will charge at checkout — no FX math, no rounding drift.
+ * Read the localized total/compare for a bundle pack-size from the Shopify
+ * @inContext response.
+ *
+ * Bundle products (2-pair, 3-pair) store PER-PAIR prices on simple
+ * "Pair #1/#2/#3" variants. The 1-pair product stores the regular price.
+ * Total = per-pair price × pack size. Compare = 1-pair retail × pack size,
+ * which is the "if you bought them individually" reference for the
+ * strikethrough.
  */
-function readLocalizedTotals(product: ShopifyProductData | null | undefined) {
+function readLocalizedTotals(
+  product: ShopifyProductData | null | undefined,
+  qty: number,
+  onePairProduct: ShopifyProductData | null | undefined,
+) {
   if (!product) return null;
-  const total = parseFloat(product.priceRange.minVariantPrice.amount);
-  const compareRaw = parseFloat(product.compareAtPriceRange.minVariantPrice.amount);
-  if (!Number.isFinite(total)) return null;
-  // If compare is missing/zero, fall back to total so the strike-through hides.
-  const compare = Number.isFinite(compareRaw) && compareRaw > 0 ? compareRaw : total;
+  const perPair = parseFloat(product.priceRange.minVariantPrice.amount);
+  if (!Number.isFinite(perPair)) return null;
+  const total = perPair * qty;
+  const onePairRetail = onePairProduct
+    ? parseFloat(onePairProduct.priceRange.minVariantPrice.amount)
+    : NaN;
+  const compare = Number.isFinite(onePairRetail)
+    ? Math.max(total, onePairRetail * qty)
+    : total;
   return { total, compare };
 }
 
@@ -111,7 +124,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               : // BEST DEAL — secondary, calmer blue treatment.
                 "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 
-            const totals = readLocalizedTotals(bundles?.[opt.qty]);
+            const totals = readLocalizedTotals(bundles?.[opt.qty], opt.qty, bundles?.[1]);
             // Headline = exact Shopify bundle total (matches checkout to
             // the cent). Per-pair is shown as a small secondary line on
             // 2/3-pair cards only — it anchors the upgrade value without

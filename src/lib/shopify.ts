@@ -287,61 +287,22 @@ export function pickInsoleVariant(product: ShopifyProductData | null): ShopifyVa
   return pickInsoleVariantForSize(product, null);
 }
 
+/**
+ * Compatibility shim: returns a `BundleProducts` map where every tier points
+ * at the same single product. Lets QuantityStep/OrderPage keep their
+ * `bundles[1|2|3]` indexing without tracking a refactor across files.
+ */
 export interface BundleProducts {
   1: ShopifyProductData | null;
   2: ShopifyProductData | null;
   3: ShopifyProductData | null;
 }
 
-/**
- * Fetch all three pack products (1-pair, 2-pair bundle, 3-pair bundle) in
- * one round-trip, all localized for the given country.
- */
 export async function fetchVitalWalkBundles(country: string = "US"): Promise<BundleProducts> {
-  const result = await storefrontApiRequest<{
-    p1: RawProduct | null;
-    p2: RawProduct | null;
-    p3: RawProduct | null;
-  }>(ALL_BUNDLES_QUERY, {
-    h1: VITALWALK_PRODUCT_HANDLES[1],
-    h2: VITALWALK_PRODUCT_HANDLES[2],
-    h3: VITALWALK_PRODUCT_HANDLES[3],
-    country: (country || "US").toUpperCase(),
-  });
-
-  const bundles: BundleProducts = {
-    1: normalizeProduct(result?.data?.p1 ?? null),
-    2: normalizeProduct(result?.data?.p2 ?? null),
-    3: normalizeProduct(result?.data?.p3 ?? null),
-  };
-
-  // If any bundle came back null (most often because it isn't included in
-  // the customer's Market catalog), refetch WITHOUT @inContext and merge
-  // in the missing ones. Falls back to base currency (USD) but ensures
-  // the price always renders instead of a skeleton bar.
-  const missingKeys = ([1, 2, 3] as const).filter((k) => bundles[k] === null);
-  if (missingKeys.length > 0) {
-    const fallback = await storefrontApiRequest<{
-      p1: RawProduct | null;
-      p2: RawProduct | null;
-      p3: RawProduct | null;
-    }>(ALL_BUNDLES_QUERY_NO_CONTEXT, {
-      h1: VITALWALK_PRODUCT_HANDLES[1],
-      h2: VITALWALK_PRODUCT_HANDLES[2],
-      h3: VITALWALK_PRODUCT_HANDLES[3],
-    });
-    const fb = {
-      1: normalizeProduct(fallback?.data?.p1 ?? null),
-      2: normalizeProduct(fallback?.data?.p2 ?? null),
-      3: normalizeProduct(fallback?.data?.p3 ?? null),
-    } as BundleProducts;
-    for (const k of missingKeys) {
-      if (fb[k]) bundles[k] = fb[k];
-    }
-  }
-
-  return bundles;
+  const product = await fetchVitalWalkProduct(country);
+  return { 1: product, 2: product, 3: product };
 }
+
 
 // ─── Cart / Checkout ────────────────────────────────────────────────
 

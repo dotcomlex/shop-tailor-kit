@@ -1,53 +1,25 @@
-## Plan
+## Goal
+Sync only the **color variant images** (Beige, Gray, Black, Blue) from the 1-pair VitalWalk product onto the 2-pair and 3-pair bundle products. No lifestyle/feature shots.
 
-I’ll restore the compare-price logic so the funnel uses the correct retail baseline again, then I’ll re-audit every pricing surface that depends on it.
+## Source images (from 1-pair product `10083237298462`)
+1. `vitalwalk_color_1_compressed.jpg` — Beige
+2. `vitalwalk_color_2_compressed.jpg` — Gray
+3. `vitalwalk_color_3_compressed.jpg` — Black
+4. `vitalwalk_color_4_compressed.jpg` — Blue
 
-### What I’ll change
+## Steps
+1. **Resolve image source.** The Shopify CDN URLs are not directly fetchable by `update_product` (returned `GIT_FILE_UNREADABLE`). Approach: download each of the 4 color JPGs into the project (e.g. `public/shopify-bundle-images/`) via `curl`, then pass those local paths into `shopify--update_product`.
+2. **Update 2-Pair bundle (`10093966917918`)** — call `shopify--update_product` with exactly the 4 color images (alts: Beige / Gray / Black / Blue). This replaces the current empty/default media set.
+3. **Update 3-Pair bundle (`10093967180062`)** — same 4 images, same alts.
+4. **Verify** with `shopify--get_product` on both bundle IDs that exactly 4 images are present and the primary image is the Beige color shot.
+5. **Clean up** the temporary `public/shopify-bundle-images/` folder after Shopify has the assets, so they don't ship in the frontend bundle.
 
-1. Fix the 1-pair compare price source
-- Update the quantity-step pricing logic so the 1-pair card uses the product’s real compare-at price from Shopify, not the live sale price as the strike-through baseline.
-- This should restore the missing/incorrect struck-through value above the $69.95 option.
+## Important note on checkout thumbnail behavior
+Bundle variants are generic `Pair #1 / #2 / #3` (no Color option on the variant), so Shopify cannot auto-swap the line-item thumbnail to the customer's chosen color. The thumbnail at checkout will show the bundle product's primary image (Beige). The actual color + size chosen for each pair is already passed as **line-item properties** and in the **order note**, so you and your supplier see the correct selections per pair.
 
-2. Fix bundle compare prices for 2-pair and 3-pair
-- Change bundle compare calculations to derive from the 1-pair retail compare-at amount, multiplied by quantity.
-- Keep the live bundle total based on the real Shopify bundle prices already used for checkout.
-- This should replace the current too-low compare values like $139.90 with the higher retail values you had before.
+If you later want the thumbnail itself to match the chosen color, we'd need to restructure the bundles so each variant is per-color (e.g. `Beige / Gray / Black / Blue` as the variant option) — a separate, larger change.
 
-3. Align all downstream pricing surfaces
-- Update any shared order-summary/sticky-checkout calculations that currently use the wrong baseline so Step 1, Step 3, savings, and the sticky bar all agree.
-- Make sure savings percentages are computed from the corrected compare totals.
-
-4. Re-verify currency/localization behavior
-- Keep localized sale prices coming from Shopify’s country-aware responses.
-- Verify the compare-price logic uses the matching localized compare-at value when it exists.
-- Preserve the existing fallback behavior for bundle products when a market-localized bundle is unavailable, while avoiding mismatched compare calculations.
-
-5. Final QA pass
-- Recheck:
-  - 1-pair, 2-pair, 3-pair cards
-  - compare price visibility
-  - savings amounts/percentages
-  - Step 3 order summary
-  - sticky checkout bar
-  - pre-checkout price sync behavior
-- If I find any remaining drift between display and checkout, I’ll correct that too.
-
-## Technical details
-
-Files I expect to update:
-- `src/components/order/QuantityStep.tsx`
-- `src/components/order/OrderPage.tsx`
-- possibly `src/hooks/useVitalWalkProduct.ts` if a shared retail baseline helper is cleaner
-
-Core logic change:
-- Current broken behavior:
-  - bundle compare = 1-pair sale price × quantity
-- Correct behavior:
-  - 1-pair compare = 1-pair compare-at price
-  - 2/3-pair compare = 1-pair compare-at price × quantity
-  - bundle total remains the actual localized Shopify selling price
-
-Expected outcome:
-- 1 Pair shows the correct compare price above `$69.95`
-- 2 Pair and 3 Pair show restored higher compare prices
-- savings and totals remain consistent with checkout and country/currency handling
+## Files / surfaces touched
+- Shopify product `10093966917918` (2-Pair Bundle) — images replaced
+- Shopify product `10093967180062` (3-Pair Bundle) — images replaced
+- No app code changes

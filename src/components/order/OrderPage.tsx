@@ -112,17 +112,25 @@ export function OrderPage() {
   // Source of truth for the order summary + sticky bar: Shopify's localized
   // bundle product price. This is the EXACT amount the customer will be
   // charged at checkout — no FX math, no rounding drift.
+  // Source of truth for the order summary + sticky bar:
+  //   bundleTotal   = bundle product per-pair price × quantity
+  //   bundleCompare = 1-pair retail price × quantity (for the strikethrough)
+  // Bundle products no longer carry a compare-at — the per-pair variants ARE
+  // the discounted price. We synthesize the strike-through on our side using
+  // the 1-pair product's price as the "regular" reference.
   const { bundleTotal, bundleCompare } = useMemo(() => {
     const bp = bundles?.[quantity];
     if (!bp) return { bundleTotal: 0, bundleCompare: 0 };
-    const total = parseFloat(bp.priceRange.minVariantPrice.amount);
-    const compareRaw = parseFloat(bp.compareAtPriceRange.minVariantPrice.amount);
-    const compare = Number.isFinite(compareRaw) && compareRaw > 0 ? compareRaw : total;
-    return {
-      bundleTotal: Number.isFinite(total) ? total : 0,
-      bundleCompare: compare,
-    };
-  }, [bundles, quantity]);
+    const perPair = parseFloat(bp.priceRange.minVariantPrice.amount);
+    const total = Number.isFinite(perPair) ? perPair * quantity : 0;
+    const onePairRetail = product
+      ? parseFloat(product.priceRange.minVariantPrice.amount)
+      : NaN;
+    const compare = Number.isFinite(onePairRetail)
+      ? Math.max(total, onePairRetail * quantity)
+      : total;
+    return { bundleTotal: total, bundleCompare: compare };
+  }, [bundles, quantity, product]);
 
   // Re-fetch the localized bundle prices whenever the user returns to the
   // tab. Catches the case where Shopify Markets revalues FX while the tab

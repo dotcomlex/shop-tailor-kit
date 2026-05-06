@@ -327,11 +327,31 @@ export async function fetchVitalWalkBundles(country: string = "US"): Promise<Bun
     country: (country || "US").toUpperCase(),
   });
 
-  return {
+  const bundles = {
     1: normalizeProduct(result?.data?.p1 ?? null),
     2: normalizeProduct(result?.data?.p2 ?? null),
     3: normalizeProduct(result?.data?.p3 ?? null),
   };
+
+  // Dev-only safety net: if any bundle product comes back null under
+  // @inContext, it almost always means the product was created in Shopify
+  // admin but never published to the Headless / Online Store sales channel
+  // that this Storefront token reads from. The Quantity Step would
+  // otherwise silently render skeleton bars instead of prices.
+  if (import.meta.env.DEV) {
+    const missing = (Object.entries(bundles) as Array<[string, ShopifyProductData | null]>)
+      .filter(([, v]) => v === null)
+      .map(([k]) => `${k}-pair (${VITALWALK_PRODUCT_HANDLES[Number(k) as 1 | 2 | 3]})`);
+    if (missing.length) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[VitalWalk] Storefront API returned null for: ${missing.join(", ")}. ` +
+          `Publish these products to the Headless / Online Store sales channel in Shopify admin.`,
+      );
+    }
+  }
+
+  return bundles;
 }
 
 // ─── Cart / Checkout ────────────────────────────────────────────────

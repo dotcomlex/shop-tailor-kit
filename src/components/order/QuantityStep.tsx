@@ -75,30 +75,17 @@ interface QuantityStepProps {
 function readLocalizedTotals(
   product: ShopifyProductData | null | undefined,
   qty: number,
-  onePairProduct: ShopifyProductData | null | undefined,
+  _onePairProduct: ShopifyProductData | null | undefined,
 ) {
   if (!product) return null;
   const perPair = parseFloat(product.priceRange.minVariantPrice.amount);
   if (!Number.isFinite(perPair)) return null;
   const total = perPair * qty;
-  // Strike-through baseline = the 1-pair product's REAL compare-at retail
-  // price (e.g. $232.83), multiplied by pack size. This is the "if you
-  // bought them individually at full retail" anchor — the same value the
-  // page used before bundles existed. Falls back to the 1-pair sale price
-  // only if compare-at is missing entirely so we never show a strike below
-  // the real total.
-  const onePairCompareRaw = onePairProduct
-    ? parseFloat(onePairProduct.compareAtPriceRange.minVariantPrice.amount)
-    : NaN;
-  const onePairSale = onePairProduct
-    ? parseFloat(onePairProduct.priceRange.minVariantPrice.amount)
-    : NaN;
-  const onePairRetail = Number.isFinite(onePairCompareRaw) && onePairCompareRaw > 0
-    ? onePairCompareRaw
-    : onePairSale;
-  const compare = Number.isFinite(onePairRetail)
-    ? Math.max(total, onePairRetail * qty)
-    : total;
+  // Strike-through is derived from the advertised bundle save % so the
+  // ribbon ("75% OFF"), the strike, and Step 3 always agree to the cent.
+  const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.75, 3: 0.80 };
+  const pct = SAVE_PCT[qty] ?? 0;
+  const compare = pct > 0 && total > 0 ? total / (1 - pct) : total;
   return { total, compare };
 }
 

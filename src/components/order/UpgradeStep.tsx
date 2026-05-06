@@ -14,6 +14,7 @@ import paymentBadges from "@/assets/payment-badges.png";
 interface UpgradeStepProps {
   total: number;
   comparePrice: number;
+  quantity: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
 }
@@ -21,6 +22,7 @@ interface UpgradeStepProps {
 export function UpgradeStep({
   total,
   comparePrice,
+  quantity,
   onCheckout,
   isCheckingOut,
 }: UpgradeStepProps) {
@@ -36,7 +38,7 @@ export function UpgradeStep({
 
       <div className="row-pad mt-4 space-y-3.5">
         <ScarcityBar />
-        <OrderSummary subtotal={total} saved={saved} />
+        <OrderSummary subtotal={total} saved={saved} quantity={quantity} />
         <IncludedChecklist />
 
         {/* 60-day risk-free guarantee — final reassurance right before CTA */}

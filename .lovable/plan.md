@@ -1,59 +1,21 @@
-# Full Funnel QA Sweep
+## Highlight selected quantity card with warm on-brand tint
 
-I'll run a complete end-to-end test of the live funnel in the browser, covering every step, button, and the currency/geo behavior across the top 4 markets.
+Make the pre-selected "2 Pairs" card pop the moment users land, using a warm cream/yellow tint that matches the existing yellow CTA brand color.
 
-## What I'll test
+### Changes (single file: `src/components/order/QuantityStep.tsx`)
 
-### 1. Step 1 — Quantity selection
-- All three bundle cards render with correct per-pair pricing and strike-through
-- "MOST POPULAR" pill appears on the right card
-- Save % pills are correct
-- Selecting each option (1, 2, 3 pairs) advances correctly
-- Sticky CTA reflects selected bundle total
+For the option `<button>` when `selected` is true:
+- **Background:** warm cream `bg-[#FDF7F0]` (matches your suggested swatch — soft, on-brand with the yellow CTA)
+- **Border:** keep `border-order-blue` but bump visibility — add a subtle warm-yellow accent ring `ring-2 ring-[hsl(45_95%_55%/0.35)]` so the card glows slightly without fighting the blue border
+- **Shadow:** add `shadow-[0_4px_14px_-4px_rgba(212,160,23,0.25)]` for a soft warm lift
+- **Save % text:** keep as-is (already strong red)
 
-### 2. Step 2 — Color & Size
-- All color swatches selectable, image updates
-- Size grid: each size selectable, sold-out states behave
-- Sizing dialog opens and closes
-- "True to size" meter renders
-- For 2-pair / 3-pair bundles: confirm extra pair color/size pickers appear and gate the CTA until filled
+Unselected cards stay white with gray border — so the contrast is immediate and the eye lands on 2 Pairs first.
 
-### 3. Insole upsell modal
-- Pops after Step 2 / before Step 3
-- "Yes, add" and "No thanks" both work
-- Insole price matches selected shoe size variant
-- Currency on insole matches localized currency
+### Why this works
+- `#FDF7F0` ties visually to the yellow "Select Color and Size" CTA → reinforces brand color story
+- Warm tone reads as "premium / chosen" without competing with the red MOST POPULAR ribbon
+- Stronger visual hierarchy than the current blue-border-only treatment, which can be missed on bright phone screens
+- Pure presentation change — no logic, copy, pricing, or ribbon changes
 
-### 4. Step 3 — Review & Checkout
-- Order summary totals match Step 1 selection
-- Insole line appears only if accepted
-- Scarcity bar, guarantee, checklist, reviews, FAQ all render
-- Sticky checkout bar appears after FAQ scroll
-- "Complete My Order" creates Shopify cart and redirects to checkout
-
-### 5. Checkout (Shopify)
-- Lands on Shopify checkout in correct currency
-- Line items show correct color/size attributes for each pair
-- Insole present if added
-- Totals match what Step 3 displayed (no drift)
-
-### 6. Currency & Geo — top 4 markets
-For US, CA, AU, GB I'll verify:
-- Currency symbol/code on Steps 1–3
-- Insole modal price
-- Sticky bar price
-- Shopify checkout opens in matching currency with matching totals
-
-I'll simulate each country by overriding the geo cache (localStorage) and reloading, then walk the funnel.
-
-### 7. Misc UI
-- Header / nav links
-- Recent purchase toasts
-- Support chat opens/sends a message
-- Mobile viewport (390x844) layout sanity check on each step
-
-## Deliverable
-
-A pass/fail report per area with screenshots of any issues found, and (if I find a bug) a separate follow-up to fix it — no code changes will be made during this plan.
-
-Approve and I'll start the sweep.
+No other files touched.

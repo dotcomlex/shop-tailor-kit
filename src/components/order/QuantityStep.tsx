@@ -151,10 +151,10 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   onClick={() => onQuantityChange(opt.qty)}
                   aria-pressed={selected}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-xl border-2 bg-card p-3 text-left transition-all sm:gap-4 sm:p-4",
+                    "flex w-full items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all sm:gap-4 sm:p-4",
                     selected
-                      ? "border-order-blue"
-                      : "border-border hover:border-[hsl(var(--text-mute))]",
+                      ? "border-order-blue bg-[#FDF7F0] ring-2 ring-[hsl(45_95%_55%/0.35)] shadow-[0_4px_14px_-4px_rgba(212,160,23,0.25)]"
+                      : "bg-card border-border hover:border-[hsl(var(--text-mute))]",
                   )}
                 >
                   {/* radio */}

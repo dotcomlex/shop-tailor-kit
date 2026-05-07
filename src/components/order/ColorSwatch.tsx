@@ -23,7 +23,7 @@ export function ColorSwatch({ color, selected, onSelect }: ColorSwatchProps) {
     >
       <span
         className={cn(
-          "relative flex h-[84px] w-[84px] items-center justify-center rounded-full bg-white p-[2px] transition-all duration-150 sm:h-[108px] sm:w-[108px]",
+          "relative flex h-[82px] w-[82px] items-center justify-center rounded-full bg-white p-[2px] transition-all duration-150 sm:h-[108px] sm:w-[108px]",
           selected
             ? "ring-[3px] ring-[hsl(var(--order-blue))] ring-offset-2"
             : "ring-1 ring-black/5 group-hover:ring-2 group-hover:ring-[hsl(var(--text-mute))]/40 group-focus-visible:ring-2 group-focus-visible:ring-[hsl(var(--order-blue))]",

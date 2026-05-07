@@ -53,7 +53,7 @@ export function ColorSwatch({ color, selected, onSelect }: ColorSwatchProps) {
       </span>
       <span
         className={cn(
-          "text-[13px] font-bold tracking-tight transition-colors sm:text-[14px]",
+          "text-[14px] font-bold tracking-tight transition-colors sm:text-[15px]",
           selected ? "text-[hsl(var(--text-strong))]" : "text-[hsl(var(--text-mute))]",
         )}
       >

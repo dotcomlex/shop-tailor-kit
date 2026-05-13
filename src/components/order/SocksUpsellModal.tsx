@@ -244,23 +244,8 @@ export function SocksUpsellModal({
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-center gap-1">
-                  <div className="flex" aria-label="4.9 out of 5 stars">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Star
-                        key={i}
-                        className="h-3 w-3 fill-[hsl(var(--verified-green))] text-[hsl(var(--verified-green))]"
-                        strokeWidth={1.5}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
-                    4.9 · 8,900+
-                  </span>
-                </div>
-
                 <DialogPrimitive.Title asChild>
-                  <h2 className="mt-1 text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Compression Socks · 3-Pack
                   </h2>
                 </DialogPrimitive.Title>

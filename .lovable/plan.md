@@ -1,89 +1,70 @@
-## Funnel Audit — Findings & Recommended Fixes
+## Goal
 
-I walked the funnel end-to-end (geo → product fetch → step 1/2/3 → upsell modals → checkout). The bucket math, pixel events, price-sync guard, and step gating all look correct. The bottlenecks are network/load-time, not logic. Two clear wins, plus a few small polish items.
+A/B test the socks upsell by promoting it to the **post-purchase position #1** slot (where insoles currently sit). Insole code stays in the project intact — just disabled behind a single flag so we can flip back instantly.
+
+Also: strengthen the socks modal with stronger, more specific benefits (edema, diabetic-friendly, soft-on-skin, true-to-shoe-size fit, etc.) so the offer looks premium.
 
 ---
 
-### 1. `useGeo` fan-out — 12 redundant edge-function calls per page load (HIGH IMPACT)
+## Scope of changes
 
-**Symptom (visible in network log):** `GET /functions/v1/geo` fires **12 times** within ~1 second on first load.
+### 1. `src/components/order/OrderPage.tsx` — re-wire the upsell flow
 
-**Cause:** 12 components/hooks call `useGeo()`. Each instance independently runs `detectCountry()` in its own `useEffect`. There's a localStorage cache, but a brand-new visitor (no cache) gets all 12 firing in parallel, and even cached visitors trigger 12 background revalidations.
-
-**Fix:** Make `detectCountry()` a singleton — coalesce concurrent calls into one in-flight promise:
-
+Add a single feature flag at the top of the file:
 ```ts
-// src/lib/geo.ts
-let inflight: Promise<DetectedCountry | null> | null = null;
-export async function detectCountry() {
-  if (inflight) return inflight;
-  inflight = (async () => { /* existing body */ })()
-    .finally(() => { inflight = null; });
-  return inflight;
-}
+const UPSELL_PRIMARY: "socks" | "insoles" = "socks";
 ```
 
-Same treatment for `revalidateInBackground`. Result: **1 geo call instead of 12**, faster TTFB on the first bundle query, less Supabase usage.
+Refactor `handleCompleteOrderClick` so that when `UPSELL_PRIMARY === "socks"`:
+- Click "Complete My Order" → open `SocksUpsellModal` directly (skip insole modal entirely)
+- Accept socks → checkout with sock line (existing `handleSocksAccept` logic, untouched)
+- Decline socks → straight to checkout (no chained second offer — clean A/B test)
+
+When `UPSELL_PRIMARY === "insoles"` the current flow is preserved verbatim (insoles → on decline, socks). Flipping the flag back is a one-line revert.
+
+No deletions. `useInsoleProduct`, `InsoleUpsellModal`, `pickInsoleVariantForSize`, `handleUpsellAccept`, `handleUpsellDecline` all stay in the file and continue to work — they're just unreachable while the flag is "socks".
+
+Keep the lazy import for `InsoleUpsellModal` so its chunk isn't even fetched while the flag is "socks" (already lazy — no change needed).
+
+### 2. `src/components/order/SocksUpsellModal.tsx` — strengthen copy & trust
+
+This is the moment of truth for the test, so the modal needs to feel premium and clinically credible — not just a generic "add socks" prompt.
+
+Updates to copy (visual layout stays the same — already approved):
+
+- **Headline tweak:** keep "Compression Socks · 3-Pack" but add a tighter sub-headline below: *"Built for VitalWalk wearers — fits true to your shoe size."*
+- **Benefits list — replace the current 4 with 5 stronger, more specific ones:**
+  1. Reduces swelling & edema — graduated 20–30 mmHg pressure
+  2. Diabetic-friendly — non-binding cuff, no circulation cut-off
+  3. Ultra-soft bamboo-blend knit — gentle on sensitive skin
+  4. Moisture-wicking & odor-resistant — fresh all day
+  5. Sized to match your VitalWalks — guaranteed perfect fit
+- **Add a small "Best paired with VitalWalks" row** (icon + text) above the size selector, replacing the existing "🦶 Pairs perfectly with your VitalWalks" line which moves up.
+- **Trust microline below the CTA:** keep "Free shipping · 60-day money-back guarantee", add "· Doctor-recommended materials".
+
+No structural/layout changes. No new components. No new images. All copy changes are inside the existing JSX — same animation, same buttons, same modal dimensions.
+
+### 3. Nothing else changes
+
+- No changes to `useSocksProduct`, `useInsoleProduct`, `shopify.ts`, checkout logic, pixel events, price-sync guard, or any other file.
+- Insole product is still fetched in the background (cheap, cached) so flipping the flag back is instant — no cold-start delay.
 
 ---
 
-### 2. Lazy-load post-interaction code (MEDIUM IMPACT — smaller initial JS)
+## Files touched
 
-These components are in the initial bundle but only render after the user takes an action:
-- `SocksUpsellModal` + `InsoleUpsellModal` — only after "Complete Order" click
-- `SizingDialogs` (size chart, fit guide) — only on "Need help?" tap
-- `AlyssaChat` (in `SupportChatProvider`) — only on chat-bubble click
-- `RecentPurchaseToasts` — fires on a delay; can defer
+- `src/components/order/OrderPage.tsx` — add `UPSELL_PRIMARY` flag + branch in `handleCompleteOrderClick`
+- `src/components/order/SocksUpsellModal.tsx` — strengthen benefits copy, add sub-headline, refine trust line
 
-**Fix:** `React.lazy()` + `Suspense` for these four. Estimated initial JS savings: ~30–50 KB gzipped (Radix Dialog already in main, but chat + toast + size-chart copy add up). Faster LCP, faster TTI on mobile.
+## How to read the test result
 
----
+After ~50–100 Step-3 completions:
+- Socks take-rate now (position #1) vs. insole take-rate before (position #1) = clean apples-to-apples
+- If socks ≥ insoles → keep socks, optionally chain insoles as #2
+- If socks < insoles → flip `UPSELL_PRIMARY` back to `"insoles"` (one-line change), socks return to position #2 or get retired
 
-### 3. Preload the LCP hero image (SMALL — measurable LCP gain)
+## Risk / rollback
 
-The shoe hero (`23b406cd-…png` at the top of `ProductPanel`) is the LCP element. Add to `index.html`:
-
-```html
-<link rel="preload" as="image"
-  href="https://cdn.shopify.com/s/files/1/0843/7143/9902/files/23b406cd-224c-430b-8e83-8fcc7b918934.png"
-  fetchpriority="high" />
-```
-
-Already have `preconnect` to `cdn.shopify.com` ✓. Adding the preload typically shaves 200–400 ms off mobile LCP.
-
----
-
-### 4. Preconnect to Supabase edge (SMALL)
-
-`vsbvrchqdvzwggsrgcrm.supabase.co` is hit on first paint (geo) and again later (fb-capi). Add:
-
-```html
-<link rel="preconnect" href="https://vsbvrchqdvzwggsrgcrm.supabase.co" crossorigin />
-```
-
-Saves ~100–150 ms of TLS handshake on the very first geo call (which is in the critical path of the bundle fetch when there's no geo cache).
-
----
-
-### 5. Tiny polish
-
-- **`fbevents.js` script** in `<head>` is fine (it's async-injected) — no change needed, just confirming.
-- **`useGeo` `loading` state** isn't read by any consumer right now — harmless, but could be removed.
-- **Socks upsell labels** — shipped last turn ✓.
-
----
-
-### Out of scope (intentionally not touching)
-
-- Pixel event mapping, price-sync guard, RLS, Shopify variant logic — all working correctly.
-- No code-splitting of routes — the app is essentially a single page; route-splitting wouldn't help.
-
----
-
-### Suggested order of execution
-
-1. `geo.ts` singleton (the big one — kills 11 redundant requests).
-2. `index.html` preload + preconnect (1-line wins).
-3. `React.lazy` the 4 post-interaction components.
-
-Want me to ship all three, or just #1 + #2 first and benchmark before doing the lazy-load refactor?
+- One-line revert: change `UPSELL_PRIMARY` back to `"insoles"`.
+- Insole code paths are unchanged and still fully wired — no regressions possible on flip-back.
+- Checkout, pixel events, price guards: all untouched.

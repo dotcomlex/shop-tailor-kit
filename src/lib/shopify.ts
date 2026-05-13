@@ -477,3 +477,92 @@ export function findVariant(
   });
 }
 
+
+// ─── Compression Socks upsell helpers ───────────────────────────────
+
+/**
+ * Fetch the compression-socks upsell product, localized for the given country.
+ */
+export async function fetchSocksProduct(country: string = "US"): Promise<ShopifyProductData | null> {
+  const result = await storefrontApiRequest<{ product: RawProduct | null }>(
+    PRODUCT_BY_HANDLE_QUERY,
+    {
+      handle: SOCKS_PRODUCT_HANDLE,
+      country: (country || "US").toUpperCase(),
+    },
+  );
+  return normalizeProduct(result?.data?.product ?? null);
+}
+
+/** Buckets the Shopify size option values down to "S/M" or "L/XL". */
+export type SocksSizeBucket = "S/M" | "L/XL";
+
+export function socksBucketFromValue(raw: string): SocksSizeBucket | null {
+  const head = raw.trim().split(/[\s/–-]/)[0]?.toUpperCase();
+  if (head === "S" || head === "M" || raw.toUpperCase().startsWith("S/M")) return "S/M";
+  if (head === "L" || head === "XL" || raw.toUpperCase().startsWith("L/XL")) return "L/XL";
+  return null;
+}
+
+/**
+ * Map the customer's shoe size string ("US W 9 / US M 8 / UK 7") to the
+ * corresponding sock bucket. Threshold matches Shopify's variant labels:
+ *   S/M  = US W 5.5–8 | US M 5–7.5 | UK 4–6.5
+ *   L/XL = US W 8–15  | US M 8–14  | UK 7–13
+ */
+export function socksBucketFromShoeSize(shoeSize: string | null): SocksSizeBucket {
+  if (!shoeSize) return "L/XL"; // safer default — most US adults
+  const { w, m, uk } = parseSizeTokens(shoeSize);
+  if (Number.isFinite(w)) return w <= 8 ? "S/M" : "L/XL";
+  if (Number.isFinite(m)) return m <= 7.5 ? "S/M" : "L/XL";
+  if (Number.isFinite(uk)) return uk <= 6.5 ? "S/M" : "L/XL";
+  return "L/XL";
+}
+
+/**
+ * Pick the socks variant matching a size bucket + color. Falls back to any
+ * available variant in that bucket, then to the first available variant of
+ * the product, then to the first variant. Never returns null if the product
+ * has any variants at all.
+ */
+export function pickSocksVariant(
+  product: ShopifyProductData | null,
+  bucket: SocksSizeBucket,
+  color: string,
+): ShopifyVariant | null {
+  if (!product || !product.variants.length) return null;
+
+  const inBucket = product.variants.filter((v) => {
+    const sizeOpt = v.selectedOptions.find(
+      (o) => o.name.replace(/:$/, "").toLowerCase() === "size",
+    );
+    return sizeOpt ? socksBucketFromValue(sizeOpt.value) === bucket : false;
+  });
+
+  const matchColor = (v: ShopifyVariant) =>
+    v.selectedOptions.some(
+      (o) =>
+        o.name.replace(/:$/, "").toLowerCase() === "color" &&
+        o.value.toLowerCase() === color.toLowerCase(),
+    );
+
+  return (
+    inBucket.find((v) => matchColor(v) && v.availableForSale) ??
+    inBucket.find((v) => matchColor(v)) ??
+    inBucket.find((v) => v.availableForSale) ??
+    inBucket[0] ??
+    product.variants.find((v) => v.availableForSale) ??
+    product.variants[0] ??
+    null
+  );
+}
+
+/** Available colors on the socks product, in Shopify's option order. */
+export function socksColors(product: ShopifyProductData | null): string[] {
+  if (!product) return [];
+  const colorOpt = product.options.find(
+    (o) => o.name.replace(/:$/, "").toLowerCase() === "color",
+  );
+  return colorOpt?.values ?? [];
+}
+

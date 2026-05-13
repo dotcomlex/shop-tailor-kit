@@ -90,9 +90,12 @@ export function SocksUpsellModal({
     return () => clearTimeout(t);
   }, [open, shoeSelections]);
 
+  const effectiveColor = color ?? colors[0] ?? "Black";
+  const colorTouched = color !== null;
+
   const variant = useMemo(
-    () => pickSocksVariant(product, bucket, color),
-    [product, bucket, color],
+    () => pickSocksVariant(product, bucket, effectiveColor),
+    [product, bucket, effectiveColor],
   );
 
   // Fire ViewContent once per open.
@@ -114,6 +117,32 @@ export function SocksUpsellModal({
     });
   }, [open, product, variant]);
 
+  // Stable gallery: lifestyle images first, followed by every available color
+  // pack. Order never changes — selecting a color just jumps the hero to that
+  // pack image instead of rebuilding the carousel.
+  const gallery = useMemo(() => {
+    const items: Array<{ src: string; alt: string; key: string; color?: string }> = [
+      ...LIFESTYLE_IMAGES.map((img, i) => ({
+        src: img.src,
+        alt: img.alt,
+        key: `life:${i}`,
+      })),
+    ];
+    for (const c of colors) {
+      const local = PACK_IMAGE[c];
+      const remote = socksImageForColor(product, c)?.url;
+      const src = local ?? remote ?? "";
+      if (!src) continue;
+      items.push({
+        src,
+        alt: `${product?.title ?? "Compression Socks"} — ${c}`,
+        key: `pack:${c}`,
+        color: c,
+      });
+    }
+    return items.filter((g) => g.src);
+  }, [colors, product]);
+
   if (!product || !variant) return null;
 
   const currency = variant.price.currencyCode;
@@ -121,20 +150,6 @@ export function SocksUpsellModal({
   const compareAt = parseFloat(variant.compareAtPrice?.amount ?? "0");
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
-
-  const localPack = PACK_IMAGE[color];
-  const fallbackImage = colorTouched
-    ? socksImageForColor(product, color)
-    : product.images[0] ?? socksImageForColor(product, color);
-  const packSrc = localPack ?? fallbackImage?.url ?? "";
-
-  const gallery: Array<{ src: string; alt: string; key: string }> = (colorTouched
-    ? [
-        { src: packSrc, alt: `${product.title} — ${color}`, key: `pack:${color}` },
-        ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
-      ]
-    : LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` }))
-  ).filter((g) => g.src);
 
   const safeIdx = Math.min(activeImg, gallery.length - 1);
   const heroItem = gallery[safeIdx];

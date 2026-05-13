@@ -182,7 +182,7 @@ export function SocksUpsellModal({
                 >
                   {heroImage && (
                     <img
-                      key={color}
+                      key={heroKey}
                       src={heroImage.url}
                       alt={heroImage.altText ?? product.title}
                       className="h-full w-full object-cover animate-in fade-in-0 duration-200"

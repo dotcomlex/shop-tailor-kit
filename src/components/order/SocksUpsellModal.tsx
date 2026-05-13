@@ -130,14 +130,13 @@ export function SocksUpsellModal({
     : product.images[0] ?? socksImageForColor(product, color);
   const packSrc = localPack ?? fallbackImage?.url ?? "";
 
-  const gallery: Array<{ src: string; alt: string; key: string }> = [
-    {
-      src: packSrc,
-      alt: `${product.title} — ${color}`,
-      key: `pack:${color}`,
-    },
-    ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
-  ].filter((g) => g.src);
+  const gallery: Array<{ src: string; alt: string; key: string }> = (colorTouched
+    ? [
+        { src: packSrc, alt: `${product.title} — ${color}`, key: `pack:${color}` },
+        ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
+      ]
+    : LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` }))
+  ).filter((g) => g.src);
 
   const safeIdx = Math.min(activeImg, gallery.length - 1);
   const heroItem = gallery[safeIdx];
@@ -282,6 +281,21 @@ export function SocksUpsellModal({
                     Save {savePct}% today
                   </span>
                 )}
+
+                <ul className="mt-2.5 space-y-1">
+                  {["3 pairs included", "Free US shipping", "60-day guarantee"].map((line) => (
+                    <li
+                      key={line}
+                      className="flex items-center gap-1.5 text-[10.5px] font-semibold text-[hsl(var(--text-body))]"
+                    >
+                      <Check
+                        className="h-2.5 w-2.5 shrink-0 text-[hsl(var(--verified-green))]"
+                        strokeWidth={3.5}
+                      />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 

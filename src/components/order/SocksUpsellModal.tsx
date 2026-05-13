@@ -346,7 +346,7 @@ export function SocksUpsellModal({
 
             {/* Subtle reassurance */}
             <p className="mt-3 text-center text-[10.5px] tracking-wide text-[hsl(var(--text-mute))]">
-              🦶 Pairs perfectly with your VitalWalks
+              🦶 Best paired with your VitalWalks · One-time bonus
             </p>
 
             {/* Savings line */}

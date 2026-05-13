@@ -1,70 +1,70 @@
 ## Goal
 
-A/B test the socks upsell by promoting it to the **post-purchase position #1** slot (where insoles currently sit). Insole code stays in the project intact — just disabled behind a single flag so we can flip back instantly.
+Two tweaks to the socks upsell modal — keep it the position #1 A/B test offer, just make it stronger:
 
-Also: strengthen the socks modal with stronger, more specific benefits (edema, diabetic-friendly, soft-on-skin, true-to-shoe-size fit, etc.) so the offer looks premium.
+1. **Punchier benefits** — kill the em-dashes, lead with results not specs.
+2. **Image carousel** — same pattern as the insole modal (left-side hero + thumbnail row), using the 3 lifestyle/social-proof images you uploaded, plus the existing variant pack shots.
+
+All assets compressed to WebP and lazy-loaded so nothing slows the funnel.
 
 ---
 
-## Scope of changes
+## 1. Bullet copy — results-first
 
-### 1. `src/components/order/OrderPage.tsx` — re-wire the upsell flow
+Replace the current 5 long em-dashed lines with 5 short punchy ones:
 
-Add a single feature flag at the top of the file:
-```ts
-const UPSELL_PRIMARY: "socks" | "insoles" = "socks";
+```
+Stops swelling fast
+Safe for diabetics & sensitive skin
+All-day comfort, zero pinching
+Stays fresh, fights odor
+True to your shoe size
 ```
 
-Refactor `handleCompleteOrderClick` so that when `UPSELL_PRIMARY === "socks"`:
-- Click "Complete My Order" → open `SocksUpsellModal` directly (skip insole modal entirely)
-- Accept socks → checkout with sock line (existing `handleSocksAccept` logic, untouched)
-- Decline socks → straight to checkout (no chained second offer — clean A/B test)
+Same green check styling, same list. No structural change.
 
-When `UPSELL_PRIMARY === "insoles"` the current flow is preserved verbatim (insoles → on decline, socks). Flipping the flag back is a one-line revert.
+## 2. Image carousel (mirrors insole modal)
 
-No deletions. `useInsoleProduct`, `InsoleUpsellModal`, `pickInsoleVariantForSize`, `handleUpsellAccept`, `handleUpsellDecline` all stay in the file and continue to work — they're just unreachable while the flag is "socks".
+In `SocksUpsellModal.tsx`, replace the single hero image with the same gallery pattern used in `InsoleUpsellModal.tsx`:
 
-Keep the lazy import for `InsoleUpsellModal` so its chunk isn't even fetched while the flag is "socks" (already lazy — no change needed).
+- Left-column **170×170 hero** image, swappable
+- Row of **6 thumbnails** (~26×26) below it, click to swap
+- Hero animates a soft fade on swap (same `animate-in fade-in-0` already in the file)
 
-### 2. `src/components/order/SocksUpsellModal.tsx` — strengthen copy & trust
+**Gallery sources (in order):**
+1. Variant pack-shot — currently `socksImageForColor(product, color)` (the new 3-pairs Shopify image you just updated). Stays color-reactive: when user picks Black/White, this thumb + hero updates.
+2. `lifestyle-feet.webp` — the white-socks-on-feet "compression / antimicrobial / soft" infographic
+3. `lifestyle-reduces.webp` — the black-socks "Reduces swelling & discomfort" shot
+4. `lifestyle-elle.webp` — the ELLE quote / "trusted by 50,000+ people" shot
 
-This is the moment of truth for the test, so the modal needs to feel premium and clinically credible — not just a generic "add socks" prompt.
+That's a 4-tile gallery (1 product + 3 lifestyle), which fits the 170px column comfortably with the same thumb sizing as the insole modal — no layout overflow.
 
-Updates to copy (visual layout stays the same — already approved):
+Color picker behavior unchanged. If the user taps a color swatch, hero jumps back to the matching variant pack-shot (keeps existing `colorTouched` logic).
 
-- **Headline tweak:** keep "Compression Socks · 3-Pack" but add a tighter sub-headline below: *"Built for VitalWalk wearers — fits true to your shoe size."*
-- **Benefits list — replace the current 4 with 5 stronger, more specific ones:**
-  1. Reduces swelling & edema — graduated 20–30 mmHg pressure
-  2. Diabetic-friendly — non-binding cuff, no circulation cut-off
-  3. Ultra-soft bamboo-blend knit — gentle on sensitive skin
-  4. Moisture-wicking & odor-resistant — fresh all day
-  5. Sized to match your VitalWalks — guaranteed perfect fit
-- **Add a small "Best paired with VitalWalks" row** (icon + text) above the size selector, replacing the existing "🦶 Pairs perfectly with your VitalWalks" line which moves up.
-- **Trust microline below the CTA:** keep "Free shipping · 60-day money-back guarantee", add "· Doctor-recommended materials".
+## 3. Asset pipeline (fast loads)
 
-No structural/layout changes. No new components. No new images. All copy changes are inside the existing JSX — same animation, same buttons, same modal dimensions.
+The 3 uploaded PNGs are ~1024×1024 and unoptimized. Process once at build time, commit small WebPs:
 
-### 3. Nothing else changes
+- Copy the 3 uploads to `/tmp`, run sharp/imagemagick to produce `1000w` WebP at quality 75 (~60–90 KB each, down from ~1 MB)
+- Save to `src/assets/socks/lifestyle-feet.webp`, `lifestyle-reduces.webp`, `lifestyle-elle.webp`
+- Import as ES modules (Vite hashes + serves with long cache)
+- Hero image: `loading="eager"` + `decoding="async"` (above-the-fold once modal opens)
+- Thumbnails: `loading="lazy"` + `decoding="async"` (same as insole modal)
 
-- No changes to `useSocksProduct`, `useInsoleProduct`, `shopify.ts`, checkout logic, pixel events, price-sync guard, or any other file.
-- Insole product is still fetched in the background (cheap, cached) so flipping the flag back is instant — no cold-start delay.
+No runtime image processing, no new deps.
 
----
+## 4. What stays the same
+
+- Modal layout, dimensions, animation, CTA, trust line, decline link — untouched
+- Size selector, color selector, price block, savings badge — untouched
+- `UPSELL_PRIMARY = "socks"` flag in `OrderPage.tsx` — untouched
+- Pixel events, checkout flow, Shopify wiring — untouched
 
 ## Files touched
 
-- `src/components/order/OrderPage.tsx` — add `UPSELL_PRIMARY` flag + branch in `handleCompleteOrderClick`
-- `src/components/order/SocksUpsellModal.tsx` — strengthen benefits copy, add sub-headline, refine trust line
+- `src/components/order/SocksUpsellModal.tsx` — new BENEFITS copy + GALLERY array + thumbnail row JSX (copied pattern from `InsoleUpsellModal.tsx`)
+- `src/assets/socks/lifestyle-feet.webp` (new, compressed from `image-11.png`)
+- `src/assets/socks/lifestyle-reduces.webp` (new, compressed from `image-12.png`)
+- `src/assets/socks/lifestyle-elle.webp` (new, compressed from `image-13.png`)
 
-## How to read the test result
-
-After ~50–100 Step-3 completions:
-- Socks take-rate now (position #1) vs. insole take-rate before (position #1) = clean apples-to-apples
-- If socks ≥ insoles → keep socks, optionally chain insoles as #2
-- If socks < insoles → flip `UPSELL_PRIMARY` back to `"insoles"` (one-line change), socks return to position #2 or get retired
-
-## Risk / rollback
-
-- One-line revert: change `UPSELL_PRIMARY` back to `"insoles"`.
-- Insole code paths are unchanged and still fully wired — no regressions possible on flip-back.
-- Checkout, pixel events, price guards: all untouched.
+No other files. One-line revert path (flip `UPSELL_PRIMARY` back to `"insoles"`) still intact.

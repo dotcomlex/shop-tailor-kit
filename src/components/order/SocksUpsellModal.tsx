@@ -16,6 +16,16 @@ import {
 } from "@/lib/shopify";
 import { cn } from "@/lib/utils";
 
+import lifestyleFeet from "@/assets/socks/lifestyle-feet.webp";
+import lifestyleReduces from "@/assets/socks/lifestyle-reduces.webp";
+import lifestyleElle from "@/assets/socks/lifestyle-elle.webp";
+
+const LIFESTYLE_IMAGES: Array<{ src: string; alt: string }> = [
+  { src: lifestyleFeet, alt: "Compression, antimicrobial, soft and breathable" },
+  { src: lifestyleReduces, alt: "Reduces swelling and discomfort" },
+  { src: lifestyleElle, alt: "ELLE: best performing compression socks" },
+];
+
 interface ShoeSelectionLite {
   color: string | null;
   size: string | null;
@@ -30,11 +40,11 @@ interface SocksUpsellModalProps {
 }
 
 const BENEFITS = [
-  "Reduces swelling & edema — graduated 20–30 mmHg pressure",
-  "Diabetic-friendly — non-binding cuff, no circulation cut-off",
-  "Ultra-soft bamboo-blend knit — gentle on sensitive skin",
-  "Moisture-wicking & odor-resistant — fresh all day",
-  "Sized to match your VitalWalks — guaranteed perfect fit",
+  "Stops swelling fast",
+  "Safe for diabetics & sensitive skin",
+  "All-day comfort, zero pinching",
+  "Stays fresh, fights odor",
+  "True to your shoe size",
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];
@@ -61,6 +71,7 @@ export function SocksUpsellModal({
   const [bucket, setBucket] = useState<SocksSizeBucket>(initialBucket);
   const [color, setColor] = useState<string>(colors[0] ?? "Black");
   const [colorTouched, setColorTouched] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
 
   // Reset selections each time the modal opens (or shoe selection changes).
   useEffect(() => {
@@ -69,6 +80,7 @@ export function SocksUpsellModal({
     setBucket(socksBucketFromShoeSize(shoeSelections[0]?.size ?? null));
     setColor(colors[0] ?? "Black");
     setColorTouched(false);
+    setActiveImg(0);
     const t = setTimeout(() => setArmed(true), 500);
     return () => clearTimeout(t);
   }, [open, shoeSelections, colors]);
@@ -105,10 +117,21 @@ export function SocksUpsellModal({
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
 
-  const heroImage = colorTouched
+  const productImage = colorTouched
     ? socksImageForColor(product, color)
     : product.images[0] ?? socksImageForColor(product, color);
-  const heroKey = colorTouched ? `c:${color}` : "default";
+
+  const gallery: Array<{ src: string; alt: string; key: string }> = [
+    {
+      src: productImage?.url ?? "",
+      alt: productImage?.altText ?? product.title,
+      key: `pack:${colorTouched ? color : "default"}`,
+    },
+    ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
+  ].filter((g) => g.src);
+
+  const safeIdx = Math.min(activeImg, gallery.length - 1);
+  const heroItem = gallery[safeIdx];
 
   const handleDecline = () => {
     if (!armed) return;
@@ -181,17 +204,43 @@ export function SocksUpsellModal({
                   className="aspect-square w-[170px] overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]"
                   style={{ backgroundColor: "#FDF7F0" }}
                 >
-                  {heroImage && (
+                  {heroItem && (
                     <img
-                      key={heroKey}
-                      src={heroImage.url}
-                      alt={heroImage.altText ?? product.title}
+                      key={heroItem.key}
+                      src={heroItem.src}
+                      alt={heroItem.alt}
                       className="h-full w-full object-cover animate-in fade-in-0 duration-200"
                       loading="eager"
                       decoding="async"
                     />
                   )}
                 </div>
+                {gallery.length > 1 && (
+                  <div className="mt-1.5 flex w-full items-center gap-1.5">
+                    {gallery.map((g, i) => (
+                      <button
+                        key={g.key}
+                        type="button"
+                        onClick={() => setActiveImg(i)}
+                        aria-label={`View ${g.alt}`}
+                        className={cn(
+                          "relative h-[30px] w-[30px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          i === safeIdx
+                            ? "border-[hsl(var(--text-strong))] ring-1 ring-[hsl(var(--text-strong))]"
+                            : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
+                        )}
+                      >
+                        <img
+                          src={g.src}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col">
@@ -326,6 +375,7 @@ export function SocksUpsellModal({
                           onClick={() => {
                             setColor(c);
                             setColorTouched(true);
+                            setActiveImg(0);
                           }}
                           aria-pressed={selected}
                           className={cn(

@@ -465,6 +465,14 @@ export function OrderPage() {
         onDecline={handleUpsellDecline}
       />
 
+      <SocksUpsellModal
+        open={socksOpen}
+        product={socksProduct ?? null}
+        shoeSelections={selections}
+        onAccept={handleSocksAccept}
+        onDecline={handleSocksDecline}
+      />
+
       <RecentPurchaseToasts paused={currentStep >= 3} />
     </div>
   );

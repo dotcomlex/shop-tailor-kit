@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useInsoleProduct } from "@/hooks/useInsoleProduct";
+import { useSocksProduct } from "@/hooks/useSocksProduct";
 import { useGeo } from "@/hooks/useGeo";
 import {
   createCheckoutForLines,
@@ -20,6 +21,7 @@ import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 import { InsoleUpsellModal } from "./InsoleUpsellModal";
+import { SocksUpsellModal } from "./SocksUpsellModal";
 import { RecentPurchaseToasts } from "./RecentPurchaseToasts";
 
 export function OrderPage() {
@@ -27,6 +29,7 @@ export function OrderPage() {
   const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
   const { data: insoleProduct } = useInsoleProduct();
+  const { data: socksProduct } = useSocksProduct();
   const { country } = useGeo();
 
   // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and
@@ -37,6 +40,7 @@ export function OrderPage() {
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const [socksOpen, setSocksOpen] = useState(false);
   const viewContentFiredRef = useRef(false);
   const addToCartFiredRef = useRef(false);
 
@@ -253,8 +257,10 @@ export function OrderPage() {
     const extrasValue = extraLines.reduce((sum, _l) => sum, 0); // placeholder; real value added below
     const upsellValue = extraLines.length
       ? extraLines.reduce((sum, l) => {
-          // For the insole upsell, look up its live price from insoleProduct.
-          const v = insoleProduct?.variants.find((vv) => vv.id === l.variantId);
+          // Look up live price from whichever upsell product owns this variant.
+          const v =
+            insoleProduct?.variants.find((vv) => vv.id === l.variantId) ??
+            socksProduct?.variants.find((vv) => vv.id === l.variantId);
           return sum + (v ? parseFloat(v.price.amount) * l.quantity : 0);
         }, 0)
       : 0;
@@ -363,8 +369,41 @@ export function OrderPage() {
     void handleCheckout(insoleLines);
   };
 
+  // Customer declined the insole offer. If the socks product is loaded
+  // and has at least one buyable variant, show the socks decline-path
+  // upsell instead of going straight to checkout.
   const handleUpsellDecline = () => {
     setUpsellOpen(false);
+    const hasSocks = !!socksProduct?.variants.some((v) => v.availableForSale);
+    if (hasSocks) {
+      setSocksOpen(true);
+      return;
+    }
+    void handleCheckout();
+  };
+
+  const handleSocksAccept = (variant: ShopifyVariant) => {
+    setSocksOpen(false);
+    fbTrack("AddToCart", {
+      customData: {
+        content_type: "product",
+        content_ids: [variantNumericId(variant.id)],
+        content_name: socksProduct?.title ?? "Compression Socks",
+        currency: variant.price.currencyCode,
+        value: parseFloat(variant.price.amount),
+        num_items: 1,
+      },
+    });
+    const sockLine: CartLineInput = {
+      variantId: variant.id,
+      quantity: 1,
+      attributes: [{ key: "Add-on", value: "Compression Socks (3-pack)" }],
+    };
+    void handleCheckout([sockLine]);
+  };
+
+  const handleSocksDecline = () => {
+    setSocksOpen(false);
     void handleCheckout();
   };
 
@@ -424,6 +463,14 @@ export function OrderPage() {
         shoeSelections={selections}
         onAccept={handleUpsellAccept}
         onDecline={handleUpsellDecline}
+      />
+
+      <SocksUpsellModal
+        open={socksOpen}
+        product={socksProduct ?? null}
+        shoeSelections={selections}
+        onAccept={handleSocksAccept}
+        onDecline={handleSocksDecline}
       />
 
       <RecentPurchaseToasts paused={currentStep >= 3} />

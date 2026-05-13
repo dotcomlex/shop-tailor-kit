@@ -1,69 +1,36 @@
-## Two changes + a verification pass
+## Two fixes in `SocksUpsellModal.tsx`
 
-### 1. Hide the variant pack shot until a color is picked
+### 1. Thumbnail gap
 
-Right now the gallery is `[pack, lifestyle1, lifestyle2, lifestyle3]` and the hero defaults to the pack. You want the **first lifestyle image** in the hero on open, and the pack shot to only appear once the user taps Black or White.
-
-**Implementation in `SocksUpsellModal.tsx`:**
-
-```ts
-// Before (always 4 tiles)
-const gallery = [
-  { src: packSrc, ... },
-  ...LIFESTYLE_IMAGES.map(...),
-];
-
-// After (3 tiles until colorTouched, then 4 with pack first)
-const gallery = colorTouched
-  ? [{ src: packSrc, alt: `${product.title} — ${color}`, key: `pack:${color}` },
-     ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` }))]
-  : LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` }));
-```
-
-- Default `activeImg` stays `0` → first lifestyle shows in hero
-- Color tap handler already calls `setActiveImg(0)` → that now lands on the newly-prepended pack shot
-- `safeIdx = Math.min(activeImg, gallery.length - 1)` already handles the array shrinking/growing
-- Reset on modal open (`setColorTouched(false); setActiveImg(0);`) is already in place
-
-### 2. Fill the right-column white space below the SAVE pill
-
-On 390px, the right column ends at the green pill while the left column extends through the thumbnail row — leaving ~70px dead space.
-
-**Add a compact 3-row "what you get" stack** directly under the SAVE pill (inside the right column, before the closing `</div>` of the hero column):
+The thumb row uses `justify-between` which spreads 3 tiles across the full 170px column → big air gaps. Switch to a tight cluster.
 
 ```tsx
-<ul className="mt-2.5 space-y-1">
-  {[
-    "3 pairs included",
-    "Free US shipping",
-    "60-day guarantee",
-  ].map((line) => (
-    <li key={line} className="flex items-center gap-1.5 text-[10.5px] font-semibold text-[hsl(var(--text-body))]">
-      <Check className="h-2.5 w-2.5 shrink-0 text-[hsl(var(--verified-green))]" strokeWidth={3.5} />
-      <span>{line}</span>
-    </li>
-  ))}
-</ul>
+// before
+<div className="mt-1.5 flex w-full items-center justify-between gap-1">
+
+// after
+<div className="mt-1.5 flex items-center justify-start gap-1.5">
 ```
 
-- 3 lines × ~14px line-height + 10px top margin ≈ 60px → matches the gap
-- Uses existing `Check` icon import; no new color tokens
-- Selected vs unselected is N/A — these are static
-- Mobile (390px): right column ≈ 175px, longest line "60-day guarantee" ≈ 100px at 10.5px → fits with margin
-- Tablet/desktop: same component, scales naturally because column is fluid
+Tiles stay 36×36, sit flush-left under the hero, breathe at 6px spacing. Works for both 3-tile (no color picked) and 4-tile (color picked) states.
 
-Note: this is **distinct** from the bottom trust line (`Free shipping · 60-day money-back · Doctor-recommended`) which sits under the CTA — that stays. The new stack is hero-density; the bottom line is CTA-reassurance. Slight wording overlap is fine — a/b research consistently shows trust signals reinforce when repeated near both the price and the CTA.
+### 2. Remove the 3 trust bullets and rebalance columns
 
-### 3. Verification pass (no code changes, just sanity checks)
+Delete the `<ul>` "what you get" stack added last turn. To prevent the right column from being shorter than the left, tighten the left column so heights line up.
 
-- **Currency on the page**: `OrderPage` already pulls `bundle.priceRange.minVariantPrice.currencyCode` from `useVitalWalkProduct`, which is fetched via `fetchVitalWalkBundles(country)` → uses `@inContext(country:)`. ✅
-- **Currency in socks upsell**: `fetchSocksProduct(country)` already passes country → `variant.price.currencyCode` flows into `formatMoney(unitPrice, currency)`. ✅
-- **Currency in insoles upsell**: same pattern via `fetchInsoleProduct(country)`. ✅
-- **Cart → Shopify checkout**: `createShopifyCart` is called with `country` → sets `buyerIdentity.countryCode` → checkout URL opens in the right market with the right currency. ✅
-- **One thing to spot-check after the edit**: open modal → confirm hero starts on lifestyle, tap Black → confirm hero swaps to black pack shot and 4 thumbs render; tap White → swaps; close + reopen → resets to lifestyle. Verify CTA price + "You save X" still show in EUR/GBP/etc. when geo is non-US (browser console will show `[currency]` warning if Shopify falls back to USD).
+**Approach:** when no color is touched yet (gallery has 3 tiles), the right column ends at the SAVE pill while the left has hero + thumbs. After bullet removal, the gap is ~70px.
+
+Two small tweaks together close that gap cleanly:
+
+- **Hero shrinks slightly when color not yet picked**: `w-[170px]` → `w-[150px]` while `colorTouched === false`. Reverts to `170px` after tap so the variant pack reads at full size. Hero is the dominant visual; -20px is barely noticeable when the user has nothing to compare against, but saves enough vertical space (-20px square) to balance.
+- **Right column gets a tiny bit of breathing room above the price**: change `mt-1.5` on the price row to `mt-2`, and the SAVE pill `mt-1` → `mt-1.5`. Adds ~6px.
+
+Combined: left column shrinks ~24px, right column grows ~10px → columns end within ~5px of each other. Hairline difference invisible at 390px.
+
+If after this the columns still don't line up perfectly in the live preview, the fallback is to drop the thumbnail row's `mt-1.5` to `mt-1` and call it done.
 
 ## Files
 
-- `src/components/order/SocksUpsellModal.tsx` — gallery construction (one ternary swap) + 3-row trust stack insert (~12 lines)
+- `src/components/order/SocksUpsellModal.tsx` — three small className tweaks + delete the trust-bullets `<ul>`
 
-No other files touched. Funnel/checkout/pixel/cart wiring untouched.
+Nothing else changes. Funnel/checkout/currency wiring untouched.

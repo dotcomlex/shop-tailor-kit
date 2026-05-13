@@ -16,6 +16,16 @@ import {
 } from "@/lib/shopify";
 import { cn } from "@/lib/utils";
 
+import lifestyleFeet from "@/assets/socks/lifestyle-feet.webp";
+import lifestyleReduces from "@/assets/socks/lifestyle-reduces.webp";
+import lifestyleElle from "@/assets/socks/lifestyle-elle.webp";
+
+const LIFESTYLE_IMAGES: Array<{ src: string; alt: string }> = [
+  { src: lifestyleFeet, alt: "Compression, antimicrobial, soft and breathable" },
+  { src: lifestyleReduces, alt: "Reduces swelling and discomfort" },
+  { src: lifestyleElle, alt: "ELLE: best performing compression socks" },
+];
+
 interface ShoeSelectionLite {
   color: string | null;
   size: string | null;

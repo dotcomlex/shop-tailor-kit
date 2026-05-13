@@ -59,6 +59,7 @@ export function SocksUpsellModal({
   );
   const [bucket, setBucket] = useState<SocksSizeBucket>(initialBucket);
   const [color, setColor] = useState<string>(colors[0] ?? "Black");
+  const [colorTouched, setColorTouched] = useState(false);
 
   // Reset selections each time the modal opens (or shoe selection changes).
   useEffect(() => {
@@ -66,6 +67,7 @@ export function SocksUpsellModal({
     setArmed(false);
     setBucket(socksBucketFromShoeSize(shoeSelections[0]?.size ?? null));
     setColor(colors[0] ?? "Black");
+    setColorTouched(false);
     const t = setTimeout(() => setArmed(true), 500);
     return () => clearTimeout(t);
   }, [open, shoeSelections, colors]);
@@ -102,7 +104,10 @@ export function SocksUpsellModal({
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
 
-  const heroImage = socksImageForColor(product, color);
+  const heroImage = colorTouched
+    ? socksImageForColor(product, color)
+    : product.images[0] ?? socksImageForColor(product, color);
+  const heroKey = colorTouched ? `c:${color}` : "default";
 
   const handleDecline = () => {
     if (!armed) return;

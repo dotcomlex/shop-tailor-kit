@@ -30,10 +30,11 @@ interface SocksUpsellModalProps {
 }
 
 const BENEFITS = [
-  "Soothes swollen feet & tired legs",
-  "Graduated 20–30 mmHg compression boosts circulation",
-  "Soft, breathable knit — comfortable all day",
-  "Trusted by thousands on their feet for hours",
+  "Reduces swelling & edema — graduated 20–30 mmHg pressure",
+  "Diabetic-friendly — non-binding cuff, no circulation cut-off",
+  "Ultra-soft bamboo-blend knit — gentle on sensitive skin",
+  "Moisture-wicking & odor-resistant — fresh all day",
+  "Sized to match your VitalWalks — guaranteed perfect fit",
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];

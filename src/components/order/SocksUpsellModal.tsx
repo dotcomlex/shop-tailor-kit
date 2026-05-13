@@ -153,13 +153,15 @@ export function SocksUpsellModal({
           )}
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-          {/* Soft cream top band — calm, gift-y tone */}
+          {/* Soft cream top band — calm tone, urgent copy */}
           <div
-            className="relative flex items-center justify-center gap-1.5 rounded-t-[20px] py-2.5 text-[11px] font-extrabold uppercase tracking-[0.14em]"
+            className="relative rounded-t-[20px] py-2.5 pl-3 pr-9"
             style={{ backgroundColor: "#FDF7F0", color: "hsl(28 35% 22%)" }}
           >
-            <Sparkles className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-            Last-chance offer · Won't be shown again
+            <div className="flex items-center justify-center gap-1.5 text-center text-[11px] font-extrabold uppercase leading-tight tracking-[0.1em]">
+              <Sparkles className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />
+              <span>Last-chance offer · Ends now</span>
+            </div>
             <button
               type="button"
               onClick={handleDecline}
@@ -320,7 +322,10 @@ export function SocksUpsellModal({
                         <button
                           key={c}
                           type="button"
-                          onClick={() => setColor(c)}
+                          onClick={() => {
+                            setColor(c);
+                            setColorTouched(true);
+                          }}
                           aria-pressed={selected}
                           className={cn(
                             "rounded-xl border py-2 text-[13px] font-extrabold leading-none transition-colors",

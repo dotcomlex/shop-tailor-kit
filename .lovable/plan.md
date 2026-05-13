@@ -1,22 +1,26 @@
-## Issue
-The socks upsell shows size sub-labels like:
-- S/M → "US W 5.5–8 · US M 5–7.5"
-- L/XL → "US W 8–15 · US M 8–14"
+## Plan: Simplify Socks Size Labels
 
-A UK shopper sees no UK range, so they can't tell which bucket fits them. The matching logic in `socksBucketFromShoeSize` already handles UK correctly (UK ≤ 6.5 = S/M, else L/XL); only the **display label** is missing UK.
+### What
+Update the size sub-labels in the socks upsell modal to show a cleaner, region-focused range that covers the main customer base (US, UK, CA, AU).
 
-No Shopify variant change is required — the socks product only has S/M and L/XL options, and they cover all UK sizes via the bucket math.
+### Why
+The current labels include US M ranges that overlap loosely with the actual size chart. A UK shopper also can't tell which bucket fits them. The underlying bucket-matching logic is already correct — this is purely a display fix to build buyer confidence.
 
-## Change
-In `src/components/order/SocksUpsellModal.tsx`, append UK ranges to the two bucket labels:
+### Changes
+1. In `src/components/order/SocksUpsellModal.tsx`, update the `SIZE_HINTS` constant:
 
 ```ts
-const SIZE_BUCKET_SUBLABEL: Record<SocksSizeBucket, string> = {
-  "S/M":  "US W 5.5–8 · US M 5–7.5 · UK 3–6.5",
-  "L/XL": "US W 8.5–15 · US M 8–14 · UK 7–13",
+const SIZE_HINTS: Record<SocksSizeBucket, string> = {
+  "S/M":  "US W 5–8 · UK 2.5–5.5",
+  "L/XL": "US W 8.5–14.5 · UK 6–12",
 };
 ```
 
-(Also tighten the W boundary to 8.5 in the L/XL label so the two ranges don't visually overlap at 8 — the underlying bucket math is unchanged.)
+- S/M: Covers US Women 5–8 and UK 2.5–5.5 (which also covers AU Women and AU Men since AU sizes map to US W and UK respectively).
+- L/XL: Covers US Women 8.5–14.5 and UK 6–12.
+- Removed US M and EU references to keep the selection simple and uncluttered.
 
-That's the entire fix. One file, one constant.
+No Shopify product variants, backend logic, or size-chart data changes are required.
+
+### Files to edit
+- `src/components/order/SocksUpsellModal.tsx` (one constant, two strings)

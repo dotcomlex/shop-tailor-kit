@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useInsoleProduct } from "@/hooks/useInsoleProduct";
+import { useSocksProduct } from "@/hooks/useSocksProduct";
 import { useGeo } from "@/hooks/useGeo";
 import {
   createCheckoutForLines,
@@ -20,6 +21,7 @@ import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
 import { InsoleUpsellModal } from "./InsoleUpsellModal";
+import { SocksUpsellModal } from "./SocksUpsellModal";
 import { RecentPurchaseToasts } from "./RecentPurchaseToasts";
 
 export function OrderPage() {

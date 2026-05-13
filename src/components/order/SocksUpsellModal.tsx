@@ -76,8 +76,7 @@ export function SocksUpsellModal({
     [shoeSelections],
   );
   const [bucket, setBucket] = useState<SocksSizeBucket>(initialBucket);
-  const [color, setColor] = useState<string>(colors[0] ?? "Black");
-  const [colorTouched, setColorTouched] = useState(false);
+  const [color, setColor] = useState<string | null>(null);
   const [activeImg, setActiveImg] = useState(0);
 
   // Reset selections each time the modal opens (or shoe selection changes).
@@ -85,12 +84,11 @@ export function SocksUpsellModal({
     if (!open) return;
     setArmed(false);
     setBucket(socksBucketFromShoeSize(shoeSelections[0]?.size ?? null));
-    setColor(colors[0] ?? "Black");
-    setColorTouched(false);
+    setColor(null);
     setActiveImg(0);
     const t = setTimeout(() => setArmed(true), 500);
     return () => clearTimeout(t);
-  }, [open, shoeSelections, colors]);
+  }, [open, shoeSelections]);
 
   const variant = useMemo(
     () => pickSocksVariant(product, bucket, color),

@@ -216,7 +216,7 @@ export function SocksUpsellModal({
                   )}
                 </div>
                 {gallery.length > 1 && (
-                  <div className="mt-1.5 flex w-full items-center gap-1.5">
+                  <div className="mt-1.5 flex w-full items-center justify-between gap-1">
                     {gallery.map((g, i) => (
                       <button
                         key={g.key}

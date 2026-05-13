@@ -117,10 +117,21 @@ export function SocksUpsellModal({
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
 
-  const heroImage = colorTouched
+  const productImage = colorTouched
     ? socksImageForColor(product, color)
     : product.images[0] ?? socksImageForColor(product, color);
-  const heroKey = colorTouched ? `c:${color}` : "default";
+
+  const gallery: Array<{ src: string; alt: string; key: string }> = [
+    {
+      src: productImage?.url ?? "",
+      alt: productImage?.altText ?? product.title,
+      key: `pack:${colorTouched ? color : "default"}`,
+    },
+    ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
+  ].filter((g) => g.src);
+
+  const safeIdx = Math.min(activeImg, gallery.length - 1);
+  const heroItem = gallery[safeIdx];
 
   const handleDecline = () => {
     if (!armed) return;

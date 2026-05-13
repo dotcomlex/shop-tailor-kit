@@ -204,17 +204,43 @@ export function SocksUpsellModal({
                   className="aspect-square w-[170px] overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]"
                   style={{ backgroundColor: "#FDF7F0" }}
                 >
-                  {heroImage && (
+                  {heroItem && (
                     <img
-                      key={heroKey}
-                      src={heroImage.url}
-                      alt={heroImage.altText ?? product.title}
+                      key={heroItem.key}
+                      src={heroItem.src}
+                      alt={heroItem.alt}
                       className="h-full w-full object-cover animate-in fade-in-0 duration-200"
                       loading="eager"
                       decoding="async"
                     />
                   )}
                 </div>
+                {gallery.length > 1 && (
+                  <div className="mt-1.5 flex w-full items-center gap-1.5">
+                    {gallery.map((g, i) => (
+                      <button
+                        key={g.key}
+                        type="button"
+                        onClick={() => setActiveImg(i)}
+                        aria-label={`View ${g.alt}`}
+                        className={cn(
+                          "relative h-[30px] w-[30px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          i === safeIdx
+                            ? "border-[hsl(var(--text-strong))] ring-1 ring-[hsl(var(--text-strong))]"
+                            : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
+                        )}
+                      >
+                        <img
+                          src={g.src}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col">

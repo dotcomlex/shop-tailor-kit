@@ -9,6 +9,7 @@ import {
   pickSocksVariant,
   socksBucketFromShoeSize,
   socksColors,
+  socksImageForColor,
   type ShopifyProductData,
   type ShopifyVariant,
   type SocksSizeBucket,
@@ -101,10 +102,7 @@ export function SocksUpsellModal({
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
 
-  const heroImage =
-    product.images.find((img) =>
-      img.altText?.toLowerCase().includes(color.toLowerCase()),
-    ) ?? product.images[0];
+  const heroImage = socksImageForColor(product, color);
 
   const handleDecline = () => {
     if (!armed) return;
@@ -156,7 +154,7 @@ export function SocksUpsellModal({
             style={{ backgroundColor: "#FDF7F0", color: "hsl(28 35% 22%)" }}
           >
             <Sparkles className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-            A little gift for your feet
+            Last-chance offer · Won't be shown again
             <button
               type="button"
               onClick={handleDecline}
@@ -177,9 +175,10 @@ export function SocksUpsellModal({
                 >
                   {heroImage && (
                     <img
+                      key={color}
                       src={heroImage.url}
                       alt={heroImage.altText ?? product.title}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover animate-in fade-in-0 duration-200"
                       loading="eager"
                       decoding="async"
                     />
@@ -209,7 +208,7 @@ export function SocksUpsellModal({
                   </h2>
                 </DialogPrimitive.Title>
                 <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
-                  Soothes swollen feet, all-day relief.
+                  One-time bonus — added to this order only.
                 </p>
 
                 <DialogPrimitive.Description className="sr-only">
@@ -277,8 +276,8 @@ export function SocksUpsellModal({
                         className={cn(
                           "flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-colors",
                           selected
-                            ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
-                            : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
+                            ? "border-[hsl(var(--text-strong))] bg-[hsl(var(--text-strong))] text-white"
+                            : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--text-strong))]",
                         )}
                       >
                         <span className="text-[15px] font-extrabold leading-tight">
@@ -287,7 +286,7 @@ export function SocksUpsellModal({
                         <span
                           className={cn(
                             "text-[10.5px] font-semibold",
-                            selected ? "text-white/85" : "text-[hsl(var(--text-mute))]",
+                            selected ? "text-white/80" : "text-[hsl(var(--text-mute))]",
                           )}
                         >
                           {SIZE_HINTS[b]}
@@ -321,8 +320,8 @@ export function SocksUpsellModal({
                           className={cn(
                             "rounded-xl border py-2 text-[13px] font-extrabold leading-none transition-colors",
                             selected
-                              ? "border-[hsl(var(--save-red))] bg-[hsl(var(--save-red))] text-white"
-                              : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--save-red))]",
+                              ? "border-[hsl(var(--text-strong))] bg-[hsl(var(--text-strong))] text-white"
+                              : "border-[hsl(var(--hairline))] bg-background text-[hsl(var(--text-body))] hover:border-[hsl(var(--text-strong))]",
                           )}
                         >
                           {c}

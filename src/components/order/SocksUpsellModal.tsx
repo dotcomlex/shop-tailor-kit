@@ -220,12 +220,9 @@ export function SocksUpsellModal({
           <div className="px-4 py-3">
             {/* Two-column hero */}
             <div className="flex gap-3">
-              <div className={cn("shrink-0", colorTouched ? "w-[170px]" : "w-[150px]")}>
+              <div className="w-[150px] shrink-0">
                 <div
-                  className={cn(
-                    "aspect-square overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]",
-                    colorTouched ? "w-[170px]" : "w-[150px]",
-                  )}
+                  className="aspect-square w-[150px] overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]"
                   style={{ backgroundColor: "#FDF7F0" }}
                 >
                   {heroItem && (

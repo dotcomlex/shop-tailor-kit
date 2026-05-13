@@ -38,8 +38,8 @@ const BENEFITS = [
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];
 const SIZE_HINTS: Record<SocksSizeBucket, string> = {
-  "S/M": "US W 5.5–8 · US M 5–7.5",
-  "L/XL": "US W 8–15 · US M 8–14",
+  "S/M": "US W 5.5–8 · US M 5–7.5 · UK 3–6.5",
+  "L/XL": "US W 8.5–15 · US M 8–14 · UK 7–13",
 };
 
 export function SocksUpsellModal({

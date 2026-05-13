@@ -1,70 +1,53 @@
 ## Goal
 
-Two tweaks to the socks upsell modal — keep it the position #1 A/B test offer, just make it stronger:
+Three small, surgical tweaks to `SocksUpsellModal.tsx`:
 
-1. **Punchier benefits** — kill the em-dashes, lead with results not specs.
-2. **Image carousel** — same pattern as the insole modal (left-side hero + thumbnail row), using the 3 lifestyle/social-proof images you uploaded, plus the existing variant pack shots.
+1. **Remove the "4.9 · 8,900+" star-rating row** at the top right of the hero.
+2. **Rewrite the bullets** with smarter, concern-addressing copy pulled from real Armadilo Performance Compression Socks product info — perfect for swollen feet, diabetic-friendly, soft on skin, etc. No "true to your shoe size" line.
+3. **Mobile polish pass** — at 390px the modal already fits, but the trust line wraps awkwardly to a 2nd line + the thumbnail row can crowd. Tighten both so the modal looks intentional, not cramped.
 
-All assets compressed to WebP and lazy-loaded so nothing slows the funnel.
+No structural rewrites, no new components, no impact on the A/B test wiring.
 
 ---
 
-## 1. Bullet copy — results-first
+## 1. Remove rating row
 
-Replace the current 5 long em-dashed lines with 5 short punchy ones:
+Delete the entire stars + "4.9 · 8,900+" block (the `<div className="flex items-center gap-1">` containing the 5 `<Star>` icons and the count `<span>`). The title now sits at the top of the right column — gives the headline more breathing room and removes a fabricated stat we don't want to defend.
+
+## 2. New bullets — concern-led, results-first
+
+Five short, scannable lines, no em-dashes, written to neutralize the top objections customers have when they hesitate on compression socks:
 
 ```
-Stops swelling fast
-Safe for diabetics & sensitive skin
-All-day comfort, zero pinching
-Stays fresh, fights odor
-True to your shoe size
+Eases swollen feet & tired legs
+Diabetic-safe, non-binding cuff
+Soft, breathable knit — gentle on sensitive skin
+Boosts circulation for all-day energy
+Stays put without slipping or pinching
 ```
 
-Same green check styling, same list. No structural change.
+Sourced from Armadilo's own product page benefits: graduated 15–20 mmHg, edema/swelling relief, circulation boost, recommended by orthopedists, snug-but-comfortable fit, breathable knit. Every bullet maps to a real customer hesitation (swelling, diabetes safety, skin sensitivity, fatigue, slipping).
 
-## 2. Image carousel (mirrors insole modal)
+Same green-check styling, same `<ul>` markup — only the array content changes.
 
-In `SocksUpsellModal.tsx`, replace the single hero image with the same gallery pattern used in `InsoleUpsellModal.tsx`:
+## 3. Mobile polish (390px)
 
-- Left-column **170×170 hero** image, swappable
-- Row of **6 thumbnails** (~26×26) below it, click to swap
-- Hero animates a soft fade on swap (same `animate-in fade-in-0` already in the file)
+Specific tweaks after testing the modal at the user's current viewport (390×781):
 
-**Gallery sources (in order):**
-1. Variant pack-shot — currently `socksImageForColor(product, color)` (the new 3-pairs Shopify image you just updated). Stays color-reactive: when user picks Black/White, this thumb + hero updates.
-2. `lifestyle-feet.webp` — the white-socks-on-feet "compression / antimicrobial / soft" infographic
-3. `lifestyle-reduces.webp` — the black-socks "Reduces swelling & discomfort" shot
-4. `lifestyle-elle.webp` — the ELLE quote / "trusted by 50,000+ people" shot
+- **Trust line under CTA**: currently wraps to 2 lines on iPhone 12/13/14. Shorten to `"Free shipping · 60-day money-back · Doctor-recommended"` (drop "materials") so it fits one line at 390px. Keep the `ShieldCheck` icon.
+- **Thumbnail row**: switch from `gap-1.5` to `gap-1` and bump from `h-[30px] w-[30px]` to `h-[34px] w-[34px]` so the 4 tiles fill the 170px hero column more cleanly with consistent spacing (currently they leave dead space on the right).
+- **Headline**: with the rating row gone, increase `mt-1` to `mt-0` so the title hugs the top of the right column — matches the visual weight of the 170px hero.
+- **Sub-headline**: keep `"Built for VitalWalk wearers — fits true to your shoe size."` for now (the user said don't mention TTS in *bullets* — the sub-headline is fine; it answers the unspoken sizing fear without being a selling point).
 
-That's a 4-tile gallery (1 product + 3 lifestyle), which fits the 170px column comfortably with the same thumb sizing as the insole modal — no layout overflow.
-
-Color picker behavior unchanged. If the user taps a color swatch, hero jumps back to the matching variant pack-shot (keeps existing `colorTouched` logic).
-
-## 3. Asset pipeline (fast loads)
-
-The 3 uploaded PNGs are ~1024×1024 and unoptimized. Process once at build time, commit small WebPs:
-
-- Copy the 3 uploads to `/tmp`, run sharp/imagemagick to produce `1000w` WebP at quality 75 (~60–90 KB each, down from ~1 MB)
-- Save to `src/assets/socks/lifestyle-feet.webp`, `lifestyle-reduces.webp`, `lifestyle-elle.webp`
-- Import as ES modules (Vite hashes + serves with long cache)
-- Hero image: `loading="eager"` + `decoding="async"` (above-the-fold once modal opens)
-- Thumbnails: `loading="lazy"` + `decoding="async"` (same as insole modal)
-
-No runtime image processing, no new deps.
-
-## 4. What stays the same
-
-- Modal layout, dimensions, animation, CTA, trust line, decline link — untouched
-- Size selector, color selector, price block, savings badge — untouched
-- `UPSELL_PRIMARY = "socks"` flag in `OrderPage.tsx` — untouched
-- Pixel events, checkout flow, Shopify wiring — untouched
+No layout/dimension changes to the modal shell itself. The existing `max-w-[400px]` + `w-[calc(100%-1rem)]` already handles 390px well.
 
 ## Files touched
 
-- `src/components/order/SocksUpsellModal.tsx` — new BENEFITS copy + GALLERY array + thumbnail row JSX (copied pattern from `InsoleUpsellModal.tsx`)
-- `src/assets/socks/lifestyle-feet.webp` (new, compressed from `image-11.png`)
-- `src/assets/socks/lifestyle-reduces.webp` (new, compressed from `image-12.png`)
-- `src/assets/socks/lifestyle-elle.webp` (new, compressed from `image-13.png`)
+- `src/components/order/SocksUpsellModal.tsx` — only this file. Three edits: delete rating block, replace `BENEFITS` array, tighten trust line + thumbnail sizing.
 
-No other files. One-line revert path (flip `UPSELL_PRIMARY` back to `"insoles"`) still intact.
+## What stays the same
+
+- `UPSELL_PRIMARY = "socks"` flag, all checkout/pixel/Shopify wiring
+- Image carousel (4 tiles), color/size pickers, CTA, decline link
+- Modal animation, dimensions, top urgency band
+- All other files

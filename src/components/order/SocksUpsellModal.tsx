@@ -76,8 +76,7 @@ export function SocksUpsellModal({
     [shoeSelections],
   );
   const [bucket, setBucket] = useState<SocksSizeBucket>(initialBucket);
-  const [color, setColor] = useState<string>(colors[0] ?? "Black");
-  const [colorTouched, setColorTouched] = useState(false);
+  const [color, setColor] = useState<string | null>(null);
   const [activeImg, setActiveImg] = useState(0);
 
   // Reset selections each time the modal opens (or shoe selection changes).
@@ -85,16 +84,17 @@ export function SocksUpsellModal({
     if (!open) return;
     setArmed(false);
     setBucket(socksBucketFromShoeSize(shoeSelections[0]?.size ?? null));
-    setColor(colors[0] ?? "Black");
-    setColorTouched(false);
+    setColor(null);
     setActiveImg(0);
     const t = setTimeout(() => setArmed(true), 500);
     return () => clearTimeout(t);
-  }, [open, shoeSelections, colors]);
+  }, [open, shoeSelections]);
+
+  const effectiveColor = color ?? colors[0] ?? "Black";
 
   const variant = useMemo(
-    () => pickSocksVariant(product, bucket, color),
-    [product, bucket, color],
+    () => pickSocksVariant(product, bucket, effectiveColor),
+    [product, bucket, effectiveColor],
   );
 
   // Fire ViewContent once per open.
@@ -116,6 +116,32 @@ export function SocksUpsellModal({
     });
   }, [open, product, variant]);
 
+  // Stable gallery: lifestyle images first, followed by every available color
+  // pack. Order never changes — selecting a color just jumps the hero to that
+  // pack image instead of rebuilding the carousel.
+  const gallery = useMemo(() => {
+    const items: Array<{ src: string; alt: string; key: string; color?: string }> = [
+      ...LIFESTYLE_IMAGES.map((img, i) => ({
+        src: img.src,
+        alt: img.alt,
+        key: `life:${i}`,
+      })),
+    ];
+    for (const c of colors) {
+      const local = PACK_IMAGE[c];
+      const remote = socksImageForColor(product, c)?.url;
+      const src = local ?? remote ?? "";
+      if (!src) continue;
+      items.push({
+        src,
+        alt: `${product?.title ?? "Compression Socks"} — ${c}`,
+        key: `pack:${c}`,
+        color: c,
+      });
+    }
+    return items.filter((g) => g.src);
+  }, [colors, product]);
+
   if (!product || !variant) return null;
 
   const currency = variant.price.currencyCode;
@@ -123,20 +149,6 @@ export function SocksUpsellModal({
   const compareAt = parseFloat(variant.compareAtPrice?.amount ?? "0");
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
-
-  const localPack = PACK_IMAGE[color];
-  const fallbackImage = colorTouched
-    ? socksImageForColor(product, color)
-    : product.images[0] ?? socksImageForColor(product, color);
-  const packSrc = localPack ?? fallbackImage?.url ?? "";
-
-  const gallery: Array<{ src: string; alt: string; key: string }> = (colorTouched
-    ? [
-        { src: packSrc, alt: `${product.title} — ${color}`, key: `pack:${color}` },
-        ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
-      ]
-    : LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` }))
-  ).filter((g) => g.src);
 
   const safeIdx = Math.min(activeImg, gallery.length - 1);
   const heroItem = gallery[safeIdx];
@@ -207,12 +219,9 @@ export function SocksUpsellModal({
           <div className="px-4 py-3">
             {/* Two-column hero */}
             <div className="flex gap-3">
-              <div className={cn("shrink-0", colorTouched ? "w-[170px]" : "w-[150px]")}>
+              <div className="w-[150px] shrink-0">
                 <div
-                  className={cn(
-                    "aspect-square overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]",
-                    colorTouched ? "w-[170px]" : "w-[150px]",
-                  )}
+                  className="aspect-square w-[150px] overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]"
                   style={{ backgroundColor: "#FDF7F0" }}
                 >
                   {heroItem && (
@@ -254,9 +263,9 @@ export function SocksUpsellModal({
                 )}
               </div>
 
-              <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
                 <DialogPrimitive.Title asChild>
-                  <h2 className="text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="text-balance text-[18px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Compression Socks · 3-Pack
                   </h2>
                 </DialogPrimitive.Title>
@@ -266,21 +275,21 @@ export function SocksUpsellModal({
                 </DialogPrimitive.Description>
 
                 {/* Price */}
-                <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                  <span className="text-[22px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="text-[26px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
                     {formatMoney(unitPrice, currency)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-[12px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
+                    <span className="text-[14px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
                       {formatMoney(compareAt, currency)}
                     </span>
                   )}
-                  <span className="text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
-                    / 3 pairs
-                  </span>
                 </div>
+                <span className="mt-1 text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
+                  / 3 pairs
+                </span>
                 {hasDiscount && (
-                  <span className="mt-1.5 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  <span className="mt-2 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
                     Save {savePct}% today
                   </span>
                 )}
@@ -363,7 +372,7 @@ export function SocksUpsellModal({
                       Color
                     </span>
                     <span className="text-[10px] font-semibold text-[hsl(var(--text-mute))]">
-                      {color}
+                      {color ?? "Choose"}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -375,8 +384,8 @@ export function SocksUpsellModal({
                           type="button"
                           onClick={() => {
                             setColor(c);
-                            setColorTouched(true);
-                            setActiveImg(0);
+                            const idx = gallery.findIndex((g) => g.color === c);
+                            if (idx >= 0) setActiveImg(idx);
                           }}
                           aria-pressed={selected}
                           className={cn(

@@ -30,6 +30,12 @@ export function tierFromBundleValue(value: string): 1 | 2 | 3 | null {
 // stays a one-tap "Yes" with zero size/color picking required.
 export const INSOLE_PRODUCT_HANDLE = "insoles";
 
+// 3-pack Wide Compression Socks — shown as the SECOND upsell when the
+// customer declines the insole offer. Two sizes (S/M, L/XL) × two colors
+// (Black, White). We auto-pick size from the shopper's shoe size and
+// always default color to Black (top-seller); customer can change either.
+export const SOCKS_PRODUCT_HANDLE = "socks1";
+
 
 export interface ShopifyImage {
   url: string;

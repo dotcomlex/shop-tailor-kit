@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Check, ShieldCheck, Sparkles, Star, X } from "lucide-react";
+import { ArrowRight, Check, ShieldCheck, Sparkles, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { YellowCta } from "./YellowCta";
@@ -40,11 +40,11 @@ interface SocksUpsellModalProps {
 }
 
 const BENEFITS = [
-  "Stops swelling fast",
-  "Safe for diabetics & sensitive skin",
-  "All-day comfort, zero pinching",
-  "Stays fresh, fights odor",
-  "True to your shoe size",
+  "Eases swollen feet & tired legs",
+  "Diabetic-safe, non-binding cuff",
+  "Soft, breathable knit · gentle on sensitive skin",
+  "Boosts circulation for all-day energy",
+  "Stays put without slipping or pinching",
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];
@@ -216,7 +216,7 @@ export function SocksUpsellModal({
                   )}
                 </div>
                 {gallery.length > 1 && (
-                  <div className="mt-1.5 flex w-full items-center gap-1.5">
+                  <div className="mt-1.5 flex w-full items-center justify-between gap-1">
                     {gallery.map((g, i) => (
                       <button
                         key={g.key}
@@ -224,7 +224,7 @@ export function SocksUpsellModal({
                         onClick={() => setActiveImg(i)}
                         aria-label={`View ${g.alt}`}
                         className={cn(
-                          "relative h-[30px] w-[30px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          "relative h-[36px] w-[36px] shrink-0 overflow-hidden rounded-md border transition-all",
                           i === safeIdx
                             ? "border-[hsl(var(--text-strong))] ring-1 ring-[hsl(var(--text-strong))]"
                             : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",
@@ -244,23 +244,8 @@ export function SocksUpsellModal({
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-center gap-1">
-                  <div className="flex" aria-label="4.9 out of 5 stars">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Star
-                        key={i}
-                        className="h-3 w-3 fill-[hsl(var(--verified-green))] text-[hsl(var(--verified-green))]"
-                        strokeWidth={1.5}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
-                    4.9 · 8,900+
-                  </span>
-                </div>
-
                 <DialogPrimitive.Title asChild>
-                  <h2 className="mt-1 text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Compression Socks · 3-Pack
                   </h2>
                 </DialogPrimitive.Title>
@@ -417,7 +402,7 @@ export function SocksUpsellModal({
             {/* Trust + decline */}
             <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))] text-center px-2">
               <ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={2.5} />
-              <span>Free shipping · 60-day money-back · Doctor-recommended materials</span>
+              <span>Free shipping · 60-day money-back · Doctor-recommended</span>
             </div>
 
             <button

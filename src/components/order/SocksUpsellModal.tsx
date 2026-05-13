@@ -40,11 +40,11 @@ interface SocksUpsellModalProps {
 }
 
 const BENEFITS = [
-  "Reduces swelling & edema — graduated 20–30 mmHg pressure",
-  "Diabetic-friendly — non-binding cuff, no circulation cut-off",
-  "Ultra-soft bamboo-blend knit — gentle on sensitive skin",
-  "Moisture-wicking & odor-resistant — fresh all day",
-  "Sized to match your VitalWalks — guaranteed perfect fit",
+  "Stops swelling fast",
+  "Safe for diabetics & sensitive skin",
+  "All-day comfort, zero pinching",
+  "Stays fresh, fights odor",
+  "True to your shoe size",
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];

@@ -19,6 +19,13 @@ import { cn } from "@/lib/utils";
 import lifestyleFeet from "@/assets/socks/lifestyle-feet.webp";
 import lifestyleReduces from "@/assets/socks/lifestyle-reduces.webp";
 import lifestyleElle from "@/assets/socks/lifestyle-elle.webp";
+import packBlack from "@/assets/socks/pack-black.webp";
+import packWhite from "@/assets/socks/pack-white.webp";
+
+const PACK_IMAGE: Record<string, string> = {
+  Black: packBlack,
+  White: packWhite,
+};
 
 const LIFESTYLE_IMAGES: Array<{ src: string; alt: string }> = [
   { src: lifestyleFeet, alt: "Compression, antimicrobial, soft and breathable" },
@@ -49,8 +56,8 @@ const BENEFITS = [
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];
 const SIZE_HINTS: Record<SocksSizeBucket, string> = {
-  "S/M": "US W 5–8 · UK 2.5–5.5",
-  "L/XL": "US W 8.5–14.5 · UK 6–12",
+  "S/M": "US M 5–7.5",
+  "L/XL": "US M 8–14",
 };
 
 export function SocksUpsellModal({
@@ -117,15 +124,17 @@ export function SocksUpsellModal({
   const hasDiscount = compareAt > unitPrice;
   const savePct = hasDiscount ? Math.round(((compareAt - unitPrice) / compareAt) * 100) : 0;
 
-  const productImage = colorTouched
+  const localPack = PACK_IMAGE[color];
+  const fallbackImage = colorTouched
     ? socksImageForColor(product, color)
     : product.images[0] ?? socksImageForColor(product, color);
+  const packSrc = localPack ?? fallbackImage?.url ?? "";
 
   const gallery: Array<{ src: string; alt: string; key: string }> = [
     {
-      src: productImage?.url ?? "",
-      alt: productImage?.altText ?? product.title,
-      key: `pack:${colorTouched ? color : "default"}`,
+      src: packSrc,
+      alt: `${product.title} — ${color}`,
+      key: `pack:${color}`,
     },
     ...LIFESTYLE_IMAGES.map((img, i) => ({ src: img.src, alt: img.alt, key: `life:${i}` })),
   ].filter((g) => g.src);
@@ -249,9 +258,6 @@ export function SocksUpsellModal({
                     Compression Socks · 3-Pack
                   </h2>
                 </DialogPrimitive.Title>
-                <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
-                  Built for VitalWalk wearers — fits true to your shoe size.
-                </p>
 
                 <DialogPrimitive.Description className="sr-only">
                   One-time bonus offer for a 3-pack of graduated compression socks.
@@ -303,7 +309,7 @@ export function SocksUpsellModal({
                     Size
                   </span>
                   <span className="text-[10px] font-semibold text-[hsl(var(--text-mute))]">
-                    Matched to your shoe size
+                    Men's US
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -378,11 +384,6 @@ export function SocksUpsellModal({
                 </div>
               )}
             </div>
-
-            {/* Subtle reassurance */}
-            <p className="mt-3 text-center text-[10.5px] tracking-wide text-[hsl(var(--text-mute))]">
-              🦶 Best paired with your VitalWalks · One-time bonus
-            </p>
 
             {/* Savings line */}
             {hasDiscount && (

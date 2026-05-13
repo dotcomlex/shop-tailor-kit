@@ -402,7 +402,7 @@ export function SocksUpsellModal({
             {/* Trust + decline */}
             <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))] text-center px-2">
               <ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={2.5} />
-              <span>Free shipping · 60-day money-back · Doctor-recommended materials</span>
+              <span>Free shipping · 60-day money-back · Doctor-recommended</span>
             </div>
 
             <button

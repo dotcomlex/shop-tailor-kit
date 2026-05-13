@@ -373,7 +373,7 @@ export function SocksUpsellModal({
                       Color
                     </span>
                     <span className="text-[10px] font-semibold text-[hsl(var(--text-mute))]">
-                      {color}
+                      {color ?? "Choose"}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">

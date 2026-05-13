@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
@@ -20,9 +20,16 @@ import { SiteHeader } from "./SiteHeader";
 import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
 import { UpgradeStep } from "./UpgradeStep";
-import { InsoleUpsellModal } from "./InsoleUpsellModal";
-import { SocksUpsellModal } from "./SocksUpsellModal";
-import { RecentPurchaseToasts } from "./RecentPurchaseToasts";
+
+const InsoleUpsellModal = lazy(() =>
+  import("./InsoleUpsellModal").then((m) => ({ default: m.InsoleUpsellModal })),
+);
+const SocksUpsellModal = lazy(() =>
+  import("./SocksUpsellModal").then((m) => ({ default: m.SocksUpsellModal })),
+);
+const RecentPurchaseToasts = lazy(() =>
+  import("./RecentPurchaseToasts").then((m) => ({ default: m.RecentPurchaseToasts })),
+);
 
 export function OrderPage() {
   const queryClient = useQueryClient();
@@ -457,23 +464,29 @@ export function OrderPage() {
         </div>
       </footer>
 
-      <InsoleUpsellModal
-        open={upsellOpen}
-        product={insoleProduct ?? null}
-        shoeSelections={selections}
-        onAccept={handleUpsellAccept}
-        onDecline={handleUpsellDecline}
-      />
+      <Suspense fallback={null}>
+        {(upsellOpen || insoleProduct) && (
+          <InsoleUpsellModal
+            open={upsellOpen}
+            product={insoleProduct ?? null}
+            shoeSelections={selections}
+            onAccept={handleUpsellAccept}
+            onDecline={handleUpsellDecline}
+          />
+        )}
 
-      <SocksUpsellModal
-        open={socksOpen}
-        product={socksProduct ?? null}
-        shoeSelections={selections}
-        onAccept={handleSocksAccept}
-        onDecline={handleSocksDecline}
-      />
+        {(socksOpen || socksProduct) && (
+          <SocksUpsellModal
+            open={socksOpen}
+            product={socksProduct ?? null}
+            shoeSelections={selections}
+            onAccept={handleSocksAccept}
+            onDecline={handleSocksDecline}
+          />
+        )}
 
-      <RecentPurchaseToasts paused={currentStep >= 3} />
+        <RecentPurchaseToasts paused={currentStep >= 3} />
+      </Suspense>
     </div>
   );
 }

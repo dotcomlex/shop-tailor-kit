@@ -225,48 +225,63 @@ async function runProviderChain(): Promise<DetectedCountry | null> {
   return null;
 }
 
+let inflightDetect: Promise<DetectedCountry | null> | null = null;
+
 export async function detectCountry(): Promise<DetectedCountry | null> {
-  // 1. Manual override (URL ?country=GB or persisted override) — always wins.
-  const override = readOverride();
-  if (override) return override;
+  if (inflightDetect) return inflightDetect;
+  inflightDetect = (async () => {
+    // 1. Manual override (URL ?country=GB or persisted override) — always wins.
+    const override = readOverride();
+    if (override) return override;
 
-  // 2. Cached lookup — return immediately for instant first paint.
-  const cached = readCache();
-  if (cached) {
-    // Background re-validate: if the real country differs from cache,
-    // update cache + notify subscribers so prices re-render.
-    void revalidateInBackground(cached.value?.code ?? null);
-    return cached.value;
-  }
+    // 2. Cached lookup — return immediately for instant first paint.
+    const cached = readCache();
+    if (cached) {
+      // Background re-validate: if the real country differs from cache,
+      // update cache + notify subscribers so prices re-render.
+      void revalidateInBackground(cached.value?.code ?? null);
+      return cached.value;
+    }
 
-  // 3. No cache — run the provider chain inline.
-  const result = await runProviderChain();
-  if (result) {
-    writeCache(result);
-    return result;
-  }
+    // 3. No cache — run the provider chain inline.
+    const result = await runProviderChain();
+    if (result) {
+      writeCache(result);
+      return result;
+    }
 
-  // All providers failed — cache null briefly so we retry soon.
-  console.warn("[geo] All country-detection providers failed; using fallback copy.");
-  writeCache(null);
-  return null;
+    // All providers failed — cache null briefly so we retry soon.
+    console.warn("[geo] All country-detection providers failed; using fallback copy.");
+    writeCache(null);
+    return null;
+  })().finally(() => {
+    inflightDetect = null;
+  });
+  return inflightDetect;
 }
 
 const CHANGE_EVENT = "vitalwalk:geo-changed";
 
+let inflightRevalidate: Promise<void> | null = null;
 async function revalidateInBackground(cachedCode: string | null) {
+  if (inflightRevalidate) return inflightRevalidate;
   // Skip if a manual override is active.
   if (readOverride()) return;
-  const fresh = await runProviderChain();
-  if (!fresh) return;
-  if (fresh.code !== cachedCode) {
-    writeCache(fresh);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent(CHANGE_EVENT, { detail: fresh }),
-      );
+  inflightRevalidate = (async () => {
+    const fresh = await runProviderChain();
+    if (!fresh) return;
+    if (fresh.code !== cachedCode) {
+      writeCache(fresh);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(CHANGE_EVENT, { detail: fresh }),
+        );
+      }
     }
-  }
+  })().finally(() => {
+    inflightRevalidate = null;
+  });
+  return inflightRevalidate;
 }
 
 export const GEO_CHANGE_EVENT = CHANGE_EVENT;

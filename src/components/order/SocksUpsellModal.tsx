@@ -207,9 +207,12 @@ export function SocksUpsellModal({
           <div className="px-4 py-3">
             {/* Two-column hero */}
             <div className="flex gap-3">
-              <div className="w-[170px] shrink-0">
+              <div className={cn("shrink-0", colorTouched ? "w-[170px]" : "w-[150px]")}>
                 <div
-                  className="aspect-square w-[170px] overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]"
+                  className={cn(
+                    "aspect-square overflow-hidden rounded-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]",
+                    colorTouched ? "w-[170px]" : "w-[150px]",
+                  )}
                   style={{ backgroundColor: "#FDF7F0" }}
                 >
                   {heroItem && (
@@ -224,7 +227,7 @@ export function SocksUpsellModal({
                   )}
                 </div>
                 {gallery.length > 1 && (
-                  <div className="mt-1.5 flex w-full items-center justify-between gap-1">
+                  <div className="mt-1.5 flex items-center justify-start gap-1.5">
                     {gallery.map((g, i) => (
                       <button
                         key={g.key}
@@ -263,7 +266,7 @@ export function SocksUpsellModal({
                 </DialogPrimitive.Description>
 
                 {/* Price */}
-                <div className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                   <span className="text-[22px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
                     {formatMoney(unitPrice, currency)}
                   </span>
@@ -277,25 +280,10 @@ export function SocksUpsellModal({
                   </span>
                 </div>
                 {hasDiscount && (
-                  <span className="mt-1 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  <span className="mt-1.5 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
                     Save {savePct}% today
                   </span>
                 )}
-
-                <ul className="mt-2.5 space-y-1">
-                  {["3 pairs included", "Free US shipping", "60-day guarantee"].map((line) => (
-                    <li
-                      key={line}
-                      className="flex items-center gap-1.5 text-[10.5px] font-semibold text-[hsl(var(--text-body))]"
-                    >
-                      <Check
-                        className="h-2.5 w-2.5 shrink-0 text-[hsl(var(--verified-green))]"
-                        strokeWidth={3.5}
-                      />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
 

@@ -40,11 +40,11 @@ interface SocksUpsellModalProps {
 }
 
 const BENEFITS = [
-  "Stops swelling fast",
-  "Safe for diabetics & sensitive skin",
-  "All-day comfort, zero pinching",
-  "Stays fresh, fights odor",
-  "True to your shoe size",
+  "Eases swollen feet & tired legs",
+  "Diabetic-safe, non-binding cuff",
+  "Soft, breathable knit · gentle on sensitive skin",
+  "Boosts circulation for all-day energy",
+  "Stays put without slipping or pinching",
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];

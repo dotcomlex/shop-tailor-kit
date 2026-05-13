@@ -54,6 +54,7 @@ export interface ShopifyVariant {
   price: ShopifyMoney;
   compareAtPrice: ShopifyMoney | null;
   selectedOptions: Array<{ name: string; value: string }>;
+  image?: ShopifyImage | null;
 }
 
 export interface ShopifyProductData {
@@ -121,6 +122,7 @@ const PRODUCT_FIELDS = /* GraphQL */ `
           price { amount currencyCode }
           compareAtPrice { amount currencyCode }
           selectedOptions { name value }
+          image { url altText }
         }
       }
     }
@@ -555,6 +557,32 @@ export function pickSocksVariant(
     product.variants[0] ??
     null
   );
+}
+
+/**
+ * Find the best image for a given socks color. Prefers the variant's own
+ * image (Shopify links color variants to color-specific photos). Falls back
+ * to alt-text matching, then to the product's first image.
+ */
+export function socksImageForColor(
+  product: ShopifyProductData | null,
+  color: string,
+): ShopifyImage | null {
+  if (!product) return null;
+  const variantWithImage = product.variants.find((v) => {
+    const colorOpt = v.selectedOptions.find(
+      (o) => o.name.replace(/:$/, "").toLowerCase() === "color",
+    );
+    return (
+      colorOpt?.value.toLowerCase() === color.toLowerCase() && v.image?.url
+    );
+  });
+  if (variantWithImage?.image) return variantWithImage.image;
+
+  const altMatch = product.images.find((img) =>
+    img.altText?.toLowerCase().includes(color.toLowerCase()),
+  );
+  return altMatch ?? product.images[0] ?? null;
 }
 
 /** Available colors on the socks product, in Shopify's option order. */

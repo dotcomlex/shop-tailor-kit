@@ -1,53 +1,71 @@
 ## Goal
 
-Three small, surgical tweaks to `SocksUpsellModal.tsx`:
+Four small fixes to `SocksUpsellModal.tsx` (+ two compressed assets):
 
-1. **Remove the "4.9 · 8,900+" star-rating row** at the top right of the hero.
-2. **Rewrite the bullets** with smarter, concern-addressing copy pulled from real Armadilo Performance Compression Socks product info — perfect for swollen feet, diabetic-friendly, soft on skin, etc. No "true to your shoe size" line.
-3. **Mobile polish pass** — at 390px the modal already fits, but the trust line wraps awkwardly to a 2nd line + the thumbnail row can crowd. Tighten both so the modal looks intentional, not cramped.
-
-No structural rewrites, no new components, no impact on the A/B test wiring.
+1. **Show the new 3-pair variant images** (Black + White) you just uploaded.
+2. **Simplify size hints to men's-only** (US M) — no awkward W/UK mix.
+3. **Remove** the "Built for VitalWalk wearers — fits true to your shoe size." sub-headline.
+4. **Remove** the "🦶 Best paired with your VitalWalks · One-time bonus" reassurance line.
 
 ---
 
-## 1. Remove rating row
+## 1. Use the new 3-pair pack shots locally (no Shopify edit)
 
-Delete the entire stars + "4.9 · 8,900+" block (the `<div className="flex items-center gap-1">` containing the 5 `<Star>` icons and the count `<span>`). The title now sits at the top of the right column — gives the headline more breathing room and removes a fabricated stat we don't want to defend.
+The Shopify product currently has 2-pair photos assigned to the variants (`128.jpg` for Black, `130_*.jpg` for White), and there's no Shopify image-upload tool wired into this workspace. Cleanest path: override the variant pack shot **at the modal layer** with the two images you just uploaded.
 
-## 2. New bullets — concern-led, results-first
+- Compress and commit:
+  - `src/assets/socks/pack-black.webp` (from `hf_…6fa39398-…-2.png`)
+  - `src/assets/socks/pack-white.webp` (from `hf_…3e7b0013-…-2.png`)
+  - WebP, ~1000px wide, q75 → ~50–80 KB each
+- In `SocksUpsellModal.tsx`, replace the `socksImageForColor(product, color)` lookup that builds the gallery's first slide with a small local map keyed by color:
+  ```ts
+  const PACK_IMAGE: Record<string, string> = {
+    Black: packBlack,
+    White: packWhite,
+  };
+  ```
+  Fall back to the existing `socksImageForColor(...)?.url` if a future color (e.g. Nude) shows up that we haven't shipped a local shot for.
+- The thumbnail + hero already react to `color` and `colorTouched` via `setActiveImg(0)` — no other wiring changes.
+- No Shopify product mutation. Cart/checkout still pulls the right variant by ID; only the visual is local.
 
-Five short, scannable lines, no em-dashes, written to neutralize the top objections customers have when they hesitate on compression socks:
+Note: the Shopify product title already says "3 Pairs - Wide Compression Socks" and the CTA already reads "Yes, Add 3 Pairs for $X" — both stay.
 
+## 2. Men's-only size hints
+
+In `SIZE_HINTS`:
+```ts
+const SIZE_HINTS: Record<SocksSizeBucket, string> = {
+  "S/M": "US M 5–7.5",
+  "L/XL": "US M 8–14",
+};
 ```
-Eases swollen feet & tired legs
-Diabetic-safe, non-binding cuff
-Soft, breathable knit — gentle on sensitive skin
-Boosts circulation for all-day energy
-Stays put without slipping or pinching
+Also update the small caption next to the "Size" label from `"Matched to your shoe size"` to `"Men's US"` so the system label is unambiguous. Bucket selection logic (`pickSocksVariant`, `socksBucketFromShoeSize`) is unchanged — it's just the display text.
+
+## 3. Remove sub-headline
+
+Delete the `<p>` immediately under the title:
 ```
+Built for VitalWalk wearers — fits true to your shoe size.
+```
+Title sits cleanly above the price block. No spacing tweaks needed — the price already has `mt-1.5`.
 
-Sourced from Armadilo's own product page benefits: graduated 15–20 mmHg, edema/swelling relief, circulation boost, recommended by orthopedists, snug-but-comfortable fit, breathable knit. Every bullet maps to a real customer hesitation (swelling, diabetes safety, skin sensitivity, fatigue, slipping).
+## 4. Remove "Best paired" reassurance line
 
-Same green-check styling, same `<ul>` markup — only the array content changes.
+Delete the centered `<p>` between the color picker and the savings line:
+```
+🦶 Best paired with your VitalWalks · One-time bonus
+```
+The savings line + CTA naturally take its place; gives more vertical breathing room on mobile.
 
-## 3. Mobile polish (390px)
-
-Specific tweaks after testing the modal at the user's current viewport (390×781):
-
-- **Trust line under CTA**: currently wraps to 2 lines on iPhone 12/13/14. Shorten to `"Free shipping · 60-day money-back · Doctor-recommended"` (drop "materials") so it fits one line at 390px. Keep the `ShieldCheck` icon.
-- **Thumbnail row**: switch from `gap-1.5` to `gap-1` and bump from `h-[30px] w-[30px]` to `h-[34px] w-[34px]` so the 4 tiles fill the 170px hero column more cleanly with consistent spacing (currently they leave dead space on the right).
-- **Headline**: with the rating row gone, increase `mt-1` to `mt-0` so the title hugs the top of the right column — matches the visual weight of the 170px hero.
-- **Sub-headline**: keep `"Built for VitalWalk wearers — fits true to your shoe size."` for now (the user said don't mention TTS in *bullets* — the sub-headline is fine; it answers the unspoken sizing fear without being a selling point).
-
-No layout/dimension changes to the modal shell itself. The existing `max-w-[400px]` + `w-[calc(100%-1rem)]` already handles 390px well.
+---
 
 ## Files touched
 
-- `src/components/order/SocksUpsellModal.tsx` — only this file. Three edits: delete rating block, replace `BENEFITS` array, tighten trust line + thumbnail sizing.
+- `src/components/order/SocksUpsellModal.tsx` — local image map for first gallery slide, simplified `SIZE_HINTS`, two text deletions
+- `src/assets/socks/pack-black.webp` (new)
+- `src/assets/socks/pack-white.webp` (new)
 
 ## What stays the same
 
-- `UPSELL_PRIMARY = "socks"` flag, all checkout/pixel/Shopify wiring
-- Image carousel (4 tiles), color/size pickers, CTA, decline link
-- Modal animation, dimensions, top urgency band
-- All other files
+- A/B test flag (`UPSELL_PRIMARY = "socks"`), checkout/Shopify wiring, pixel events
+- 4-tile gallery (3-pair pack shot + 3 lifestyle images), color/size pickers, CTA, decline link, trust line, modal animation/dimensions

@@ -236,7 +236,9 @@ export function SocksUpsellModal({
                   )}
                 </div>
                 {gallery.length > 1 && (
-                  <div className="mt-1.5 flex items-center justify-start gap-1.5">
+                  <div
+                    className="mt-1.5 flex w-[150px] items-center gap-1 overflow-x-auto snap-x scroll-px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  >
                     {gallery.map((g, i) => (
                       <button
                         key={g.key}
@@ -244,7 +246,7 @@ export function SocksUpsellModal({
                         onClick={() => setActiveImg(i)}
                         aria-label={`View ${g.alt}`}
                         className={cn(
-                          "relative h-[36px] w-[36px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          "relative h-[28px] w-[28px] shrink-0 snap-start overflow-hidden rounded-md border transition-all",
                           i === safeIdx
                             ? "border-[hsl(var(--text-strong))] ring-1 ring-[hsl(var(--text-strong))]"
                             : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",

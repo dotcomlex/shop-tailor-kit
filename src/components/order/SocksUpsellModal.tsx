@@ -55,9 +55,9 @@ const BENEFITS = [
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];
-const SIZE_HINTS: Record<SocksSizeBucket, string> = {
-  "S/M": "US M 5–7.5",
-  "L/XL": "US M 8–14",
+const SIZE_HINTS: Record<SocksSizeBucket, { line1: string; line2: string }> = {
+  "S/M":  { line1: "US M 5–7.5 · W 5.5–8", line2: "UK 4–6.5 · EU 37–40" },
+  "L/XL": { line1: "US M 8–14 · W 8–15",   line2: "UK 7–13 · EU 41–47" },
 };
 
 export function SocksUpsellModal({
@@ -309,7 +309,7 @@ export function SocksUpsellModal({
                     Size
                   </span>
                   <span className="text-[10px] font-semibold text-[hsl(var(--text-mute))]">
-                    Men's US
+                    US · UK · EU
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -333,11 +333,19 @@ export function SocksUpsellModal({
                         </span>
                         <span
                           className={cn(
-                            "text-[10.5px] font-semibold",
-                            selected ? "text-white/80" : "text-[hsl(var(--text-mute))]",
+                            "mt-0.5 text-[10px] font-semibold leading-tight",
+                            selected ? "text-white/85" : "text-[hsl(var(--text-mute))]",
                           )}
                         >
-                          {SIZE_HINTS[b]}
+                          {SIZE_HINTS[b].line1}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[10px] font-medium leading-tight",
+                            selected ? "text-white/65" : "text-[hsl(var(--text-mute))]/75",
+                          )}
+                        >
+                          {SIZE_HINTS[b].line2}
                         </span>
                       </button>
                     );

@@ -91,7 +91,6 @@ export function SocksUpsellModal({
   }, [open, shoeSelections]);
 
   const effectiveColor = color ?? colors[0] ?? "Black";
-  const colorTouched = color !== null;
 
   const variant = useMemo(
     () => pickSocksVariant(product, bucket, effectiveColor),

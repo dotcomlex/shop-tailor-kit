@@ -375,6 +375,7 @@ export function SocksUpsellModal({
                           onClick={() => {
                             setColor(c);
                             setColorTouched(true);
+                            setActiveImg(0);
                           }}
                           aria-pressed={selected}
                           className={cn(

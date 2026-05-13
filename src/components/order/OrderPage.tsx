@@ -315,6 +315,15 @@ export function OrderPage() {
   // insole product failed to load or has no available variant, skip the
   // modal entirely so we never block a purchase on a non-essential upsell.
   const handleCompleteOrderClick = () => {
+    if (UPSELL_PRIMARY === "socks") {
+      const hasSocks = !!socksProduct?.variants.some((v) => v.availableForSale);
+      if (!hasSocks) {
+        void handleCheckout();
+        return;
+      }
+      setSocksOpen(true);
+      return;
+    }
     const firstSize = selections[0]?.size ?? null;
     const insoleVariant = pickInsoleVariantForSize(insoleProduct ?? null, firstSize);
     if (!insoleVariant || !insoleVariant.availableForSale) {

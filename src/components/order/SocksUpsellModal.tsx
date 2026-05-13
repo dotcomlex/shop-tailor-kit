@@ -385,8 +385,8 @@ export function SocksUpsellModal({
                           type="button"
                           onClick={() => {
                             setColor(c);
-                            setColorTouched(true);
-                            setActiveImg(0);
+                            const idx = gallery.findIndex((g) => g.color === c);
+                            if (idx >= 0) setActiveImg(idx);
                           }}
                           aria-pressed={selected}
                           className={cn(

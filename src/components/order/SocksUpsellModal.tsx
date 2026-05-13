@@ -216,7 +216,7 @@ export function SocksUpsellModal({
                   </h2>
                 </DialogPrimitive.Title>
                 <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
-                  One-time bonus — added to this order only.
+                  Built for VitalWalk wearers — fits true to your shoe size.
                 </p>
 
                 <DialogPrimitive.Description className="sr-only">

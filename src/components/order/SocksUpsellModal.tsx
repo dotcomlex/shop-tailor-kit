@@ -224,7 +224,7 @@ export function SocksUpsellModal({
                         onClick={() => setActiveImg(i)}
                         aria-label={`View ${g.alt}`}
                         className={cn(
-                          "relative h-[30px] w-[30px] shrink-0 overflow-hidden rounded-md border transition-all",
+                          "relative h-[36px] w-[36px] shrink-0 overflow-hidden rounded-md border transition-all",
                           i === safeIdx
                             ? "border-[hsl(var(--text-strong))] ring-1 ring-[hsl(var(--text-strong))]"
                             : "border-[hsl(var(--hairline))] opacity-60 hover:opacity-100",

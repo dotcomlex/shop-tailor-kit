@@ -257,8 +257,10 @@ export function OrderPage() {
     const extrasValue = extraLines.reduce((sum, _l) => sum, 0); // placeholder; real value added below
     const upsellValue = extraLines.length
       ? extraLines.reduce((sum, l) => {
-          // For the insole upsell, look up its live price from insoleProduct.
-          const v = insoleProduct?.variants.find((vv) => vv.id === l.variantId);
+          // Look up live price from whichever upsell product owns this variant.
+          const v =
+            insoleProduct?.variants.find((vv) => vv.id === l.variantId) ??
+            socksProduct?.variants.find((vv) => vv.id === l.variantId);
           return sum + (v ? parseFloat(v.price.amount) * l.quantity : 0);
         }, 0)
       : 0;

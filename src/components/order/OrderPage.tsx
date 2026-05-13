@@ -29,6 +29,7 @@ export function OrderPage() {
   const { data: bundles } = useVitalWalkBundles();
   const { data: product } = useVitalWalkProduct();
   const { data: insoleProduct } = useInsoleProduct();
+  const { data: socksProduct } = useSocksProduct();
   const { country } = useGeo();
 
   // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and

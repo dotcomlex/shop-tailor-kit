@@ -30,10 +30,11 @@ interface SocksUpsellModalProps {
 }
 
 const BENEFITS = [
-  "Soothes swollen feet & tired legs",
-  "Graduated 20–30 mmHg compression boosts circulation",
-  "Soft, breathable knit — comfortable all day",
-  "Trusted by thousands on their feet for hours",
+  "Reduces swelling & edema — graduated 20–30 mmHg pressure",
+  "Diabetic-friendly — non-binding cuff, no circulation cut-off",
+  "Ultra-soft bamboo-blend knit — gentle on sensitive skin",
+  "Moisture-wicking & odor-resistant — fresh all day",
+  "Sized to match your VitalWalks — guaranteed perfect fit",
 ];
 
 const SIZE_BUCKETS: SocksSizeBucket[] = ["S/M", "L/XL"];
@@ -215,7 +216,7 @@ export function SocksUpsellModal({
                   </h2>
                 </DialogPrimitive.Title>
                 <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
-                  One-time bonus — added to this order only.
+                  Built for VitalWalk wearers — fits true to your shoe size.
                 </p>
 
                 <DialogPrimitive.Description className="sr-only">
@@ -345,7 +346,7 @@ export function SocksUpsellModal({
 
             {/* Subtle reassurance */}
             <p className="mt-3 text-center text-[10.5px] tracking-wide text-[hsl(var(--text-mute))]">
-              🦶 Pairs perfectly with your VitalWalks
+              🦶 Best paired with your VitalWalks · One-time bonus
             </p>
 
             {/* Savings line */}
@@ -364,9 +365,9 @@ export function SocksUpsellModal({
             </div>
 
             {/* Trust + decline */}
-            <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))]">
-              <ShieldCheck className="h-3 w-3" strokeWidth={2.5} />
-              <span>Free shipping · 60-day money-back guarantee</span>
+            <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10.5px] text-[hsl(var(--text-mute))] text-center px-2">
+              <ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+              <span>Free shipping · 60-day money-back · Doctor-recommended materials</span>
             </div>
 
             <button

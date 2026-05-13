@@ -40,6 +40,7 @@ export function OrderPage() {
   const [selections, setSelections] = useState<Selection[]>([{ color: null, size: null }]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const [socksOpen, setSocksOpen] = useState(false);
   const viewContentFiredRef = useRef(false);
   const addToCartFiredRef = useRef(false);
 

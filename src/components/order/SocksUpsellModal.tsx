@@ -264,9 +264,9 @@ export function SocksUpsellModal({
                 )}
               </div>
 
-              <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
                 <DialogPrimitive.Title asChild>
-                  <h2 className="text-balance text-[17.5px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
+                  <h2 className="text-balance text-[18px] font-extrabold leading-[1.15] tracking-tight text-[hsl(var(--text-strong))]">
                     Compression Socks · 3-Pack
                   </h2>
                 </DialogPrimitive.Title>
@@ -276,21 +276,21 @@ export function SocksUpsellModal({
                 </DialogPrimitive.Description>
 
                 {/* Price */}
-                <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                  <span className="text-[22px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="text-[26px] font-black tabular-nums leading-none text-[hsl(var(--text-strong))]">
                     {formatMoney(unitPrice, currency)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-[12px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
+                    <span className="text-[14px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
                       {formatMoney(compareAt, currency)}
                     </span>
                   )}
-                  <span className="text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
-                    / 3 pairs
-                  </span>
                 </div>
+                <span className="mt-1 text-[10.5px] font-semibold text-[hsl(var(--text-mute))]">
+                  / 3 pairs
+                </span>
                 {hasDiscount && (
-                  <span className="mt-1.5 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  <span className="mt-2 inline-block w-fit rounded-full bg-[hsl(var(--verified-green))] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
                     Save {savePct}% today
                   </span>
                 )}

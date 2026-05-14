@@ -1,55 +1,43 @@
-## Step 3 polish — Priority card + layout reflow
+## Tighten the post-CTA trust block
 
-Three small, surgical changes. Pure presentation, no business-logic touches.
+The area under "Complete My Order" feels heavy: a big 60-day card with a long paragraph, a microline that *repeats* "60-day money-back guarantee" (duplicating the card it sits beneath), and a wide payment-badge PNG that competes with the guarantee. Three small fixes.
 
-### 1. Priority Processing subtitle (`PriorityUpsellCard.tsx`)
+### 1. Slim the 60-day guarantee card (`RiskFreeGuarantee.tsx`)
 
-Drop the 24h promise (we're dropshipping, can't honor it). Replace with something playful that still sells the "jump the queue" benefit.
+Right now the card is the visual heaviest thing under the CTA — bigger than the CTA itself on a 390-wide viewport. Make it inline-compact while keeping the badge as the trust anchor.
 
-- New copy: **"Skip the line — your order ships first ⚡"**
-  - Honest (we *do* prioritize their order ahead of standard queue)
-  - Punchy, single line, no time commitment
-  - Trailing bolt emoji ties back to the lightning-bolt icon on the left
+- Shrink the circular badge: 78/88px → **56/64px**.
+- Tighten the body copy to one short line + one supporting line:
+  - **H:** "Try VitalWalk risk-free for 60 days."
+  - **B:** "Don't love them? Send them back for a full refund. Easy returns & exchanges."
+- Drop card padding from `p-4 sm:p-5` → `p-3 sm:p-3.5`.
+- Headline `text-[14px]`, body `text-[12px] leading-snug` (down from 14.5/12.5 leading-relaxed).
 
-### 2. Priority card visual standout
+Net: same reassurance, ~35% less vertical space, sits cleanly between CTA and microline.
 
-Right now the card uses the same neutral `bg-card` as the OrderSummary above and the IncludedChecklist below — so it visually melts into the stack. Lift it with a soft tinted background and a slightly warmer border so the eye stops on it.
+### 2. De-dupe the trust microline (`UpgradeStep.tsx`)
 
-- **Idle state:** soft yellow wash (`bg-order-yellow/8`, border `border-order-yellow-deep/30`) — same accent family as the CTA, signals "this is an opportunity," not noise.
-- **Selected state:** keep the existing verified-green ring/border but layer it over the yellow wash so the toggle still feels like a clean confirmation.
-- Add a faint top-left shimmer gradient (`from-order-yellow/15 to-transparent`) for a touch of depth — same recipe used elsewhere on premium CTAs in this funnel.
-- Icon disc tint stays as-is (yellow when idle, green when added).
+Currently reads: *Secure SSL checkout · Powered by Shopify · 60-day money-back guarantee*
 
-Result: the card reads as a distinct "upgrade" row, not another summary line — without screaming.
+The "60-day" mention is now directly above it (in the card) and below it (in the badge image's "100% SECURE" seal area). Drop it from the microline.
 
-### 3. Reflow Step 3 to shorten the scroll
+- New microline: **"🔒 Secure SSL checkout · Powered by Shopify"**
 
-Currently above the CTA: ScarcityBar → OrderSummary → PriorityCard → IncludedChecklist → **RiskFreeGuarantee** → CTA. That's 5 boxes before the button on a 390-wide viewport.
+Keeps the security/legitimacy signal without echoing the guarantee three times in a row.
 
-Move the **60-day guarantee block under the CTA**, right above the trust microline. New order:
+### 3. Soften the payment badges (`UpgradeStep.tsx`)
 
-```text
-ScarcityBar
-OrderSummary
-PriorityUpsellCard
-IncludedChecklist
-[ Complete My Order ]   ← CTA reachable ~1 scroll sooner
-RiskFreeGuarantee       ← reassurance for hesitant clickers
-Trust microline · payment badges
-↓ Reviews / FAQ
-```
+The PNG is loud (saturated SSL gold seal + 7 colored card logos) and pulls the eye away from the guarantee. Two cheap tweaks:
 
-Why this works:
-- Customers who are ready to buy hit the CTA faster (less stacked friction above the fold).
-- Customers who hesitate at the CTA see the 60-day guarantee *as the next thing they look at* — exactly when reassurance matters most.
-- The guarantee block stays visually tied to the CTA (sits in the same `row-pad` group as the trust microline and badges).
+- Cap max-width tighter: `max-w-[340px]` → **`max-w-[300px] sm:max-w-[340px]`**.
+- Apply a subtle desaturation + opacity so it reads as a trust footer, not a banner: `className="... opacity-80 saturate-[0.85]"`.
 
-No spacing or padding rebuilds — the block keeps its current styling, only its position changes.
+No PNG re-export needed.
 
 ### Files touched
-- `src/components/order/PriorityUpsellCard.tsx` — copy + tinted background/border
-- `src/components/order/UpgradeStep.tsx` — move `<RiskFreeGuarantee />` from above the CTA to below it
+- `src/components/order/RiskFreeGuarantee.tsx` — compact layout + tighter copy
+- `src/components/order/UpgradeStep.tsx` — drop redundant microline phrase, slim badge image
 
 ### Out of scope
-- No changes to OrderSummary, IncludedChecklist, sticky bar, checkout logic, or pixel events.
-- No new content in the guarantee block itself.
+- No changes to the CTA, sticky bar, Priority card, OrderSummary, IncludedChecklist, or any logic.
+- Reviews/FAQ blocks below remain untouched.

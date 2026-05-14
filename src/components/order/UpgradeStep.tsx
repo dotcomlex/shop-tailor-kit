@@ -10,7 +10,7 @@ import { FaqBlock } from "./FaqBlock";
 import { StickyCheckoutBar } from "./StickyCheckoutBar";
 import { IncludedChecklist } from "./IncludedChecklist";
 import { PriorityUpsellCard } from "./PriorityUpsellCard";
-import paymentBadges from "@/assets/payment-badges.png";
+import paymentBadges from "@/assets/payment-badges-compact.png";
 
 interface UpgradeStepProps {
   total: number;
@@ -72,7 +72,7 @@ export function UpgradeStep({
         <IncludedChecklist quantity={quantity} />
       </div>
 
-      <div className="row-pad mt-4 space-y-3.5">
+      <div className="row-pad mt-4 space-y-2.5">
         <YellowCta
           label="Complete My Order"
           onClick={onCheckout}
@@ -90,18 +90,18 @@ export function UpgradeStep({
           <span>Powered by Shopify</span>
         </div>
 
-        {/* 60-day risk-free guarantee — secondary reassurance below the microline. */}
-        <RiskFreeGuarantee />
-
-        {/* Payment / trust badges — softened so they read as a footer, not a banner */}
-        <div className="mt-3 flex justify-center">
+        {/* Compact payment badges strip — sits right under the SSL microline. */}
+        <div className="flex justify-center">
           <img
             src={paymentBadges}
-            alt="Accepted payments: Visa, Mastercard, American Express, Discover, PayPal, Apple Pay. SSL secured. Secured by Stripe."
-            className="h-auto w-full max-w-[300px] opacity-80 saturate-[0.85] sm:max-w-[340px]"
+            alt="Accepted payments: Shop Pay, Discover, Visa, Mastercard, Apple Pay, Google Pay, Amazon, American Express."
+            className="h-auto w-full max-w-[280px] sm:max-w-[320px]"
             loading="lazy"
           />
         </div>
+
+        {/* 60-day risk-free guarantee — final reassurance. */}
+        <RiskFreeGuarantee />
       </div>
 
       {/* Below-the-fold trust blocks — only mounted on Step 3, fade in beautifully */}

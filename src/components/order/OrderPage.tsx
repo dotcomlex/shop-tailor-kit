@@ -485,6 +485,10 @@ export function OrderPage() {
                 onCheckout={handleCompleteOrderClick}
                 isCheckingOut={isCheckingOut}
                 endRef={footerRef}
+                priorityPrice={priorityPrice}
+                priorityAvailable={priorityAvailable}
+                prioritySelected={prioritySelected}
+                onTogglePriority={setPrioritySelected}
               />
             )}
           </div>

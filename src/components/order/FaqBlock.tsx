@@ -20,6 +20,10 @@ const FAQS = [
     a: "No. The WideComfort™ true extra-wide toe box gives your toes real room to spread naturally — not just a slightly roomier 'wide' label. The seamless interior also protects diabetic and sensitive skin, so there's nothing inside to rub against bunions or pressure points.",
   },
   {
+    q: "Are these safe and comfortable for diabetics?",
+    a: "Yes — VitalWalk was designed with diabetic-friendly features in mind: a seamless interior so there's nothing to rub against sensitive skin, an extra-wide toe box that won't compress toes, and adjustable straps that accommodate swelling and diabetic socks. Always check with your doctor before changing footwear if you have advanced neuropathy or active foot ulcers.",
+  },
+  {
     q: "Can I wear them with diabetic socks or compression stockings?",
     a: "Yes. The adjustable straps and extra-wide toe box accommodate diabetic socks, compression stockings, and swelling throughout the day without pinching or cutting off circulation.",
   },
@@ -29,7 +33,7 @@ const FAQS = [
   },
   {
     q: "How fast will my order arrive?",
-    a: "Free standard shipping on every order. Most US orders arrive in 5–8 business days. UK, Canada, Australia, and New Zealand typically arrive within 5–6 business days. You'll get a tracking link by email the moment your pair ships.",
+    a: "Free standard shipping on every order. Most US orders arrive in 4–7 business days. UK, Canada, Australia, and New Zealand typically arrive in 5–7 business days. You'll get a tracking link by email the moment your pair ships.",
   },
   {
     q: "What if they don't fit, or I need a different size?",

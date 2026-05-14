@@ -286,7 +286,9 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             <span className="text-[hsl(var(--text-mute))]" aria-hidden>
               ·
             </span>
-            <span className="font-semibold">Free Shipping</span>
+            <span className="font-semibold">
+              {quantity === 1 ? "Free Shipping on 2+ Pairs" : "Free Shipping"}
+            </span>
           </div>
 
           <img

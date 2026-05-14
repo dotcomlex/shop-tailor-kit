@@ -36,6 +36,10 @@ export const INSOLE_PRODUCT_HANDLE = "insoles";
 // always default color to Black (top-seller); customer can change either.
 export const SOCKS_PRODUCT_HANDLE = "socks1";
 
+// Priority Processing — one-click add-on shown on Step 3.
+// Single variant, ships within 24h. Live Shopify product, $4.95.
+export const PRIORITY_PRODUCT_HANDLE = "processing";
+
 
 export interface ShopifyImage {
   url: string;
@@ -490,6 +494,21 @@ export async function fetchSocksProduct(country: string = "US"): Promise<Shopify
     PRODUCT_BY_HANDLE_QUERY,
     {
       handle: SOCKS_PRODUCT_HANDLE,
+      country: (country || "US").toUpperCase(),
+    },
+  );
+  return normalizeProduct(result?.data?.product ?? null);
+}
+
+/**
+ * Fetch the Priority Processing add-on product, localized for the given country.
+ * Single-variant product — picked via product.variants[0] in the UI.
+ */
+export async function fetchPriorityProduct(country: string = "US"): Promise<ShopifyProductData | null> {
+  const result = await storefrontApiRequest<{ product: RawProduct | null }>(
+    PRODUCT_BY_HANDLE_QUERY,
+    {
+      handle: PRIORITY_PRODUCT_HANDLE,
       country: (country || "US").toUpperCase(),
     },
   );

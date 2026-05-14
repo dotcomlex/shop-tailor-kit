@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useInsoleProduct } from "@/hooks/useInsoleProduct";
 import { useSocksProduct } from "@/hooks/useSocksProduct";
+import { usePriorityProcessingProduct } from "@/hooks/usePriorityProcessingProduct";
 import { useGeo } from "@/hooks/useGeo";
 import {
   createCheckoutForLines,
@@ -41,6 +42,7 @@ export function OrderPage() {
   const { data: product } = useVitalWalkProduct();
   const { data: insoleProduct } = useInsoleProduct();
   const { data: socksProduct } = useSocksProduct();
+  const { data: priorityProduct } = usePriorityProcessingProduct();
   const { country } = useGeo();
 
   // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and
@@ -52,6 +54,10 @@ export function OrderPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
   const [socksOpen, setSocksOpen] = useState(false);
+  // Priority Processing one-click add-on (Step 3). Lifted here so the cart
+  // line + Pixel value follow through every checkout path (insole-accept,
+  // socks-accept, plain decline, etc.).
+  const [prioritySelected, setPrioritySelected] = useState(false);
   const viewContentFiredRef = useRef(false);
   const addToCartFiredRef = useRef(false);
 
@@ -162,6 +168,22 @@ export function OrderPage() {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [queryClient]);
 
+  // Resolve the live priority-processing variant (single-variant product).
+  const priorityVariant = priorityProduct?.variants.find((v) => v.availableForSale)
+    ?? priorityProduct?.variants[0]
+    ?? null;
+  const priorityPrice = priorityVariant ? parseFloat(priorityVariant.price.amount) : null;
+  const priorityAvailable = !!priorityVariant?.availableForSale;
+
+  const buildPriorityLine = (): CartLineInput | null => {
+    if (!prioritySelected || !priorityVariant) return null;
+    return {
+      variantId: priorityVariant.id,
+      quantity: 1,
+      attributes: [{ key: "Add-on", value: "Priority Processing (24h)" }],
+    };
+  };
+
   const handleCheckout = async (extraLines: CartLineInput[] = []) => {
     if (!product) {
       toast.error("Product is still loading. Please wait a moment and try again.");
@@ -260,33 +282,36 @@ export function OrderPage() {
       attributes: [{ key: "Pair", value: g.pairs.join(", ") }],
     }));
 
-    const lines: CartLineInput[] = [...bundleLines, ...extraLines];
+    // Fold the priority-processing add-on (if toggled on) into the cart lines
+    // so it lands as its own line item in Shopify checkout at its real price.
+    const priorityLine = buildPriorityLine();
+    const allExtras = priorityLine ? [...extraLines, priorityLine] : extraLines;
+    const lines: CartLineInput[] = [...bundleLines, ...allExtras];
 
     // Fire InitiateCheckout right before redirecting to Shopify checkout.
     // Bump the value by any upsell extras so server-side ROAS stays accurate.
     const currency = bundleProduct.priceRange.minVariantPrice.currencyCode;
-    const extrasValue = extraLines.reduce((sum, _l) => sum, 0); // placeholder; real value added below
-    const upsellValue = extraLines.length
-      ? extraLines.reduce((sum, l) => {
+    const upsellValue = allExtras.length
+      ? allExtras.reduce((sum, l) => {
           // Look up live price from whichever upsell product owns this variant.
           const v =
             insoleProduct?.variants.find((vv) => vv.id === l.variantId) ??
-            socksProduct?.variants.find((vv) => vv.id === l.variantId);
+            socksProduct?.variants.find((vv) => vv.id === l.variantId) ??
+            priorityProduct?.variants.find((vv) => vv.id === l.variantId);
           return sum + (v ? parseFloat(v.price.amount) * l.quantity : 0);
         }, 0)
       : 0;
-    void extrasValue;
     fbTrack("InitiateCheckout", {
       customData: {
         content_type: "product",
         content_ids: [
           variantNumericId(pair1Variant.id),
-          ...extraLines.map((l) => variantNumericId(l.variantId)),
+          ...allExtras.map((l) => variantNumericId(l.variantId)),
         ],
         content_name: bundleProduct.title,
         currency,
         value: bundleTotal + upsellValue,
-        num_items: quantity + extraLines.reduce((s, l) => s + l.quantity, 0),
+        num_items: quantity + allExtras.reduce((s, l) => s + l.quantity, 0),
       },
     });
 
@@ -460,6 +485,10 @@ export function OrderPage() {
                 onCheckout={handleCompleteOrderClick}
                 isCheckingOut={isCheckingOut}
                 endRef={footerRef}
+                priorityPrice={priorityPrice}
+                priorityAvailable={priorityAvailable}
+                prioritySelected={prioritySelected}
+                onTogglePriority={setPrioritySelected}
               />
             )}
           </div>

@@ -9,6 +9,7 @@ import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
 import { FaqBlock } from "./FaqBlock";
 import { StickyCheckoutBar } from "./StickyCheckoutBar";
 import { IncludedChecklist } from "./IncludedChecklist";
+import { PriorityUpsellCard } from "./PriorityUpsellCard";
 import paymentBadges from "@/assets/payment-badges.png";
 
 interface UpgradeStepProps {
@@ -19,6 +20,12 @@ interface UpgradeStepProps {
   isCheckingOut: boolean;
   /** Footer/end-of-content sentinel — sticky bar tucks away when this is in view. */
   endRef?: React.RefObject<HTMLElement | null>;
+  /** Localized price for Priority Processing (null until product loads). */
+  priorityPrice: number | null;
+  /** Hide card entirely if Shopify variant is unavailable. */
+  priorityAvailable: boolean;
+  prioritySelected: boolean;
+  onTogglePriority: (next: boolean) => void;
 }
 
 export function UpgradeStep({
@@ -27,10 +34,15 @@ export function UpgradeStep({
   quantity,
   onCheckout,
   isCheckingOut,
-  endRef,
+  priorityPrice,
+  priorityAvailable,
+  prioritySelected,
+  onTogglePriority,
 }: UpgradeStepProps) {
   const saved = Math.max(0, comparePrice - total);
   const showAtRef = useRef<HTMLDivElement | null>(null);
+  const addOnTotal = prioritySelected && priorityPrice != null ? priorityPrice : 0;
+  const grandTotal = total + addOnTotal;
 
   return (
     <section aria-labelledby="step-3-heading" className="animate-fade-in pb-28 md:pb-0">
@@ -41,7 +53,22 @@ export function UpgradeStep({
 
       <div className="row-pad mt-4 space-y-3.5">
         <ScarcityBar />
-        <OrderSummary subtotal={total} saved={saved} quantity={quantity} />
+        <OrderSummary
+          subtotal={total}
+          saved={saved}
+          quantity={quantity}
+          addOnTotal={addOnTotal}
+          addOnLabel={addOnTotal > 0 ? "Priority Processing" : undefined}
+        />
+
+        {priorityAvailable && (
+          <PriorityUpsellCard
+            price={priorityPrice}
+            selected={prioritySelected}
+            onToggle={onTogglePriority}
+          />
+        )}
+
         <IncludedChecklist quantity={quantity} />
 
         {/* 60-day risk-free guarantee — final reassurance right before CTA */}
@@ -89,10 +116,10 @@ export function UpgradeStep({
       {/* Sentinel: sticky bar appears once the user scrolls past the FAQs */}
       <div ref={showAtRef} aria-hidden className="h-px w-full" />
 
-      {/* Sticky mobile checkout bar — appears only after the user reaches the end of the FAQs */}
+      {/* Sticky mobile checkout bar — appears once the user reaches the end of the FAQs */}
       <StickyCheckoutBar
-        total={total}
-        comparePrice={comparePrice}
+        total={grandTotal}
+        comparePrice={comparePrice + addOnTotal}
         quantity={quantity}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}

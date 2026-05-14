@@ -2,13 +2,12 @@ import { useEffect, useState, type RefObject } from "react";
 import { ArrowRight, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/useCurrency";
-import { useShipping } from "@/hooks/useShipping";
 
 interface StickyCheckoutBarProps {
   total: number;
   /** Strike-through retail price shown above the live total. */
   comparePrice?: number;
-  /** Selected bundle quantity — drives the shipping line + total. */
+  /** Selected bundle quantity — drives the shipping subtitle. */
   quantity?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
@@ -25,9 +24,7 @@ export function StickyCheckoutBar({
   showAtRef,
 }: StickyCheckoutBarProps) {
   const { format } = useCurrency();
-  const { cost: shippingCost, isFree: shipsFree, formatted: shippingFormatted } =
-    useShipping(quantity);
-  const grandTotal = total + shippingCost;
+  const shipsFree = quantity > 1;
   const [reachedBottom, setReachedBottom] = useState(false);
 
   useEffect(() => {
@@ -73,13 +70,11 @@ export function StickyCheckoutBar({
                   </span>
                 )}
                 <span className="text-[22px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
-                  {format(grandTotal)}
+                  {format(total)}
                 </span>
               </div>
               <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-wider text-[hsl(var(--text-mute))]">
-                {shipsFree
-                  ? "Total · Free shipping"
-                  : `Total · incl. ${shippingFormatted || "shipping"}`}
+                {shipsFree ? "Total · Free shipping" : "Total · Secure checkout"}
               </span>
             </div>
 

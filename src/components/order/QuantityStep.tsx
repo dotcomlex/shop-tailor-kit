@@ -5,7 +5,6 @@ import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
-import { useShipping } from "@/hooks/useShipping";
 import type { ShopifyProductData } from "@/lib/shopify";
 import trustBadges from "@/assets/trust-badges.png";
 
@@ -93,9 +92,6 @@ function readLocalizedTotals(
 export function QuantityStep({ quantity, onQuantityChange, onContinue }: QuantityStepProps) {
   const { format } = useCurrency();
   const { data: bundles } = useVitalWalkBundles();
-  // Localized shipping for the 1-pair option (single source of truth across
-  // the whole funnel — see useShipping for the FX derivation).
-  const { formatted: shippingFormatted } = useShipping(1);
 
   return (
     <section aria-labelledby="step-1-heading">
@@ -175,7 +171,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   {/* thumb */}
                   <BundleThumb count={opt.qty} />
 
-                  {/* name + save */}
+                  {/* name + save + shipping pill */}
                   <div className="min-w-0 flex-1">
                     <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
                       {opt.name}
@@ -183,12 +179,17 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     <p className="mt-1 text-[14px] font-extrabold text-save">
                       Save {opt.savePct}%
                     </p>
+                    {opt.qty > 1 && (
+                      <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--verified-green)/0.10)] px-2 py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-verified">
+                        <Truck className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+                        Free Shipping
+                      </span>
+                    )}
                   </div>
 
                   {/* Price column — headline is the exact Shopify bundle
                       total so the number on this card matches Step 3 /
-                      checkout to the cent. A small per-pair sub-line is
-                      shown on 2/3-pair cards as the value anchor. */}
+                      checkout to the cent. */}
                   <div className="shrink-0 text-right">
                     {perPairCompareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
@@ -207,32 +208,6 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     )}
                   </div>
                 </button>
-
-                {/* Shipping line — directly tied to Shopify's shipping
-                    profile: 1 pair pays $9.95 (localized), 2/3 pairs ship
-                    free. Shown below each card so the trade-off is
-                    visible at the moment the customer is choosing. */}
-                <div
-                  className={cn(
-                    "mt-1.5 flex items-center justify-end gap-1.5 pr-1 text-[12px] font-semibold tabular-nums",
-                    opt.qty === 1
-                      ? "text-[hsl(var(--text-mute))]"
-                      : "text-save",
-                  )}
-                >
-                  <Truck className="h-3.5 w-3.5" aria-hidden />
-                  {opt.qty === 1 ? (
-                    shippingFormatted ? (
-                      <span>+ {shippingFormatted} shipping</span>
-                    ) : (
-                      <span className="inline-block h-[14px] w-24 rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
-                    )
-                  ) : (
-                    <span className="font-extrabold uppercase tracking-wide">
-                      Free Shipping
-                    </span>
-                  )}
-                </div>
               </li>
             );
           })}

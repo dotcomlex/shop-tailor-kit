@@ -1,17 +1,29 @@
-# Reword Free-Shipping Nudge — Generalize
+# Move 60-Day Guarantee Below the Payment Badges
 
 ## Change
-In `src/components/order/UpgradeStep.tsx`, update the 1-pair shipping nudge copy to cover both 2-pair and 3-pair bundles.
+In `src/components/order/UpgradeStep.tsx`, relocate `<RiskFreeGuarantee />` from the upper stack (currently sitting between the PriorityUpsellCard and the CTA) to a new position **between the payment badges block and the VerifiedReviewsBlock** (reviews/FAQ section).
 
-**Before:**
-> 🚚 **Add another pair** to unlock **free shipping**.
+## New flow
+```
+ScarcityBar
+OrderSummary
+  → "Get 2+ pairs to unlock free shipping" nudge (1-pair only)
+PriorityUpsellCard
+[ Complete My Order ]
+🔒 Secure SSL checkout · Powered by Shopify
+[ payment badges ]
 
-**After:**
-> 🚚 **Get 2+ pairs** to unlock **free shipping**.
+[ 60-Day Guarantee card ]   ← moved here, sits as a bridge before social proof
 
-Rationale: customer can pick the 2-pack or the 3-pack — both ship free. "2+ pairs" reads instantly and matches what's already used elsewhere in the funnel ("free on 2+").
+VerifiedReviews
+FAQ
+```
 
-Bold stays on "Get 2+ pairs" and "free shipping". Position, styling, and `quantity === 1` condition unchanged.
+## Implementation details
+- Remove `<RiskFreeGuarantee />` from the upper `row-pad mt-4 space-y-3.5` block.
+- Insert it in its own `row-pad mt-6` wrapper between the post-CTA block and the `row-pad mt-10 space-y-6 animate-fade-in` block that holds reviews + FAQ.
+- Use `mt-6` so it has a clear breath of space from the badges above and the reviews below — feels intentional, not cramped.
+- No styling changes to the `RiskFreeGuarantee` component itself.
 
 ## Files touched
-- `src/components/order/UpgradeStep.tsx` (copy only)
+- `src/components/order/UpgradeStep.tsx` (only)

@@ -50,9 +50,9 @@ const GALLERY: GalleryItem[] = [
 ];
 
 const BENEFITS = [
-  "Cloud-soft underfoot, all day",
-  "Made to slip into your VitalWalks",
-  "Feet feel new by the time you get home",
+  "Sink into a softer step the moment you stand up",
+  "Pressure points get worked loose mile after mile",
+  "Walk off the plane, the trail, the long shift — still fresh",
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";

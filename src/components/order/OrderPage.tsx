@@ -282,22 +282,25 @@ export function OrderPage() {
       attributes: [{ key: "Pair", value: g.pairs.join(", ") }],
     }));
 
-    const lines: CartLineInput[] = [...bundleLines, ...extraLines];
+    // Fold the priority-processing add-on (if toggled on) into the cart lines
+    // so it lands as its own line item in Shopify checkout at its real price.
+    const priorityLine = buildPriorityLine();
+    const allExtras = priorityLine ? [...extraLines, priorityLine] : extraLines;
+    const lines: CartLineInput[] = [...bundleLines, ...allExtras];
 
     // Fire InitiateCheckout right before redirecting to Shopify checkout.
     // Bump the value by any upsell extras so server-side ROAS stays accurate.
     const currency = bundleProduct.priceRange.minVariantPrice.currencyCode;
-    const extrasValue = extraLines.reduce((sum, _l) => sum, 0); // placeholder; real value added below
-    const upsellValue = extraLines.length
-      ? extraLines.reduce((sum, l) => {
+    const upsellValue = allExtras.length
+      ? allExtras.reduce((sum, l) => {
           // Look up live price from whichever upsell product owns this variant.
           const v =
             insoleProduct?.variants.find((vv) => vv.id === l.variantId) ??
-            socksProduct?.variants.find((vv) => vv.id === l.variantId);
+            socksProduct?.variants.find((vv) => vv.id === l.variantId) ??
+            priorityProduct?.variants.find((vv) => vv.id === l.variantId);
           return sum + (v ? parseFloat(v.price.amount) * l.quantity : 0);
         }, 0)
       : 0;
-    void extrasValue;
     fbTrack("InitiateCheckout", {
       customData: {
         content_type: "product",

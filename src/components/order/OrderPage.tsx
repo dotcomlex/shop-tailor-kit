@@ -33,7 +33,7 @@ const RecentPurchaseToasts = lazy(() =>
 
 // A/B test flag — controls which upsell appears first after "Complete My Order".
 // Flip back to "insoles" to instantly restore the prior insole-first flow.
-const UPSELL_PRIMARY: "socks" | "insoles" = "socks";
+const UPSELL_PRIMARY: "socks" | "insoles" = "insoles";
 
 export function OrderPage() {
   const queryClient = useQueryClient();

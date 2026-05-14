@@ -50,9 +50,9 @@ const GALLERY: GalleryItem[] = [
 ];
 
 const BENEFITS = [
-  "Instant arch & heel pain relief",
-  "Acupressure massage with every step",
-  "Fits perfectly inside your VitalWalk shoes",
+  "Cloud-soft underfoot, all day",
+  "Made to slip into your VitalWalks",
+  "Feet feel new by the time you get home",
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";

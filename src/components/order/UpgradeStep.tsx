@@ -84,7 +84,8 @@ export function UpgradeStep({
             the next thing a hesitant clicker reads. */}
         <RiskFreeGuarantee />
 
-        {/* Single consolidated trust microline */}
+        {/* Single consolidated trust microline (no 60-day echo — the card
+            above already covers it). */}
         <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
           <span className="inline-flex items-center gap-1 font-semibold text-[hsl(var(--text-body))]">
             <Lock className="h-3 w-3" strokeWidth={2.5} />
@@ -92,16 +93,14 @@ export function UpgradeStep({
           </span>
           <span aria-hidden>·</span>
           <span>Powered by Shopify</span>
-          <span aria-hidden>·</span>
-          <span>60-day money-back guarantee</span>
         </div>
 
-        {/* Payment / trust badges */}
-        <div className="mt-4 flex justify-center">
+        {/* Payment / trust badges — softened so they read as a footer, not a banner */}
+        <div className="mt-3 flex justify-center">
           <img
             src={paymentBadges}
             alt="Accepted payments: Visa, Mastercard, American Express, Discover, PayPal, Apple Pay. SSL secured. Secured by Stripe."
-            className="h-auto w-full max-w-[340px] sm:max-w-[380px]"
+            className="h-auto w-full max-w-[300px] opacity-80 saturate-[0.85] sm:max-w-[340px]"
             loading="lazy"
           />
         </div>

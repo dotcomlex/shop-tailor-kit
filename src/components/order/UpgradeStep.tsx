@@ -78,7 +78,7 @@ export function UpgradeStep({
           />
         )}
 
-        <RiskFreeGuarantee />
+        
       </div>
 
       <div className="row-pad mt-4">

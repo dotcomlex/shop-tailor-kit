@@ -1,60 +1,55 @@
-## Step 3 polish + Priority Processing upsell
+## Step 3 polish — Priority card + layout reflow
 
-Three tightly-scoped changes on the Order page.
+Three small, surgical changes. Pure presentation, no business-logic touches.
 
-### 1. Risk-Free Guarantee copy (`RiskFreeGuarantee.tsx`)
+### 1. Priority Processing subtitle (`PriorityUpsellCard.tsx`)
 
-Drop the "prepaid return label" promise so the funnel never overpromises something we don't actually do.
+Drop the 24h promise (we're dropshipping, can't honor it). Replace with something playful that still sells the "jump the queue" benefit.
 
-- New body copy: *"Wear them every day — long days, swollen evenings, morning stiffness. If they don't change how you experience your feet, send them back for a **full refund**. Easy returns and exchanges, no hassle."*
+- New copy: **"Skip the line — your order ships first ⚡"**
+  - Honest (we *do* prioritize their order ahead of standard queue)
+  - Punchy, single line, no time commitment
+  - Trailing bolt emoji ties back to the lightning-bolt icon on the left
 
-### 2. Included Checklist wrapping (`IncludedChecklist.tsx`)
+### 2. Priority card visual standout
 
-Right now the flag emoji can wrap to its own line on narrow viewports (your screenshot shows `🇺🇸` orphaned beneath "free on 2+ pairs"). Two fixes:
+Right now the card uses the same neutral `bg-card` as the OrderSummary above and the IncludedChecklist below — so it visually melts into the stack. Lift it with a soft tinted background and a slightly warmer border so the eye stops on it.
 
-- Wrap the trailing `country.flag` together with the last word using a non-breaking space + `whitespace-nowrap` span so the flag never separates from the preceding text.
-- Slightly tighten the checklist line so the whole sentence fits cleanly at 390px width (use `text-[12.5px]` on mobile, keep `13.5px` from `sm:` up).
+- **Idle state:** soft yellow wash (`bg-order-yellow/8`, border `border-order-yellow-deep/30`) — same accent family as the CTA, signals "this is an opportunity," not noise.
+- **Selected state:** keep the existing verified-green ring/border but layer it over the yellow wash so the toggle still feels like a clean confirmation.
+- Add a faint top-left shimmer gradient (`from-order-yellow/15 to-transparent`) for a touch of depth — same recipe used elsewhere on premium CTAs in this funnel.
+- Icon disc tint stays as-is (yellow when idle, green when added).
 
-Same treatment applied symmetrically to the 2-pair "Fast & free shipping to {country} 🇺🇸" line.
+Result: the card reads as a distinct "upgrade" row, not another summary line — without screaming.
 
-### 3. Priority Processing one-click upsell (NEW)
+### 3. Reflow Step 3 to shorten the scroll
 
-A subtle, tappable card placed **between the OrderSummary and the IncludedChecklist** on Step 3 — so it's seen right when the user is reviewing total cost, but doesn't push the CTA below the fold.
+Currently above the CTA: ScarcityBar → OrderSummary → PriorityCard → IncludedChecklist → **RiskFreeGuarantee** → CTA. That's 5 boxes before the button on a 390-wide viewport.
 
-**Visual:**
+Move the **60-day guarantee block under the CTA**, right above the trust microline. New order:
+
 ```text
-┌─────────────────────────────────────────────┐
-│ ⚡  Priority Processing            +$4.95   │
-│    Ships within 24h · jumps the queue       │
-│                                  [  Add  ]  │
-└─────────────────────────────────────────────┘
+ScarcityBar
+OrderSummary
+PriorityUpsellCard
+IncludedChecklist
+[ Complete My Order ]   ← CTA reachable ~1 scroll sooner
+RiskFreeGuarantee       ← reassurance for hesitant clickers
+Trust microline · payment badges
+↓ Reviews / FAQ
 ```
 
-When toggled on:
-- Card border turns `verified` green, button flips to "✓ Added".
-- The `OrderSummary` adds a new line: `Priority Processing  +$4.95` above the Total, and the Total + sticky-bar total update instantly.
-- Price displays in the user's localized currency via the existing `useCurrency` hook (FX uses the same Shopify Markets rate as the bundle product, so totals stay perfectly in sync with checkout).
+Why this works:
+- Customers who are ready to buy hit the CTA faster (less stacked friction above the fold).
+- Customers who hesitate at the CTA see the 60-day guarantee *as the next thing they look at* — exactly when reassurance matters most.
+- The guarantee block stays visually tied to the CTA (sits in the same `row-pad` group as the trust microline and badges).
 
-**Wiring (technical detail):**
-- New hook `usePriorityProcessingProduct.ts` mirroring `useSocksProduct` — fetches product `gid://shopify/Product/9077428519198` via the existing Storefront API, picks the first available variant, returns `{ variantId, price }`.
-- New `PriorityUpsellCard.tsx` component (presentational + toggle).
-- `OrderPage.tsx` holds `priorityAddOn: boolean` state. When true, a `CartLineInput` for that variant is appended in `handleCheckout(extraLines)` exactly the way insole/socks lines already work — so it lands in Shopify checkout as a real line item with its own price, and bumps the `InitiateCheckout` Pixel `value` correctly.
-- `OrderSummary` and `StickyCheckoutBar` accept an optional `addOnTotal` number; if > 0, they render the extra line and add it to the displayed total.
-
-**Why this placement & format:** A single, subtle add-on between Summary and Checklist tests well on Shopify funnels (low friction, no modal, no second page). Keeping it as a checkbox-style card — not a modal — means zero added clicks for users who decline. We can A/B the copy later.
-
-### Out of scope (not building unless you ask)
-- Shipping protection / extended warranty stack (you can add later as additional cards using the same pattern).
-- Any change to the existing insole upsell modal flow.
+No spacing or padding rebuilds — the block keeps its current styling, only its position changes.
 
 ### Files touched
-- `src/components/order/RiskFreeGuarantee.tsx` — copy edit
-- `src/components/order/IncludedChecklist.tsx` — wrapping fix
-- `src/hooks/usePriorityProcessingProduct.ts` — NEW
-- `src/components/order/PriorityUpsellCard.tsx` — NEW
-- `src/components/order/UpgradeStep.tsx` — mount card, lift add-on state
-- `src/components/order/OrderPage.tsx` — append cart line on checkout, include in Pixel value
-- `src/components/order/OrderSummary.tsx` — render add-on line + bump total
-- `src/components/order/StickyCheckoutBar.tsx` — bump total
+- `src/components/order/PriorityUpsellCard.tsx` — copy + tinted background/border
+- `src/components/order/UpgradeStep.tsx` — move `<RiskFreeGuarantee />` from above the CTA to below it
 
-After implementation I'll act as the customer (1-pair flow, toggle Priority on) and verify the line item + price land correctly in Shopify checkout.
+### Out of scope
+- No changes to OrderSummary, IncludedChecklist, sticky bar, checkout logic, or pixel events.
+- No new content in the guarantee block itself.

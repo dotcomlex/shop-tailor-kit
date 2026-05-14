@@ -73,11 +73,13 @@ export function StickyCheckoutBar({
                   </span>
                 )}
                 <span className="text-[22px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
-                  {format(total)}
+                  {format(grandTotal)}
                 </span>
               </div>
               <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-wider text-[hsl(var(--text-mute))]">
-                Total · Free shipping
+                {shipsFree
+                  ? "Total · Free shipping"
+                  : `Total · incl. ${shippingFormatted || "shipping"}`}
               </span>
             </div>
 

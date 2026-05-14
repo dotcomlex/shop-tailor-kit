@@ -42,7 +42,7 @@ export function UpgradeStep({
       <div className="row-pad mt-4 space-y-3.5">
         <ScarcityBar />
         <OrderSummary subtotal={total} saved={saved} quantity={quantity} />
-        <IncludedChecklist />
+        <IncludedChecklist quantity={quantity} />
 
         {/* 60-day risk-free guarantee — final reassurance right before CTA */}
         <RiskFreeGuarantee />

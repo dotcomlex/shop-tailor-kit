@@ -1,109 +1,96 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { ArrowRight, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCurrency } from "@/hooks/useCurrency";
 
 interface StickyCheckoutBarProps {
-  total: number;
-  /** Strike-through retail price shown above the live total. */
+  total?: number;
   comparePrice?: number;
-  /** Selected bundle quantity — kept for future use. */
   quantity?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
-  /** Ref to the main CTA — sticky bar appears whenever the CTA is offscreen. */
+  /** Ref to the main CTA — sticky button only appears once it's offscreen. */
   ctaRef?: RefObject<HTMLElement | null>;
 }
 
 export function StickyCheckoutBar({
-  total,
-  comparePrice,
   onCheckout,
   isCheckingOut,
   ctaRef,
 }: StickyCheckoutBarProps) {
-  const { format } = useCurrency();
-  const [visible, setVisible] = useState(false);
+  const [ctaOffscreen, setCtaOffscreen] = useState(false);
+  const [scrollingDown, setScrollingDown] = useState(false);
 
   useEffect(() => {
     const el = ctaRef?.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const obs = new IntersectionObserver(
-      ([entry]) => setVisible(!entry.isIntersecting),
+      ([entry]) => setCtaOffscreen(!entry.isIntersecting),
       { threshold: 0 },
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, [ctaRef]);
 
-  const showCompare = typeof comparePrice === "number" && comparePrice > total;
+  const lastY = useRef(typeof window !== "undefined" ? window.scrollY : 0);
+  const ticking = useRef(false);
+  useEffect(() => {
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const dy = y - lastY.current;
+        if (Math.abs(dy) > 2) {
+          setScrollingDown(dy > 0);
+          lastY.current = y;
+        }
+        ticking.current = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const visible = ctaOffscreen && scrollingDown;
 
   return (
     <div
       aria-hidden={!visible}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 md:hidden transition-all duration-300 ease-out",
-        visible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none",
+        "pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden flex justify-center px-5 pb-4 transition-all duration-300 ease-out",
+        visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
       )}
+      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none h-6 w-full bg-gradient-to-t from-background to-transparent"
-      />
-      <div
-        className="border-t border-[hsl(var(--hairline))] bg-background/95 backdrop-blur-md shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.22)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      <button
+        type="button"
+        onClick={onCheckout}
+        disabled={isCheckingOut || !visible}
+        className={cn(
+          "pointer-events-auto group relative flex h-[54px] w-full max-w-[320px] items-center justify-center gap-2 rounded-full px-6",
+          "bg-order-yellow text-[16px] font-extrabold tracking-tight text-[hsl(var(--text-strong))]",
+          "shadow-[0_14px_32px_-10px_hsl(var(--order-yellow-deep)/0.55),0_4px_14px_-4px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.55)]",
+          "transition-all duration-150",
+          "active:translate-y-[1px]",
+          "disabled:cursor-not-allowed disabled:opacity-70",
+        )}
       >
-        <div className="mx-auto max-w-[640px] px-4 pt-2.5 pb-3">
-          <div className="flex items-stretch gap-3">
-            <div className="flex min-w-0 shrink-0 flex-col justify-center">
-              <div className="flex items-baseline gap-1.5">
-                {showCompare && (
-                  <span className="text-[11.5px] font-medium tabular-nums text-[hsl(var(--text-mute))] line-through">
-                    {format(comparePrice as number)}
-                  </span>
-                )}
-                <span className="text-[22px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
-                  {format(total)}
-                </span>
-              </div>
-              <span className="mt-1 text-[11px] font-medium text-[hsl(var(--text-mute))]">
-                Total today
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={onCheckout}
-              disabled={isCheckingOut}
-              className={cn(
-                "group relative flex h-[54px] flex-1 items-center justify-center gap-2 rounded-full px-5",
-                "bg-order-yellow text-[16px] font-extrabold tracking-tight text-[hsl(var(--text-strong))]",
-                "shadow-[0_8px_20px_-8px_hsl(var(--order-yellow-deep)/0.6),inset_0_1px_0_rgba(255,255,255,0.55)]",
-                "transition-all duration-150",
-                "active:translate-y-[1px] active:shadow-[0_3px_8px_-3px_hsl(var(--order-yellow-deep)/0.4),inset_0_1px_0_rgba(255,255,255,0.35)]",
-                "disabled:cursor-not-allowed disabled:opacity-70",
-              )}
-            >
-              {isCheckingOut ? (
-                <>
-                  <span>Processing…</span>
-                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.75} />
-                </>
-              ) : (
-                <>
-                  <Lock className="h-4 w-4" strokeWidth={2.75} aria-hidden />
-                  <span>Complete Order</span>
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
-                    strokeWidth={2.75}
-                  />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+        {isCheckingOut ? (
+          <>
+            <span>Processing…</span>
+            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.75} />
+          </>
+        ) : (
+          <>
+            <Lock className="h-4 w-4" strokeWidth={2.75} aria-hidden />
+            <span>Complete Order</span>
+            <ArrowRight
+              className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+              strokeWidth={2.75}
+            />
+          </>
+        )}
+      </button>
     </div>
   );
 }

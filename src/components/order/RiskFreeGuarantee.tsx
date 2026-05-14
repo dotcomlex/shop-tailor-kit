@@ -23,8 +23,8 @@ export function RiskFreeGuarantee() {
           <p className="mt-1 text-[12.5px] leading-relaxed text-[hsl(var(--text-body))] sm:text-[13px]">
             Wear them every day — long days, swollen evenings, morning stiffness. If they don't
             change how you experience your feet, send them back for a{" "}
-            <span className="font-semibold text-[hsl(var(--text-strong))]">full refund</span>. No
-            forms, no questions, prepaid return label.
+            <span className="font-semibold text-[hsl(var(--text-strong))]">full refund</span>. Easy
+            returns &amp; exchanges, no hassle.
           </p>
         </div>
       </div>

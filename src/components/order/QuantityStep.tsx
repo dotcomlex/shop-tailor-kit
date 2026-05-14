@@ -93,9 +93,6 @@ function readLocalizedTotals(
 export function QuantityStep({ quantity, onQuantityChange, onContinue }: QuantityStepProps) {
   const { format } = useCurrency();
   const { data: bundles } = useVitalWalkBundles();
-  // Localized shipping for the 1-pair option (single source of truth across
-  // the whole funnel — see useShipping for the FX derivation).
-  const { formatted: shippingFormatted } = useShipping(1);
 
   return (
     <section aria-labelledby="step-1-heading">

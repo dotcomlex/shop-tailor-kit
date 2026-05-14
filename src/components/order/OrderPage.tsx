@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useVitalWalkBundles, useVitalWalkProduct } from "@/hooks/useVitalWalkProduct";
 import { useInsoleProduct } from "@/hooks/useInsoleProduct";
 import { useSocksProduct } from "@/hooks/useSocksProduct";
+import { usePriorityProcessingProduct } from "@/hooks/usePriorityProcessingProduct";
 import { useGeo } from "@/hooks/useGeo";
 import {
   createCheckoutForLines,
@@ -41,6 +42,7 @@ export function OrderPage() {
   const { data: product } = useVitalWalkProduct();
   const { data: insoleProduct } = useInsoleProduct();
   const { data: socksProduct } = useSocksProduct();
+  const { data: priorityProduct } = usePriorityProcessingProduct();
   const { country } = useGeo();
 
   // Default to the 2-pair bundle: it's our highest-margin SKU after CAC and
@@ -52,6 +54,10 @@ export function OrderPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
   const [socksOpen, setSocksOpen] = useState(false);
+  // Priority Processing one-click add-on (Step 3). Lifted here so the cart
+  // line + Pixel value follow through every checkout path (insole-accept,
+  // socks-accept, plain decline, etc.).
+  const [prioritySelected, setPrioritySelected] = useState(false);
   const viewContentFiredRef = useRef(false);
   const addToCartFiredRef = useRef(false);
 

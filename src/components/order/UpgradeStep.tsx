@@ -72,7 +72,7 @@ export function UpgradeStep({
         <IncludedChecklist quantity={quantity} />
       </div>
 
-      <div className="row-pad mt-4 space-y-2.5">
+      <div className="row-pad mt-4">
         <YellowCta
           label="Complete My Order"
           onClick={onCheckout}
@@ -81,7 +81,7 @@ export function UpgradeStep({
         />
 
         {/* Button-level reassurance — sits immediately under the CTA. */}
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
           <span className="inline-flex items-center gap-1 font-semibold text-[hsl(var(--text-body))]">
             <Lock className="h-3 w-3" strokeWidth={2.5} />
             Secure SSL checkout
@@ -91,17 +91,19 @@ export function UpgradeStep({
         </div>
 
         {/* Compact payment badges strip — sits right under the SSL microline. */}
-        <div className="flex justify-center">
+        <div className="mt-2.5 flex justify-center py-0.5">
           <img
             src={paymentBadges}
             alt="Accepted payments: Shop Pay, Discover, Visa, Mastercard, Apple Pay, Google Pay, Amazon, American Express."
-            className="h-auto w-full max-w-[280px] sm:max-w-[320px]"
+            className="h-auto w-full max-w-[260px] sm:max-w-[320px]"
             loading="lazy"
           />
         </div>
 
         {/* 60-day risk-free guarantee — final reassurance. */}
-        <RiskFreeGuarantee />
+        <div className="mt-3">
+          <RiskFreeGuarantee />
+        </div>
       </div>
 
       {/* Below-the-fold trust blocks — only mounted on Step 3, fade in beautifully */}

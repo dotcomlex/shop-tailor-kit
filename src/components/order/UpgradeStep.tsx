@@ -111,6 +111,11 @@ export function UpgradeStep({
 
       </div>
 
+      {/* 60-day guarantee — bridges the checkout block and social proof below. */}
+      <div className="row-pad mt-6">
+        <RiskFreeGuarantee />
+      </div>
+
       {/* Below-the-fold trust blocks — only mounted on Step 3, fade in beautifully */}
       <div className="row-pad mt-10 space-y-6 animate-fade-in">
         <VerifiedReviewsBlock />

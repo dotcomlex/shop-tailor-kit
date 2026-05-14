@@ -1,27 +1,37 @@
-## Re-order post-CTA trust elements
+# Compact Payment Badges + Cleaner Post-CTA Stack
 
-Right now under the "Complete My Order" button:
+## Goal
+Replace the current chunky payment-badges PNG with the new compact strip the user uploaded, and tighten the post-CTA reassurance stack so SSL line, badges, and 60-day guarantee feel like one cohesive, premium block.
 
-```text
+## Changes
+
+### 1. Add the new badge asset
+- Copy `user-uploads://image-14.png` → `src/assets/payment-badges-compact.png`
+- Retire the old `payment-badges.png` import in `UpgradeStep.tsx` (file itself can stay in repo, just unused).
+
+### 2. Reorder + restyle the post-CTA block in `src/components/order/UpgradeStep.tsx`
+New order, tightly spaced:
+
+```
 [ Complete My Order ]
-60-Day Guarantee card
 🔒 Secure SSL checkout · Powered by Shopify
-Payment badges
+[ compact payment badges strip ]
+[ 60-Day Guarantee card ]
 ```
 
-The microline is floating below the guarantee card, disconnected from the button it's meant to support. Swap so the microline sits *immediately* under the CTA — that's where it belongs (it's a button-level reassurance, not a guarantee-level one).
+- Reduce vertical spacing from `space-y-3.5` → `space-y-2.5` so the group reads as one unit.
+- Render the new badges immediately under the SSL microline (no extra `mt-3` wrapper, just `mt-1.5`).
+- Constrain badge image to `max-w-[280px] sm:max-w-[320px]`, drop the `opacity-80 saturate-[0.85]` (new asset is already balanced), keep `mx-auto`.
+- Update alt text to match the new providers visible in the strip: Shop Pay, Discover, Visa, Mastercard, Apple Pay, Google Pay, Amazon, Amex.
 
-### New order
+### 3. Keep the `RiskFreeGuarantee` card as the closing element
+- It already has the compact styling from the prior pass — no changes to that component.
+- Sits last so the guarantee is the final reassurance before the fold.
 
-```text
-[ Complete My Order ]
-🔒 Secure SSL checkout · Powered by Shopify
-60-Day Guarantee card
-Payment badges
-```
+## Files touched
+- `src/assets/payment-badges-compact.png` (new, copied from upload)
+- `src/components/order/UpgradeStep.tsx` (import swap, reorder, spacing)
 
-### Files touched
-- `src/components/order/UpgradeStep.tsx` — move the `<RiskFreeGuarantee />` block from directly under the CTA to between the microline and the payment badges.
-
-### Out of scope
-- No copy changes, no styling changes, nothing else moves.
+## Out of scope
+- No changes to `RiskFreeGuarantee.tsx`, the CTA button, or anything above the CTA.
+- Old `payment-badges.png` left on disk (can be cleaned up later).

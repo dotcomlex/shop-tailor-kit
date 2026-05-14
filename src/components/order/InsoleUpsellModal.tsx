@@ -406,7 +406,7 @@ export function InsoleUpsellModal({
 
             {/* Subtle reassurance */}
             <p className="mt-3 text-center text-[10.5px] tracking-wide text-[hsl(var(--text-mute))]">
-              ✂ Trim-to-fit · works in any shoe
+              Featherlight · Trim-to-fit any shoe
             </p>
 
             {/* Per-pair insole sizes */}

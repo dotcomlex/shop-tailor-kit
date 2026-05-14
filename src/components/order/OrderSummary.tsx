@@ -4,12 +4,22 @@ interface OrderSummaryProps {
   subtotal: number;
   saved: number;
   quantity?: number;
+  /** Optional one-click add-on amount (e.g. priority processing). */
+  addOnTotal?: number;
+  /** Display label for the add-on line. */
+  addOnLabel?: string;
 }
 
-export function OrderSummary({ subtotal, saved, quantity }: OrderSummaryProps) {
+export function OrderSummary({
+  subtotal,
+  saved,
+  quantity,
+  addOnTotal = 0,
+  addOnLabel,
+}: OrderSummaryProps) {
   const { format } = useCurrency();
   const qty = quantity ?? 1;
-  const total = subtotal;
+  const total = subtotal + addOnTotal;
   const compare = subtotal + saved;
   const perPair = qty > 0 ? subtotal / qty : 0;
 
@@ -17,6 +27,7 @@ export function OrderSummary({ subtotal, saved, quantity }: OrderSummaryProps) {
   // exact rate once the customer enters their address — surfacing it on
   // the funnel hurt CVR. We keep a soft, qualitative line instead.
   const shipsFree = qty > 1;
+  const showAddOn = addOnTotal > 0 && !!addOnLabel;
 
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3.5 sm:px-5 sm:py-4">
@@ -43,6 +54,15 @@ export function OrderSummary({ subtotal, saved, quantity }: OrderSummaryProps) {
             </span>
           </span>
         </div>
+
+        {showAddOn && (
+          <div className="flex items-baseline justify-between animate-fade-in">
+            <span className="text-[hsl(var(--text-body))]">{addOnLabel}</span>
+            <span className="tabular-nums font-semibold text-[hsl(var(--text-strong))]">
+              +{format(addOnTotal)}
+            </span>
+          </div>
+        )}
 
         {shipsFree && (
           <div className="flex items-baseline justify-between">

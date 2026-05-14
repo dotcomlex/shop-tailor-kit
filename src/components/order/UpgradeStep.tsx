@@ -8,7 +8,7 @@ import { RiskFreeGuarantee } from "./RiskFreeGuarantee";
 import { VerifiedReviewsBlock } from "./VerifiedReviewsBlock";
 import { FaqBlock } from "./FaqBlock";
 import { StickyCheckoutBar } from "./StickyCheckoutBar";
-import { IncludedChecklist } from "./IncludedChecklist";
+
 import { PriorityUpsellCard } from "./PriorityUpsellCard";
 import paymentBadges from "@/assets/payment-badges-compact.png";
 
@@ -61,6 +61,15 @@ export function UpgradeStep({
           addOnLabel={addOnTotal > 0 ? "Priority Processing" : undefined}
         />
 
+        {quantity === 1 && (
+          <p className="-mt-1 px-1 text-center text-[12px] text-[hsl(var(--text-mute))]">
+            <span aria-hidden>🚚</span>{" "}
+            <span className="font-semibold text-[hsl(var(--text-body))]">Add another pair</span>{" "}
+            to unlock{" "}
+            <span className="font-semibold text-verified">free shipping</span>.
+          </p>
+        )}
+
         {priorityAvailable && (
           <PriorityUpsellCard
             price={priorityPrice}
@@ -69,7 +78,7 @@ export function UpgradeStep({
           />
         )}
 
-        <IncludedChecklist quantity={quantity} />
+        <RiskFreeGuarantee />
       </div>
 
       <div className="row-pad mt-4">
@@ -100,10 +109,6 @@ export function UpgradeStep({
           />
         </div>
 
-        {/* 60-day risk-free guarantee — final reassurance. */}
-        <div className="mt-3">
-          <RiskFreeGuarantee />
-        </div>
       </div>
 
       {/* Below-the-fold trust blocks — only mounted on Step 3, fade in beautifully */}

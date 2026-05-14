@@ -1,27 +1,37 @@
-# Tighten Post-CTA Spacing Rhythm
+# Swap Checklist for Guarantee + Soft Free-Shipping Nudge
 
-## Observation from screenshot
-- CTA → SSL line gap looks fine.
-- SSL line → payment badges feels slightly tight (badges hug the text).
-- Payment badges → 60-day guarantee card gap feels a bit too large compared to the others, breaking the visual grouping.
+## Changes
 
-## Goal
-Even, intentional rhythm so the four elements (CTA, SSL line, badges, guarantee) read as one cohesive trust block.
+### 1. Replace `IncludedChecklist` with `RiskFreeGuarantee` above the CTA
+In `src/components/order/UpgradeStep.tsx`:
+- Remove `<IncludedChecklist quantity={quantity} />` from the upper stack (above the CTA).
+- Render `<RiskFreeGuarantee />` in its place — the 60-day badge becomes the closing reassurance before the CTA.
+- Also remove the duplicate `<RiskFreeGuarantee />` currently sitting below the CTA (otherwise it appears twice). Post-CTA stack becomes: CTA → SSL microline → payment badges. Cleaner, less stacked.
+- Drop the now-unused `IncludedChecklist` import.
 
-## Changes — `src/components/order/UpgradeStep.tsx`
+### 2. Add a soft free-shipping nudge for 1-pair orders
+The "Easy returns" + shipping copy is gone, but we still want to nudge single-pair buyers toward the 2-pack. Place a single, low-key line **outside** and **just under** the `OrderSummary` card (not inside it, so it doesn't compete with the price).
 
-Replace the `space-y-2.5` wrapper with explicit per-element margins so each gap is tuned:
+In `src/components/order/UpgradeStep.tsx`, immediately after `<OrderSummary />`, conditionally render when `quantity === 1`:
 
-- CTA → SSL line: `mt-3` (≈12px) — clear separation from the big yellow button.
-- SSL line → badges: `mt-2.5` (≈10px) — close but breathing.
-- Badges → 60-day guarantee: `mt-3` (≈12px) — slight step-down to signal a new "card" element.
-- Add a touch more vertical padding inside the badge row (`py-0.5`) so the strip doesn't feel cramped against neighbors.
+```tsx
+{quantity === 1 && (
+  <p className="px-1 text-center text-[12px] text-[hsl(var(--text-mute))]">
+    🚚 <span className="font-semibold text-[hsl(var(--text-body))]">Add another pair</span> to unlock <span className="font-semibold text-verified">free shipping</span>.
+  </p>
+)}
+```
 
-Also: cap badge width slightly tighter on mobile (`max-w-[260px]` → keeps logos crisp at 390px viewport).
+- Sits between OrderSummary and PriorityUpsellCard.
+- Subtle (12px, muted) so it doesn't fight the priority upsell or subtotal numbers.
+- Only shown for `quantity === 1` since 2+ already ships free.
+
+### 3. Keep `IncludedChecklist.tsx` file intact
+- File stays in repo (still imported nowhere) in case we want to bring it back. No deletion.
 
 ## Files touched
-- `src/components/order/UpgradeStep.tsx` (spacing only — no structural or copy changes)
+- `src/components/order/UpgradeStep.tsx` (only)
 
 ## Out of scope
-- No changes to `RiskFreeGuarantee`, the CTA, or anything above the CTA.
-- No new assets.
+- No changes to `OrderSummary` internals, `RiskFreeGuarantee` styling, or `PriorityUpsellCard`.
+- No copy changes inside the priority/subtotal cards.

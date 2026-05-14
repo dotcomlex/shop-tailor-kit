@@ -360,7 +360,7 @@ export function InsoleUpsellModal({
                   </h2>
                 </DialogPrimitive.Title>
                 <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
-                  Slip them in for instant arch support &amp; all-day relief.
+                  Designed to pair with your VitalWalks. Every step lands softer.
                 </p>
 
                 <DialogPrimitive.Description className="sr-only">

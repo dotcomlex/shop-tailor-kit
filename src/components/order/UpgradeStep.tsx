@@ -93,6 +93,7 @@ export function UpgradeStep({
       <StickyCheckoutBar
         total={total}
         comparePrice={comparePrice}
+        quantity={quantity}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}
         showAtRef={showAtRef}

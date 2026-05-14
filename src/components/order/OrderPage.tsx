@@ -389,16 +389,11 @@ export function OrderPage() {
     void handleCheckout(insoleLines);
   };
 
-  // Customer declined the insole offer. If the socks product is loaded
-  // and has at least one buyable variant, show the socks decline-path
-  // upsell instead of going straight to checkout.
+  // Customer declined the insole offer — go straight to checkout. The socks
+  // upsell has been disabled (was hurting CVR by stacking modals on people
+  // who already said no once).
   const handleUpsellDecline = () => {
     setUpsellOpen(false);
-    const hasSocks = !!socksProduct?.variants.some((v) => v.availableForSale);
-    if (hasSocks) {
-      setSocksOpen(true);
-      return;
-    }
     void handleCheckout();
   };
 

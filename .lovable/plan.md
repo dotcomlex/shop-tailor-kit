@@ -1,61 +1,53 @@
-# Polish Pass: Guarantee Card, Priority Color, Reviews Header, FAQ Refinement
+# Sticky CTA Visibility, Simpler Bar, Priority Color Fix, FAQ Updates
 
-## 1. Make the 60-Day Guarantee card more beautiful
-File: `src/components/order/RiskFreeGuarantee.tsx`
+## 1. Sticky checkout bar — make it visible during reviews + FAQ scroll
+Today the sticky bar only appears after a sentinel placed *below* the FAQ block intersects, so it's hidden the entire time customers read reviews and FAQs. Switch the trigger so the bar slides in **as soon as the main "Complete My Order" CTA leaves the viewport** (i.e., the moment the customer scrolls past it).
 
-- Wrap the card in a soft gradient background (`from-[hsl(var(--order-blue-soft))] to-card`) with a subtle inner highlight, so it reads as a premium reassurance block, not a flat card.
-- Promote the badge: bump back to ~64/72px, add a thin ring + outer glow in `--order-blue` so the disc feels like a seal/medallion.
-- Add a tiny "Risk-Free Promise" eyebrow label above the headline (uppercase, 10px, blue, tracked) for hierarchy.
-- Headline stays "Try VitalWalk risk-free for 60 days." in 14.5px extrabold.
-- Body line tightens to: *"Don't love them? Send them back for a **full refund** — easy returns, no questions asked."*
-- Padding bumps to `p-4 sm:p-5` so it has presence as a standalone block (now that it sits on its own between badges and reviews).
+**Files:**
+- `src/components/order/UpgradeStep.tsx`
+  - Add a `ctaRef = useRef<HTMLDivElement>(null)` and wrap the `<YellowCta>` in a `<div ref={ctaRef}>`.
+  - Pass `ctaRef` to `<StickyCheckoutBar />` (replacing the now-unused `showAtRef` sentinel).
+  - Remove the bottom sentinel `<div ref={showAtRef} ... />`.
+- `src/components/order/StickyCheckoutBar.tsx`
+  - Rename prop to `ctaRef`. Observe with `IntersectionObserver`; set `visible = !entry.isIntersecting`. Use `threshold: 0` and `rootMargin: "0px 0px 0px 0px"` so the bar appears the moment the CTA scrolls offscreen and hides again when it's back in view.
 
-## 2. Recolor the Priority Processing card
-File: `src/components/order/PriorityUpsellCard.tsx`
+## 2. Simplify the sticky bar content
+The current sticky bar repeats SSL + 60-day + savings — info already shown above. Strip it down so it reads as a quick-action bar, not a second checkout summary.
 
-The yellow on the upsell competes with the yellow CTA and the red ScarcityBar above it. Switch to a cool blue treatment — distinct, premium, still attention-grabbing without piling on warm tones.
+**File:** `src/components/order/StickyCheckoutBar.tsx`
+- Keep: price (with strike-through compare) + the yellow "Complete Order" button.
+- Below price: replace the uppercase `TOTAL · SECURE CHECKOUT` line with a single quiet line `Total today` (12px, muted, sentence case). Drop "Free shipping" variant — not needed, it's just a price label.
+- Remove the entire bottom microline (`Secure SSL checkout · 60-day guarantee · You save $X`).
+- Net result: two-element bar (price stack on left, CTA on right) with one line under the price. Cleaner and lighter.
 
-- Background: soft blue wash `bg-[hsl(var(--order-blue)/0.06)]` (selected state keeps verified-green ring).
-- Border (idle): `border-[hsl(var(--order-blue)/0.30)]`, hover `0.55`.
-- Top-left shimmer gradient swaps yellow → `hsl(var(--order-blue)/0.14)`.
-- Icon disc (idle): `bg-[hsl(var(--order-blue)/0.18)] text-[hsl(var(--order-blue))]`. Selected stays verified green.
-- "Add" pill (idle): blue border + blue text on white, hover deepens. Selected stays verified green.
-- No copy changes.
+## 3. Priority Upsell — revert to yellow, fix icon/text visibility
+The blue-then-green selected state had dark-on-dark legibility issues. Keep the yellow accent family but make the icon and text clearly readable.
 
-Net effect: the visual stack reads cool-blue (priority) → bold-yellow (CTA), much cleaner than warm-on-warm-on-red.
+**File:** `src/components/order/PriorityUpsellCard.tsx`
+- Background returns to soft yellow wash: `bg-[hsl(var(--order-yellow)/0.10)]`.
+- Border idle: `border-[hsl(var(--order-yellow-deep)/0.45)]`, hover deepens.
+- **Icon disc (idle):** dark navy `bg-[hsl(var(--order-blue))] text-white` with a subtle ring — high contrast against the yellow card, the bolt clearly pops.
+- **Icon disc (selected):** stays `bg-verified text-white` (the check inside is white, contrast is fine).
+- **"Add" pill (idle):** white background, dark text `text-[hsl(var(--text-strong))]`, dark border — reads as a real button on yellow.
+- **"Added" pill (selected):** verified-green background, **white** text + white check (was reading dark before). Add `text-white` + `border-verified` explicitly.
+- Title and subtitle text already use `--text-strong` / `--text-body`, so no changes.
 
-## 3. Reviews block — add a section headline
-File: `src/components/order/VerifiedReviewsBlock.tsx`
-
-Add a header above the Trustpilot bar so the section announces itself:
-
-- Eyebrow: `WHAT CUSTOMERS SAY` (10px, uppercase, tracked, blue).
-- H3: `Real stories from real walkers` (18px extrabold, text-strong).
-- Sit above the existing Trustpilot rating row, separated by the same hairline.
-
-Review **bodies, names, ratings, and counts are unchanged** (won't fabricate new testimonials — see note above). If you provide real reviews from your store/Trustpilot export, I'll swap them in.
-
-## 4. FAQ block — small refinements
-File: `src/components/order/FaqBlock.tsx`
-
-Light copy + structure polish only — no new fake claims:
-
-- Reorder so the highest-converting questions surface first: fit/swelling → easy on/off → wide feet → orthotics → shipping → returns (current order is already close, just tighten).
-- Tighten 2 answers for clarity (no new product claims):
-  - **"My feet swell severely throughout the day…"** — trim filler, keep the DayFlex™ + compression-sock points.
-  - **"How fast will my order arrive?"** — drop the "ships within 24 hours" line (per your earlier note we're drop-shipping). New copy: *"Free standard shipping on every order. Most US orders arrive in 5–8 business days; UK, Canada, Australia, and New Zealand typically arrive in 5–6 business days. You'll get a tracking link by email the moment your pair ships."*
-- Add a final FAQ:
-  - **Q:** *"Can I wear them with diabetic socks or compression stockings?"*
-  - **A:** *"Yes. The adjustable straps and extra-wide toe box accommodate diabetic socks, compression stockings, and swelling throughout the day without pinching."*
-  (This is product-specification copy about the shoe's design, not fabricated social proof — safe to add. Tell me if you'd rather omit.)
+## 4. FAQ updates
+**File:** `src/components/order/FaqBlock.tsx`
+- Add a new diabetic-specific question (objection-handling for ad traffic):
+  - **Q:** *"Are these safe and comfortable for diabetics?"*
+  - **A:** *"Yes — VitalWalk was designed with diabetic-friendly features in mind: a seamless interior so there's nothing to rub against sensitive skin, an extra-wide toe box that won't compress toes, and adjustable straps that accommodate swelling and diabetic socks. Always check with your doctor before changing footwear if you have advanced neuropathy or active foot ulcers."*
+  - Place it after the bunions/wide-feet question, before the diabetic-socks question (or merge with it — see below).
+- Tighten so we don't have two near-identical diabetic questions: keep the existing "Can I wear them with diabetic socks or compression stockings?" *and* the new safety one — they answer different objections (safety vs. fit with socks). Order: swelling → easy on/off → wide feet → **diabetic safety (new)** → diabetic socks → orthotics → shipping → returns.
+- Update the "How fast will my order arrive?" answer to use **4–7 business days** for US (per your correction). New copy:
+  > *"Free standard shipping on every order. Most US orders arrive in 4–7 business days. UK, Canada, Australia, and New Zealand typically arrive in 5–7 business days. You'll get a tracking link by email the moment your pair ships."*
 
 ## Files touched
-- `src/components/order/RiskFreeGuarantee.tsx`
+- `src/components/order/UpgradeStep.tsx`
+- `src/components/order/StickyCheckoutBar.tsx`
 - `src/components/order/PriorityUpsellCard.tsx`
-- `src/components/order/VerifiedReviewsBlock.tsx`
 - `src/components/order/FaqBlock.tsx`
 
 ## Out of scope
-- Generating new review testimonials, ratings, names, or counts.
-- Any backend / data changes.
-- Layout above the OrderSummary.
+- No changes to RiskFreeGuarantee, OrderSummary, or reviews block.
+- No new fake reviews.

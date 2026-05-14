@@ -1,4 +1,5 @@
 import { useCurrency } from "@/hooks/useCurrency";
+import { useShipping } from "@/hooks/useShipping";
 
 interface OrderSummaryProps {
   subtotal: number;
@@ -7,19 +8,25 @@ interface OrderSummaryProps {
 }
 
 export function OrderSummary({ subtotal, saved, quantity }: OrderSummaryProps) {
-  const total = subtotal;
-  const compare = subtotal + saved;
   const { format } = useCurrency();
-  const perPair = quantity && quantity > 0 ? subtotal / quantity : 0;
+  // Shipping comes from the same source of truth as Step 1 — $9.95 (USD,
+  // localized) on 1-pair, free on 2/3-pair. Including it in the displayed
+  // total here matches what the customer will see on Shopify checkout.
+  const qty = quantity ?? 1;
+  const { cost: shippingCost, isFree: shipsFree, formatted: shippingFormatted } =
+    useShipping(qty);
+  const total = subtotal + shippingCost;
+  const compare = subtotal + saved;
+  const perPair = qty > 0 ? subtotal / qty : 0;
 
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3.5 sm:px-5 sm:py-4">
       {/* Calm per-pair anchor — frames the price as a normal unit price
           rather than a discount. Only shown for multi-pair bundles. */}
-      {quantity && quantity > 1 && perPair > 0 && (
+      {qty > 1 && perPair > 0 && (
         <div className="mb-3 flex items-baseline justify-between border-b border-[hsl(var(--hairline))] pb-3 text-[13px] text-[hsl(var(--text-mute))]">
           <span className="font-medium">
-            {format(perPair)}/pair · {quantity} pairs
+            {format(perPair)}/pair · {qty} pairs
           </span>
           <span className="text-[12px]">Bundle pricing</span>
         </div>
@@ -42,7 +49,11 @@ export function OrderSummary({ subtotal, saved, quantity }: OrderSummaryProps) {
           </span>
         </div>
 
-        <Row label="Shipping" value="FREE" valueClass="text-verified font-bold" />
+        <Row
+          label="Shipping"
+          value={shipsFree ? "FREE" : shippingFormatted || "—"}
+          valueClass={shipsFree ? "text-verified font-bold" : ""}
+        />
       </div>
 
       <div className="mt-3 border-t border-[hsl(var(--hairline))] pt-3">

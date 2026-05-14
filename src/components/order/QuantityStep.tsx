@@ -1,10 +1,11 @@
-import { Star } from "lucide-react";
+import { Star, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
+import { useShipping } from "@/hooks/useShipping";
 import type { ShopifyProductData } from "@/lib/shopify";
 import trustBadges from "@/assets/trust-badges.png";
 
@@ -92,6 +93,9 @@ function readLocalizedTotals(
 export function QuantityStep({ quantity, onQuantityChange, onContinue }: QuantityStepProps) {
   const { format } = useCurrency();
   const { data: bundles } = useVitalWalkBundles();
+  // Localized shipping for the 1-pair option (single source of truth across
+  // the whole funnel — see useShipping for the FX derivation).
+  const { formatted: shippingFormatted } = useShipping(1);
 
   return (
     <section aria-labelledby="step-1-heading">
@@ -203,6 +207,32 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     )}
                   </div>
                 </button>
+
+                {/* Shipping line — directly tied to Shopify's shipping
+                    profile: 1 pair pays $9.95 (localized), 2/3 pairs ship
+                    free. Shown below each card so the trade-off is
+                    visible at the moment the customer is choosing. */}
+                <div
+                  className={cn(
+                    "mt-1.5 flex items-center justify-end gap-1.5 pr-1 text-[12px] font-semibold tabular-nums",
+                    opt.qty === 1
+                      ? "text-[hsl(var(--text-mute))]"
+                      : "text-save",
+                  )}
+                >
+                  <Truck className="h-3.5 w-3.5" aria-hidden />
+                  {opt.qty === 1 ? (
+                    shippingFormatted ? (
+                      <span>+ {shippingFormatted} shipping</span>
+                    ) : (
+                      <span className="inline-block h-[14px] w-24 rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
+                    )
+                  ) : (
+                    <span className="font-extrabold uppercase tracking-wide">
+                      Free Shipping
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -241,7 +271,9 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             <span className="text-[hsl(var(--text-mute))]" aria-hidden>
               ·
             </span>
-            <span className="font-semibold">Free Shipping</span>
+            <span className="font-semibold">
+              {quantity === 1 ? "Free Shipping on 2+ Pairs" : "Free Shipping"}
+            </span>
           </div>
 
           <img

@@ -50,9 +50,9 @@ const GALLERY: GalleryItem[] = [
 ];
 
 const BENEFITS = [
-  "Sink into a softer step the moment you stand up",
-  "Pressure points get worked loose mile after mile",
-  "Walk off the plane, the trail, the long shift — still fresh",
+  "Medical-grade arch support that holds its shape for 12+ months",
+  "200+ acupressure nodes target heel, arch & ball-of-foot pressure points",
+  "Memory-foam core absorbs 90% of impact with every step",
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";

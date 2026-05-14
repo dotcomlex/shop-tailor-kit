@@ -5,7 +5,6 @@ import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
-import { useShipping } from "@/hooks/useShipping";
 import type { ShopifyProductData } from "@/lib/shopify";
 import trustBadges from "@/assets/trust-badges.png";
 

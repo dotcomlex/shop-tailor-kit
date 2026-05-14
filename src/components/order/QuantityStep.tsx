@@ -102,6 +102,16 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
   const { format } = useCurrency();
   const { data: bundles } = useVitalWalkBundles();
 
+  // Localized shipping for the 1-pair option. We scale 9.95 USD by the same
+  // FX ratio Shopify applied to the 1-pair product so the funnel display
+  // matches what the customer is charged at checkout.
+  const onePairLocalized = bundles?.[1]
+    ? parseFloat(bundles[1].priceRange.minVariantPrice.amount)
+    : 0;
+  const fxRatio = onePairLocalized > 0 ? onePairLocalized / ONE_PAIR_USD_BASE : 0;
+  const shippingLocalized = fxRatio > 0 ? SHIPPING_USD * fxRatio : 0;
+  const shippingFormatted = shippingLocalized > 0 ? format(shippingLocalized) : "";
+
   return (
     <section aria-labelledby="step-1-heading">
       <h2 id="step-1-heading" className="sr-only">

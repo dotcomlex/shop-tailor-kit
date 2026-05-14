@@ -222,6 +222,32 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     )}
                   </div>
                 </button>
+
+                {/* Shipping line — directly tied to Shopify's shipping
+                    profile: 1 pair pays $9.95 (localized), 2/3 pairs ship
+                    free. Shown below each card so the trade-off is
+                    visible at the moment the customer is choosing. */}
+                <div
+                  className={cn(
+                    "mt-1.5 flex items-center justify-end gap-1.5 pr-1 text-[12px] font-semibold tabular-nums",
+                    opt.qty === 1
+                      ? "text-[hsl(var(--text-mute))]"
+                      : "text-save",
+                  )}
+                >
+                  <Truck className="h-3.5 w-3.5" aria-hidden />
+                  {opt.qty === 1 ? (
+                    shippingFormatted ? (
+                      <span>+ {shippingFormatted} shipping</span>
+                    ) : (
+                      <span className="inline-block h-[14px] w-24 rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
+                    )
+                  ) : (
+                    <span className="font-extrabold uppercase tracking-wide">
+                      Free Shipping
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}

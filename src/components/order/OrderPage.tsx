@@ -168,6 +168,22 @@ export function OrderPage() {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [queryClient]);
 
+  // Resolve the live priority-processing variant (single-variant product).
+  const priorityVariant = priorityProduct?.variants.find((v) => v.availableForSale)
+    ?? priorityProduct?.variants[0]
+    ?? null;
+  const priorityPrice = priorityVariant ? parseFloat(priorityVariant.price.amount) : null;
+  const priorityAvailable = !!priorityVariant?.availableForSale;
+
+  const buildPriorityLine = (): CartLineInput | null => {
+    if (!prioritySelected || !priorityVariant) return null;
+    return {
+      variantId: priorityVariant.id,
+      quantity: 1,
+      attributes: [{ key: "Add-on", value: "Priority Processing (24h)" }],
+    };
+  };
+
   const handleCheckout = async (extraLines: CartLineInput[] = []) => {
     if (!product) {
       toast.error("Product is still loading. Please wait a moment and try again.");

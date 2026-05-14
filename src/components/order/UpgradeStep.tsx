@@ -80,12 +80,7 @@ export function UpgradeStep({
           leadingLock
         />
 
-        {/* 60-day risk-free guarantee — placed directly under the CTA so it's
-            the next thing a hesitant clicker reads. */}
-        <RiskFreeGuarantee />
-
-        {/* Single consolidated trust microline (no 60-day echo — the card
-            above already covers it). */}
+        {/* Button-level reassurance — sits immediately under the CTA. */}
         <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
           <span className="inline-flex items-center gap-1 font-semibold text-[hsl(var(--text-body))]">
             <Lock className="h-3 w-3" strokeWidth={2.5} />
@@ -94,6 +89,9 @@ export function UpgradeStep({
           <span aria-hidden>·</span>
           <span>Powered by Shopify</span>
         </div>
+
+        {/* 60-day risk-free guarantee — secondary reassurance below the microline. */}
+        <RiskFreeGuarantee />
 
         {/* Payment / trust badges — softened so they read as a footer, not a banner */}
         <div className="mt-3 flex justify-center">

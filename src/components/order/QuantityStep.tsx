@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Star, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
@@ -7,6 +7,15 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
 import type { ShopifyProductData } from "@/lib/shopify";
 import trustBadges from "@/assets/trust-badges.png";
+
+// Shipping is configured in Shopify as a USD-denominated rate ($9.95) on a
+// dedicated "1-Pair Shipping" profile. 2-pair and 3-pair bundles ship free.
+// To keep the funnel display in sync with what the customer is actually
+// charged at checkout (after Shopify Markets FX), we derive a localized
+// shipping price by scaling 9.95 USD by the same ratio Shopify applied to
+// the 1-pair product's USD base price.
+const SHIPPING_USD = 9.95;
+const ONE_PAIR_USD_BASE = 59.95;
 
 
 // Numbers mirrored EXACTLY from VerifiedReviewsBlock so the rating shown

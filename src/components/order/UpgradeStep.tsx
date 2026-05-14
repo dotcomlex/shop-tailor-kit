@@ -40,7 +40,7 @@ export function UpgradeStep({
   onTogglePriority,
 }: UpgradeStepProps) {
   const saved = Math.max(0, comparePrice - total);
-  const showAtRef = useRef<HTMLDivElement | null>(null);
+  const ctaRef = useRef<HTMLDivElement | null>(null);
   const addOnTotal = prioritySelected && priorityPrice != null ? priorityPrice : 0;
   const grandTotal = total + addOnTotal;
 
@@ -82,12 +82,14 @@ export function UpgradeStep({
       </div>
 
       <div className="row-pad mt-4">
-        <YellowCta
-          label="Complete My Order"
-          onClick={onCheckout}
-          loading={isCheckingOut}
-          leadingLock
-        />
+        <div ref={ctaRef}>
+          <YellowCta
+            label="Complete My Order"
+            onClick={onCheckout}
+            loading={isCheckingOut}
+            leadingLock
+          />
+        </div>
 
         {/* Button-level reassurance — sits immediately under the CTA. */}
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
@@ -122,17 +124,14 @@ export function UpgradeStep({
         <FaqBlock />
       </div>
 
-      {/* Sentinel: sticky bar appears once the user scrolls past the FAQs */}
-      <div ref={showAtRef} aria-hidden className="h-px w-full" />
-
-      {/* Sticky mobile checkout bar — appears once the user reaches the end of the FAQs */}
+      {/* Sticky mobile checkout bar — slides in once the main CTA scrolls offscreen */}
       <StickyCheckoutBar
         total={grandTotal}
         comparePrice={comparePrice + addOnTotal}
         quantity={quantity}
         onCheckout={onCheckout}
         isCheckingOut={isCheckingOut}
-        showAtRef={showAtRef}
+        ctaRef={ctaRef}
       />
     </section>
   );

@@ -7,42 +7,36 @@ interface StickyCheckoutBarProps {
   total: number;
   /** Strike-through retail price shown above the live total. */
   comparePrice?: number;
-  /** Selected bundle quantity — drives the shipping subtitle. */
+  /** Selected bundle quantity — kept for future use. */
   quantity?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
-  /** Ref to a sentinel near the bottom of the page — bar appears only once this scrolls into view. */
-  showAtRef?: RefObject<HTMLElement | null>;
+  /** Ref to the main CTA — sticky bar appears whenever the CTA is offscreen. */
+  ctaRef?: RefObject<HTMLElement | null>;
 }
 
 export function StickyCheckoutBar({
   total,
   comparePrice,
-  quantity = 1,
   onCheckout,
   isCheckingOut,
-  showAtRef,
+  ctaRef,
 }: StickyCheckoutBarProps) {
   const { format } = useCurrency();
-  const shipsFree = quantity > 1;
-  const [reachedBottom, setReachedBottom] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const el = showAtRef?.current;
+    const el = ctaRef?.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setReachedBottom(true);
-      },
-      { threshold: 0, rootMargin: "0px 0px -10% 0px" },
+      ([entry]) => setVisible(!entry.isIntersecting),
+      { threshold: 0 },
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [showAtRef]);
+  }, [ctaRef]);
 
-  const visible = reachedBottom;
   const showCompare = typeof comparePrice === "number" && comparePrice > total;
-  const saved = showCompare ? (comparePrice as number) - total : 0;
 
   return (
     <div
@@ -73,8 +67,8 @@ export function StickyCheckoutBar({
                   {format(total)}
                 </span>
               </div>
-              <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-wider text-[hsl(var(--text-mute))]">
-                {shipsFree ? "Total · Free shipping" : "Total · Secure checkout"}
+              <span className="mt-1 text-[11px] font-medium text-[hsl(var(--text-mute))]">
+                Total today
               </span>
             </div>
 
@@ -107,20 +101,6 @@ export function StickyCheckoutBar({
                 </>
               )}
             </button>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 text-[10.5px] font-medium text-[hsl(var(--text-mute))]">
-            <span>Secure SSL checkout</span>
-            <span aria-hidden>·</span>
-            <span>60-day guarantee</span>
-            {saved > 0 && (
-              <>
-                <span aria-hidden>·</span>
-                <span className="text-[hsl(var(--text-body))]">
-                  You save <span className="font-semibold tabular-nums">{format(saved)}</span>
-                </span>
-              </>
-            )}
           </div>
         </div>
       </div>

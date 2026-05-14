@@ -44,18 +44,12 @@ export function OrderSummary({ subtotal, saved, quantity }: OrderSummaryProps) {
           </span>
         </div>
 
-        <div className="flex items-baseline justify-between">
-          <span className="text-[hsl(var(--text-body))]">Shipping</span>
-          <span
-            className={`tabular-nums font-semibold ${
-              shipsFree
-                ? "text-verified font-bold"
-                : "text-[hsl(var(--text-mute))]"
-            }`}
-          >
-            {shipsFree ? "FREE" : "Calculated at checkout"}
-          </span>
-        </div>
+        {shipsFree && (
+          <div className="flex items-baseline justify-between">
+            <span className="text-[hsl(var(--text-body))]">Shipping</span>
+            <span className="tabular-nums font-bold text-verified">FREE</span>
+          </div>
+        )}
       </div>
 
       <div className="mt-3 border-t border-[hsl(var(--hairline))] pt-3">

@@ -50,9 +50,9 @@ const GALLERY: GalleryItem[] = [
 ];
 
 const BENEFITS = [
-  "Instant arch & heel pain relief",
-  "Acupressure massage with every step",
-  "Fits perfectly inside your VitalWalk shoes",
+  "Cloud-soft underfoot, all day",
+  "Made to slip into your VitalWalks",
+  "Feet feel new by the time you get home",
 ];
 
 const SIZE_STORAGE_KEY = "vitalwalk_size_system";
@@ -360,7 +360,7 @@ export function InsoleUpsellModal({
                   </h2>
                 </DialogPrimitive.Title>
                 <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--text-body))]">
-                  Slip them in for instant arch support &amp; all-day relief.
+                  Designed to pair with your VitalWalks. Every step lands softer.
                 </p>
 
                 <DialogPrimitive.Description className="sr-only">
@@ -406,7 +406,7 @@ export function InsoleUpsellModal({
 
             {/* Subtle reassurance */}
             <p className="mt-3 text-center text-[10.5px] tracking-wide text-[hsl(var(--text-mute))]">
-              ✂ Trim-to-fit · works in any shoe
+              Featherlight · Trim-to-fit any shoe
             </p>
 
             {/* Per-pair insole sizes */}

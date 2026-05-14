@@ -2,11 +2,14 @@ import { useEffect, useState, type RefObject } from "react";
 import { ArrowRight, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useShipping } from "@/hooks/useShipping";
 
 interface StickyCheckoutBarProps {
   total: number;
   /** Strike-through retail price shown above the live total. */
   comparePrice?: number;
+  /** Selected bundle quantity — drives the shipping line + total. */
+  quantity?: number;
   onCheckout: () => void;
   isCheckingOut: boolean;
   /** Ref to a sentinel near the bottom of the page — bar appears only once this scrolls into view. */
@@ -16,11 +19,15 @@ interface StickyCheckoutBarProps {
 export function StickyCheckoutBar({
   total,
   comparePrice,
+  quantity = 1,
   onCheckout,
   isCheckingOut,
   showAtRef,
 }: StickyCheckoutBarProps) {
   const { format } = useCurrency();
+  const { cost: shippingCost, isFree: shipsFree, formatted: shippingFormatted } =
+    useShipping(quantity);
+  const grandTotal = total + shippingCost;
   const [reachedBottom, setReachedBottom] = useState(false);
 
   useEffect(() => {

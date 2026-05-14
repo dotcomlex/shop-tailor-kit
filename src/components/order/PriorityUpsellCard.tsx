@@ -5,8 +5,6 @@ import { useCurrency } from "@/hooks/useCurrency";
 interface PriorityUpsellCardProps {
   /** Localized price in the buyer's currency (already FX-converted by Shopify). */
   price: number | null;
-  /** Currency code returned alongside the price — overrides geo guess if present. */
-  currencyCode?: string;
   selected: boolean;
   onToggle: (next: boolean) => void;
 }
@@ -18,12 +16,11 @@ interface PriorityUpsellCardProps {
  */
 export function PriorityUpsellCard({
   price,
-  currencyCode,
   selected,
   onToggle,
 }: PriorityUpsellCardProps) {
   const { format } = useCurrency();
-  const priceLabel = price != null ? format(price, currencyCode) : null;
+  const priceLabel = price != null ? format(price) : null;
 
   return (
     <button

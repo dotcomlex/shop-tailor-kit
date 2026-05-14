@@ -306,12 +306,12 @@ export function OrderPage() {
         content_type: "product",
         content_ids: [
           variantNumericId(pair1Variant.id),
-          ...extraLines.map((l) => variantNumericId(l.variantId)),
+          ...allExtras.map((l) => variantNumericId(l.variantId)),
         ],
         content_name: bundleProduct.title,
         currency,
         value: bundleTotal + upsellValue,
-        num_items: quantity + extraLines.reduce((s, l) => s + l.quantity, 0),
+        num_items: quantity + allExtras.reduce((s, l) => s + l.quantity, 0),
       },
     });
 

@@ -31,7 +31,17 @@ export function VerifiedReviewsBlock() {
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-      {/* Trustpilot-style header */}
+      {/* Section header */}
+      <div className="mb-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--order-blue))]">
+          What customers say
+        </p>
+        <h3 className="mt-1 text-[18px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[19px]">
+          Real stories from real walkers
+        </h3>
+      </div>
+
+      {/* Trustpilot-style rating bar */}
       <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[hsl(var(--hairline))] pb-4">
         <TrustpilotStars size={20} />
         <div className="flex items-baseline gap-1.5 text-[13px]">

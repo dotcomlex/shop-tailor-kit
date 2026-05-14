@@ -8,8 +8,8 @@ import { HelpCircle } from "lucide-react";
 
 const FAQS = [
   {
-    q: "My feet swell severely throughout the day. Will these actually fit?",
-    a: "Yes. Our DayFlex™ velcro system was built specifically for changing feet. Loosen or tighten in 2 seconds without removing the shoe — even mid-afternoon when swelling peaks. Works perfectly with compression socks and accommodates significant size changes between morning and evening.",
+    q: "My feet swell throughout the day. Will these still fit?",
+    a: "Yes — DayFlex™ velcro was built for changing feet. Loosen or tighten in 2 seconds without taking the shoe off, even mid-afternoon when swelling peaks. Works with compression socks and accommodates real size changes between morning and evening.",
   },
   {
     q: "I struggle to bend over to tie shoes. Are these easy to put on?",
@@ -20,12 +20,16 @@ const FAQS = [
     a: "No. The WideComfort™ true extra-wide toe box gives your toes real room to spread naturally — not just a slightly roomier 'wide' label. The seamless interior also protects diabetic and sensitive skin, so there's nothing inside to rub against bunions or pressure points.",
   },
   {
+    q: "Can I wear them with diabetic socks or compression stockings?",
+    a: "Yes. The adjustable straps and extra-wide toe box accommodate diabetic socks, compression stockings, and swelling throughout the day without pinching or cutting off circulation.",
+  },
+  {
     q: "Can I use my own custom orthotics or insoles?",
     a: "Yes. The cushioned insole is fully removable, so you can drop in your own custom orthotics or medical insoles and still get a perfect fit thanks to the adjustable straps.",
   },
   {
     q: "How fast will my order arrive?",
-    a: "Orders ship within 24 hours from our warehouse with free standard shipping. Most US orders arrive in 5–8 business days. UK, Canada, Australia and New Zealand typically arrive within 5–6 business days. You'll get a tracking link by email the moment your pair ships.",
+    a: "Free standard shipping on every order. Most US orders arrive in 5–8 business days. UK, Canada, Australia, and New Zealand typically arrive within 5–6 business days. You'll get a tracking link by email the moment your pair ships.",
   },
   {
     q: "What if they don't fit, or I need a different size?",

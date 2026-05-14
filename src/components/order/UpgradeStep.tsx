@@ -70,12 +70,9 @@ export function UpgradeStep({
         )}
 
         <IncludedChecklist quantity={quantity} />
-
-        {/* 60-day risk-free guarantee — final reassurance right before CTA */}
-        <RiskFreeGuarantee />
       </div>
 
-      <div className="row-pad mt-4">
+      <div className="row-pad mt-4 space-y-3.5">
         <YellowCta
           label="Complete My Order"
           onClick={onCheckout}
@@ -83,9 +80,12 @@ export function UpgradeStep({
           leadingLock
         />
 
+        {/* 60-day risk-free guarantee — placed directly under the CTA so it's
+            the next thing a hesitant clicker reads. */}
+        <RiskFreeGuarantee />
 
         {/* Single consolidated trust microline */}
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-[hsl(var(--text-mute))]">
           <span className="inline-flex items-center gap-1 font-semibold text-[hsl(var(--text-body))]">
             <Lock className="h-3 w-3" strokeWidth={2.5} />
             Secure SSL checkout

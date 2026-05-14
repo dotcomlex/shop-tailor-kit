@@ -176,17 +176,15 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
                       {opt.name}
                     </p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="text-[14px] font-extrabold text-save">
-                        Save {opt.savePct}%
-                      </p>
-                      {opt.qty > 1 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--verified-green)/0.10)] px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-verified">
-                          <Truck className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-                          Free Shipping
-                        </span>
-                      )}
-                    </div>
+                    <p className="mt-1 text-[14px] font-extrabold text-save">
+                      Save {opt.savePct}%
+                    </p>
+                    {opt.qty > 1 && (
+                      <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--verified-green)/0.10)] px-2 py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-verified">
+                        <Truck className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+                        Free Shipping
+                      </span>
+                    )}
                   </div>
 
                   {/* Price column — headline is the exact Shopify bundle

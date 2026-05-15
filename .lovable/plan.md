@@ -1,29 +1,31 @@
-# Simplify trust strip under Step 1 CTA
+## Goal
 
-Strip out the dynamic "Free Shipping on 2+ Pairs / Free Shipping" text that swaps when the user changes quantity. Keep a single static, centered line.
+Make Step 1 land harder — bigger jumps between tiers so the strikethrough compare prices and "Save X%" labels feel like a clear "wow, this is a deal."
 
-## Final content (mobile + desktop, identical)
+## Change
 
-`★★★★★  4.9  ·  2,847 reviews  ·  60-Day Guarantee`
+In `src/components/order/QuantityStep.tsx`, update the discount ladder in two places (they must stay in sync — one drives the label, the other drives the strikethrough math):
 
-- Stars (green Trustpilot mini stars) — kept
-- Rating `4.9` — kept
-- Review count `2,847 reviews` — **now shown on mobile too** (was desktop-only)
-- `60-Day Guarantee` — kept
-- ❌ Remove `Free Shipping` / `Free Shipping on 2+ Pairs` segment entirely
-- ❌ Remove the `/ 5` desktop-only fragment (cleaner without it)
+**1. `OPTIONS` array (visible "Save X%" label):**
+- 1 Pair: `70` → **70** (unchanged — protects ad/PDP consistency)
+- 2 Pairs: `75` → **80**
+- 3 Pairs: `80` → **85**
 
-Payment-badges row underneath stays unchanged.
+**2. `SAVE_PCT` map inside `readLocalizedTotals` (drives strikethrough compare price):**
+- `{ 1: 0.70, 2: 0.75, 3: 0.80 }` → `{ 1: 0.70, 2: 0.80, 3: 0.85 }`
 
-## Changes
+## What this affects visually
 
-**`src/components/order/QuantityStep.tsx`**
+Real Shopify prices do **not** change — only the strikethrough "compare at" prices and the "Save X%" copy. Example with a $36.63/pair bundle price:
 
-1. In the trust strip block, drop the responsive `hidden … sm:inline` classes so the rating + review count render the same on every viewport.
-2. Delete the `· Free Shipping` (and its dynamic `quantity === 1 ? …` ternary) segment and its preceding bullet separator.
-3. Since `quantity` is no longer read inside the trust strip, the `quantity` prop is still used elsewhere in the component — no signature changes.
-4. Ensure the wrapper keeps `flex flex-col items-center` so the line stays centered. Inner row uses `inline-flex items-center justify-center gap-x-1.5` — already centered, just verify after the edits.
+| Tier   | Per-pair price | Old strike (compare) | New strike (compare) |
+|--------|----------------|----------------------|----------------------|
+| 1 pair | unchanged      | ~$122 (70%)          | ~$122 (70%)          |
+| 2 pair | unchanged      | ~$147 (75%)          | ~$184 (80%)          |
+| 3 pair | unchanged      | ~$184 (80%)          | ~$245 (85%)          |
+
+Bigger gap between tiers, more dramatic strikethrough on the "Best Deal" card, no change to what the customer actually pays or to Shopify.
 
 ## Out of scope
 
-No changes to the bundle cards, CTA, payment badges, or any other component.
+No changes to: real bundle pricing, Shopify variants, free-shipping pill, ribbons, Step 2/3, upsells, or checkout. Pure label/strike refresh.

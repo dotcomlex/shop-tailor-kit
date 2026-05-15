@@ -45,13 +45,13 @@ const OPTIONS: BundleOption[] = [
   {
     qty: 2,
     name: "2 Pairs VitalWalk® Shoes",
-    savePct: 75,
+    savePct: 80,
     ribbon: { label: "MOST POPULAR", tone: "popular" },
   },
   {
     qty: 3,
     name: "3 Pairs VitalWalk® Shoes",
-    savePct: 80,
+    savePct: 85,
     ribbon: { label: "BEST DEAL", tone: "best" },
   },
 ];
@@ -83,7 +83,7 @@ function readLocalizedTotals(
   const total = perPair * qty;
   // Strike-through is derived from the advertised bundle save % so the
   // ribbon ("75% OFF"), the strike, and Step 3 always agree to the cent.
-  const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.75, 3: 0.80 };
+  const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.80, 3: 0.85 };
   const pct = SAVE_PCT[qty] ?? 0;
   const compare = pct > 0 && total > 0 ? total / (1 - pct) : total;
   return { total, compare };

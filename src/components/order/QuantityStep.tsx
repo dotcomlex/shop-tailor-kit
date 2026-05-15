@@ -228,27 +228,16 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             <span className="font-extrabold text-[hsl(var(--text-strong))] tabular-nums">
               {TRUST_RATING}
             </span>
-            {/* Desktop-only extras — keeps mobile minimal */}
-            <span className="hidden text-[hsl(var(--text-mute))] tabular-nums sm:inline">
-              / 5
-            </span>
-            <span className="hidden text-[hsl(var(--text-mute))] sm:inline" aria-hidden>
+            <span className="text-[hsl(var(--text-mute))]" aria-hidden>
               ·
             </span>
-            <span className="hidden font-semibold tabular-nums sm:inline">
+            <span className="font-semibold tabular-nums">
               {TRUST_REVIEWS.toLocaleString()} reviews
             </span>
-
             <span className="text-[hsl(var(--text-mute))]" aria-hidden>
               ·
             </span>
             <span className="font-semibold">60-Day Guarantee</span>
-            <span className="text-[hsl(var(--text-mute))]" aria-hidden>
-              ·
-            </span>
-            <span className="font-semibold">
-              {quantity === 1 ? "Free Shipping on 2+ Pairs" : "Free Shipping"}
-            </span>
           </div>
 
           <img

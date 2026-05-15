@@ -106,12 +106,6 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
       />
 
       <div className="row-pad">
-        <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:mt-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--order-blue-soft))] px-2.5 py-1 text-[11.5px] font-extrabold uppercase tracking-wider text-[hsl(var(--order-blue))]">
-            <span aria-hidden>👟</span> Unisex — fits Men &amp; Women
-          </span>
-        </div>
-
         <ul className="mt-3 space-y-2.5">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;

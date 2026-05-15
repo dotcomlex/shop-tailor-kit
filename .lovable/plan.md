@@ -1,27 +1,29 @@
-# Simplify Floating CTA
+# Simplify trust strip under Step 1 CTA
 
-Strip the sticky checkout bar down to a single floating button. Remove the white background panel, the price stack, and the "Total today" label. Only show it when the user is scrolling **down** past the main CTA — hide it when they scroll back up.
+Strip out the dynamic "Free Shipping on 2+ Pairs / Free Shipping" text that swaps when the user changes quantity. Keep a single static, centered line.
+
+## Final content (mobile + desktop, identical)
+
+`★★★★★  4.9  ·  2,847 reviews  ·  60-Day Guarantee`
+
+- Stars (green Trustpilot mini stars) — kept
+- Rating `4.9` — kept
+- Review count `2,847 reviews` — **now shown on mobile too** (was desktop-only)
+- `60-Day Guarantee` — kept
+- ❌ Remove `Free Shipping` / `Free Shipping on 2+ Pairs` segment entirely
+- ❌ Remove the `/ 5` desktop-only fragment (cleaner without it)
+
+Payment-badges row underneath stays unchanged.
 
 ## Changes
 
-**`src/components/order/StickyCheckoutBar.tsx`** — full rewrite of the visual + visibility logic:
+**`src/components/order/QuantityStep.tsx`**
 
-1. **Visual** — remove the white background panel, the top fade gradient, the border, and the price stack. Render only the yellow "Complete Order" pill, centered, floating above content with a soft drop shadow. Wrap in safe-area padding so it sits cleanly above the iPhone home indicator.
-
-2. **Visibility logic** — combine two signals:
-   - `IntersectionObserver` on `ctaRef` → tracks whether main CTA is offscreen (existing).
-   - Scroll direction tracker → only show when user is scrolling **down**. On any upward scroll, hide immediately.
-   - Result: visible only when (CTA is offscreen) AND (last scroll was downward). Scrolling back up hides the floating button even if the main CTA is still offscreen.
-
-3. **Props cleanup** — `comparePrice` and `quantity` become unused; keep `total` as optional/ignored or remove entirely. Caller (`UpgradeStep.tsx`) keeps passing them — no breaking change needed, just stop reading them.
-
-## Technical notes
-
-- Floating button: `fixed bottom-4 inset-x-0` with `mx-auto max-w-[260px]`, transparent surrounding area, `pointer-events-none` on the wrapper and `pointer-events-auto` on the button so it doesn't block taps on content beneath it.
-- Scroll direction: `useEffect` listening to `window` scroll, comparing `window.scrollY` to a `lastY` ref. Use `requestAnimationFrame` throttling to avoid jank.
-- Keep `md:hidden` so this only appears on mobile.
-- Keep existing transition (`translate-y-full → translate-y-0`, opacity) for smooth enter/exit.
+1. In the trust strip block, drop the responsive `hidden … sm:inline` classes so the rating + review count render the same on every viewport.
+2. Delete the `· Free Shipping` (and its dynamic `quantity === 1 ? …` ternary) segment and its preceding bullet separator.
+3. Since `quantity` is no longer read inside the trust strip, the `quantity` prop is still used elsewhere in the component — no signature changes.
+4. Ensure the wrapper keeps `flex flex-col items-center` so the line stays centered. Inner row uses `inline-flex items-center justify-center gap-x-1.5` — already centered, just verify after the edits.
 
 ## Out of scope
 
-No changes to `UpgradeStep.tsx`, the main CTA, or any other component.
+No changes to the bundle cards, CTA, payment badges, or any other component.

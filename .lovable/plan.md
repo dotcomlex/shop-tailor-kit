@@ -1,40 +1,26 @@
 # Plan
 
-## What I’ll change
+## Exact issue
+On the real iPhone screenshot, the extra white area is not coming from the footer text itself. The problem is the step-1 page shell: on mobile Safari, the page is not using the available viewport height consistently, so the remaining height shows up as blank space below the footer.
 
-1. **Remove the fake empty white space under Step 1**
-   - Adjust the page shell in `src/components/order/OrderPage.tsx` so the first-step view no longer stretches to fill the viewport with a large blank white block.
-   - Keep the footer natural instead of visually forcing a big white panel above it on mobile.
-
-2. **Keep Step 2 completely hidden on first load**
-   - Preserve the current conditional rendering for Step 2 and Step 3.
-   - Tighten the layout around the Step 2/Step 3 wrapper containers so they don’t reserve visible space before the user advances.
-
-3. **Make Step 1 fill the phone screen more appropriately**
-   - Rebalance vertical spacing in `src/components/order/QuantityStep.tsx` so the bundle cards, CTA, trust row, and payment badges sit comfortably within the phone viewport.
-   - Keep the trust strip directly under the CTA, not detached lower on the page.
-   - Reduce the feeling of the content being cramped at the top while avoiding extra scroll on Step 1.
-
-4. **Restyle the top marquee to strong red with white content**
-   - Update `src/components/order/FreeShippingMarquee.tsx` to use a stronger red background with white text and white icons for better visibility.
-   - Keep the message simple: free shipping / today only, without adding more urgency clutter.
-
-## Files involved
-
+## Files to adjust
 - `src/components/order/OrderPage.tsx`
 - `src/components/order/QuantityStep.tsx`
-- `src/components/order/FreeShippingMarquee.tsx`
+- `src/index.css` only if a small viewport-height utility is needed for iPhone-safe behavior
 
-## Expected result
-
-- On initial load, users see only Step 1.
-- The bottom of the page no longer has a large empty white area.
-- The trust elements stay right below the yellow CTA.
-- The top shipping strip reads clearly in red with white icon/text.
-- Step 1 feels cleaner, better balanced, and more “full-screen mobile” without looking crowded.
+## What I’ll change
+1. Fix the step-1 layout shell so the page fills the visible mobile viewport correctly and the footer sits flush at the bottom instead of floating above empty space.
+2. Keep Step 2 and Step 3 fully hidden on first load with no reserved space.
+3. If extra height exists on taller phones, distribute it inside Step 1 in a controlled way so it helps the quantity section breathe instead of creating a dead white block under the footer.
+4. Leave the red top marquee alone unless the final check shows a real visibility regression.
 
 ## Technical details
+- Use an iPhone-safe viewport-height approach (`svh` / safe-area-aware layout) for the first-step shell.
+- Keep the footer in the normal flow, but make the wrapper and main area own the extra height correctly.
+- Avoid reintroducing the earlier issue where trust elements get pushed too far down or Step 1 becomes scroll-heavy.
+- No pricing, step logic, Shopify, or checkout changes.
 
-- The main issue appears to be the outer page shell using a full-height flex layout (`min-h-[100dvh]` + `flex-1`) that visually stretches the Step 1 surface even when later steps are hidden.
-- I’ll remove or relax the height/stretch behavior only where needed so Step 3 and footer behavior don’t regress.
-- I’ll keep the existing step-state logic intact and limit the work to presentation/layout changes only.
+## Validation
+- Re-check the 390×844 mobile preview.
+- Confirm there is no visible empty white block below the footer on Step 1.
+- Confirm the CTA, trust row, and footer still feel balanced and readable without exposing Step 2 on initial load.

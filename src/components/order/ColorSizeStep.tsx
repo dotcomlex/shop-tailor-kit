@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ShopifyProductData } from "@/lib/shopify";
@@ -9,6 +9,7 @@ import { ColorZoomDialog } from "./ColorZoomDialog";
 import { SizeTileGrid } from "./SizeTileGrid";
 import { TrueToSizeMeter } from "./TrueToSizeMeter";
 import { SizingDialogs } from "./SizingDialogs";
+import { imageForColor } from "@/data/swatchImages";
 
 export interface Selection {
   color: string | null;

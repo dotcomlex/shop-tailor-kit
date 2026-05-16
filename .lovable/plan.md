@@ -1,16 +1,25 @@
-# Tighten swatches, simplify zoom, relocate fit meter
+# Bigger swatches, tighter grid, instant loading
 
-## 1. Swatch spacing — `ColorSizeStep.tsx`
-Reduce the color grid gap from `gap-3 sm:gap-4` to `gap-2 sm:gap-3`. That pulls the 2 × 2 mobile grid tighter without crowding tap targets.
+## 1. Bigger swatches — `ColorSwatch.tsx`
+Bump diameter:
+- Mobile: `h-[108px] w-[108px]` → `h-[140px] w-[140px]`
+- Desktop (`sm:`): `h-[132px] w-[132px]` → `h-[160px] w-[160px]`
 
-## 2. Zoom dialog — `ColorZoomDialog.tsx`
-Strip the footer entirely. The dialog becomes just the high-res square image (with a close affordance via the existing Dialog X). No "Colorway / Beige" label, no "Select this color" button. Simplified props — drop `onSelect` and `isSelected`. Update `ColorSizeStep.tsx` to stop passing them.
+Slightly larger zoom-trigger icon (`h-7 w-7` → `h-8 w-8`) so it stays proportional.
 
-## 3. Move the "How do they fit?" meter — `ColorSizeStep.tsx`
-Today the render order inside each pair card is: Color grid → **TrueToSizeMeter** → Size label + tiles → SizingDialogs (View size chart / sizing tips). Move `<TrueToSizeMeter />` so it renders **after** `<SizingDialogs />` instead of between the swatches and the size grid. Keeps it discoverable but stops it from breaking the color → size flow.
+## 2. Tighter 2×2 grid — `ColorSizeStep.tsx`
+Drop the gap further on mobile: `gap-2 sm:gap-3` → `gap-1 sm:gap-2`. Combined with bigger circles, the white space between them collapses to a clean, dense block.
 
-Single render-order swap, no logic changes.
+## 3. Kill the load lag
+
+**Step 2 paint** — `ColorSwatch.tsx`:
+- Switch swatch `<img>` from `loading="lazy"` to `loading="eager"` and add `fetchpriority="high"` so the four photos paint immediately when Step 2 mounts (they're tiny — 320px Shopify-resized JPGs).
+
+**Zoom instant-open** — new tiny effect in `ColorSizeStep.tsx`:
+- On mount, fire-and-forget preload of every color's 1200px zoom image via `new Image(); img.src = imageForColor(c, 1200)`. By the time the user taps the magnifier, the high-res file is in the browser cache → dialog opens with no flash.
+
+No design changes elsewhere. No new deps.
 
 ## Files
-- `src/components/order/ColorSizeStep.tsx` — gap tweak + move TrueToSizeMeter below SizingDialogs + drop zoom props
-- `src/components/order/ColorZoomDialog.tsx` — remove footer/select-button, image-only layout
+- `src/components/order/ColorSwatch.tsx` — sizes + eager loading + larger zoom icon
+- `src/components/order/ColorSizeStep.tsx` — tighter gap + preload effect for zoom-size images

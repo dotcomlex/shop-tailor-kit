@@ -135,6 +135,14 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
       <div className="row-pad mt-5">
         <YellowCta label="Next" onClick={onContinue} disabled={!allComplete} />
       </div>
+
+      <ColorZoomDialog
+        color={zoom?.color ?? null}
+        open={!!zoom}
+        onOpenChange={(o) => !o && setZoom(null)}
+        onSelect={() => zoom && onUpdate(zoom.pairIndex, { color: zoom.color })}
+        isSelected={!!zoom && selections[zoom.pairIndex]?.color === zoom.color}
+      />
     </section>
   );
 }

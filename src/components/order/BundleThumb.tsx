@@ -14,7 +14,7 @@ export function BundleThumb({ count, className }: BundleThumbProps) {
   return (
     <div
       className={cn(
-        "relative h-[58px] w-[66px] shrink-0 sm:h-[80px] sm:w-[92px]",
+        "relative h-[76px] w-[84px] shrink-0 sm:h-[88px] sm:w-[100px]",
         className,
       )}
     >

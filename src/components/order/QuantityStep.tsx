@@ -41,16 +41,16 @@ interface BundleOption {
 }
 
 const OPTIONS: BundleOption[] = [
-  { qty: 1, name: "1 Pair VitalWalk® Shoes", savePct: 70 },
+  { qty: 1, name: "1 Pair", savePct: 70 },
   {
     qty: 2,
-    name: "2 Pairs VitalWalk® Shoes",
+    name: "2 Pairs",
     savePct: 80,
     ribbon: { label: "MOST POPULAR", tone: "popular" },
   },
   {
     qty: 3,
-    name: "3 Pairs VitalWalk® Shoes",
+    name: "3 Pairs",
     savePct: 85,
     ribbon: { label: "BEST DEAL", tone: "best" },
   },

@@ -1,9 +1,9 @@
 import { Truck } from "lucide-react";
 
 /**
- * Slim full-width scrolling band — single message ("Free shipping today only")
- * hammered home. Sits directly under the GlobalUrgencyBar so all top-of-page
- * urgency messaging reads as one cohesive strip.
+ * Slim full-width red scrolling band — single message ("Free shipping today
+ * only") repeated with sparkle separators. Sits at the very top of the page
+ * above SiteHeader as the first thing the eye lands on.
  */
 export function FreeShippingMarquee() {
   const item = (
@@ -15,19 +15,19 @@ export function FreeShippingMarquee() {
 
   return (
     <div
-      className="relative overflow-hidden border-b border-[hsl(var(--verified-green)/0.15)] bg-[hsl(var(--verified-green)/0.08)] py-1.5"
+      className="relative overflow-hidden border-b border-[hsl(0_72%_42%/0.18)] bg-[hsl(0_85%_96%)] py-1.5"
       aria-label="Free shipping today only"
     >
       <div
-        className="flex w-max animate-[marquee_24s_linear_infinite] whitespace-nowrap text-[11.5px] font-extrabold uppercase tracking-wider text-verified motion-reduce:animate-none"
+        className="flex w-max animate-[marquee_24s_linear_infinite] whitespace-nowrap text-[11.5px] font-extrabold uppercase tracking-wider text-[hsl(0_72%_42%)] motion-reduce:animate-none"
         aria-hidden
       >
-        {item}<span className="text-verified/40">✦</span>
-        {item}<span className="text-verified/40">✦</span>
-        {item}<span className="text-verified/40">✦</span>
-        {item}<span className="text-verified/40">✦</span>
-        {item}<span className="text-verified/40">✦</span>
-        {item}<span className="text-verified/40">✦</span>
+        {item}<span className="text-[hsl(0_72%_42%/0.45)]">✦</span>
+        {item}<span className="text-[hsl(0_72%_42%/0.45)]">✦</span>
+        {item}<span className="text-[hsl(0_72%_42%/0.45)]">✦</span>
+        {item}<span className="text-[hsl(0_72%_42%/0.45)]">✦</span>
+        {item}<span className="text-[hsl(0_72%_42%/0.45)]">✦</span>
+        {item}<span className="text-[hsl(0_72%_42%/0.45)]">✦</span>
       </div>
     </div>
   );

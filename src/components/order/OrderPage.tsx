@@ -18,7 +18,6 @@ import {
 import { fbTrack, variantNumericId } from "@/lib/fbpixel";
 import { formatMoney } from "@/lib/money";
 import { SiteHeader } from "./SiteHeader";
-import { GlobalUrgencyBar } from "./GlobalUrgencyBar";
 import { FreeShippingMarquee } from "./FreeShippingMarquee";
 import { QuantityStep, type Quantity } from "./QuantityStep";
 import { ColorSizeStep, type Selection } from "./ColorSizeStep";
@@ -451,7 +450,6 @@ export function OrderPage() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[hsl(0_0%_98.5%)]">
-      <GlobalUrgencyBar />
       <FreeShippingMarquee />
       <SiteHeader />
 

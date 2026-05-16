@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ShopifyProductData } from "@/lib/shopify";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { ColorSwatch } from "./ColorSwatch";
+import { ColorZoomDialog } from "./ColorZoomDialog";
 import { SizeTileGrid } from "./SizeTileGrid";
 import { TrueToSizeMeter } from "./TrueToSizeMeter";
 import { SizingDialogs } from "./SizingDialogs";

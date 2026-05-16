@@ -31,6 +31,7 @@ function getOptionValues(product: ShopifyProductData | null | undefined, name: "
 export function ColorSizeStep({ product, selections, onUpdate, onContinue }: ColorSizeStepProps) {
   const colors = getOptionValues(product, "color");
   const sizes = getOptionValues(product, "size");
+  const [zoom, setZoom] = useState<{ pairIndex: number; color: string } | null>(null);
 
   const allComplete = selections.every((s) => s.color && s.size);
   const multiPair = selections.length > 1;
@@ -82,9 +83,9 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                   </p>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-4 gap-3 sm:gap-4">
+              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4">
                 {colors.length === 0 && (
-                  <span className="col-span-4 text-[13px] text-[hsl(var(--text-mute))]">
+                  <span className="col-span-3 text-[13px] text-[hsl(var(--text-mute))] sm:col-span-4">
                     Loading colors…
                   </span>
                 )}
@@ -94,6 +95,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                       color={c}
                       selected={sel.color === c}
                       onSelect={() => onUpdate(idx, { color: c })}
+                      onZoom={() => setZoom({ pairIndex: idx, color: c })}
                     />
                   </div>
                 ))}

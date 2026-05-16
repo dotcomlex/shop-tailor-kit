@@ -1,4 +1,4 @@
-import { Check, Zap } from "lucide-react";
+import { Check, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/useCurrency";
 
@@ -27,6 +27,7 @@ export function PriorityUpsellCard({
       type="button"
       onClick={() => onToggle(!selected)}
       aria-pressed={selected}
+      aria-label={selected ? "Remove Priority Processing" : "Add Priority Processing"}
       className={cn(
         "group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border px-3.5 py-3 text-left transition-all duration-150 sm:px-4",
         "active:scale-[0.995]",
@@ -83,6 +84,9 @@ export function PriorityUpsellCard({
           <>
             <Check className="mr-1 h-3 w-3 text-white" strokeWidth={3.5} />
             Added
+            <span className="mx-1 opacity-60" aria-hidden>·</span>
+            Remove
+            <X className="ml-0.5 h-3 w-3 text-white" strokeWidth={3.5} aria-hidden />
           </>
         ) : (
           "Add"

@@ -1,41 +1,40 @@
-## Wrap-up sweep: free shipping everywhere + tier badges
+# Funnel Polish — Step 1 & Step 3 Improvements
 
-Shopify variant prices are being updated manually. This is the remaining frontend work to align UI copy with the new universal free-shipping policy, plus a couple of small polish touches the original plan called out.
+Four focused changes. All UI-only, no pricing or backend changes.
 
-### 1. `QuantityStep.tsx` — free shipping badge on all tiers
+## 1. Shorter bundle names (Step 1)
 
-Currently the green "Free Shipping" pill only renders when `opt.qty > 1` (gated on 1-pair). Remove that gate so the badge shows on the 1-pair card too. This makes all three cards visually consistent and signals the new "free on every order" policy.
+`src/components/order/QuantityStep.tsx` — `OPTIONS` array.
 
-### 2. `UpgradeStep.tsx` — drop the "Get 2+ pairs to unlock free shipping" nudge
+Drop the redundant "VitalWalk® Shoes" entirely (the whole page is already branded). New names:
+- **"1 Pair"**
+- **"2 Pairs"**
+- **"3 Pairs"**
 
-That line (only shown when `quantity === 1`) is now factually wrong — 1-pair also ships free. Delete the entire conditional block. Don't replace with anything; the OrderSummary's shipping line and the IncludedChecklist already convey free shipping.
+No sub-label. This kills the wrap on 360–390px screens and gives the price column breathing room. Bump font size slightly (e.g. 18–19px) so the headline still carries weight.
 
-### 3. Keep the strikethrough story strong (no change to math)
+## 2. Urgency strip on Step 1
 
-The `SAVE_PCT` derivation in `QuantityStep.tsx` (70/80/85%) drives each card's per-pair strikethrough. With new prices:
-- $64.95 / 70% off → strike at $216.50/ea
-- $54.95 / 80% off → strike at $274.75/ea
-- $49.95 / 85% off → strike at $333.00/ea
+Add a slim "Sale ends in MM:SS" strip directly under the Step 1 header, above the bundle cards. New tiny component `Step1UrgencyStrip.tsx`, reads the same `vitalwalk_offer_deadline_v2` localStorage key as `ScarcityBar` so both timers stay in sync but read as distinct moments (Step 1 = "Sale ends", Step 3 = "Reserved for you"). Flame icon + red accent matching `--save`.
 
-These keep the "loud savings" feel intact. Leaving the math as-is on purpose.
+## 3. Make Priority Processing removable (Step 3)
 
-### 4. Optional polish (skip unless you want it)
+`src/components/order/PriorityUpsellCard.tsx`:
 
-- Rename the 3-pair ribbon from `BEST DEAL` to `BEST VALUE` — minor copy tweak, same component.
-- Update the option-label "% OFF" suffix on Shopify (`1x Pair - (70% OFF)`, etc.) to match the new % — decorative only, the UI doesn't read these. Recommend leaving as-is for now.
+- Selected state pill: change "✓ Added" → **"✓ Added · Remove"** with a small `×` glyph so the affordance is obvious.
+- Update `aria-label` to flip between "Add Priority Processing" / "Remove Priority Processing".
+- Card already toggles on click — no logic change, just clearer copy + icon.
 
-### Files touched
+## 4. Fix sticky Complete Order bar on mobile
 
-- `src/components/order/QuantityStep.tsx` — remove `opt.qty > 1` gate on the Free Shipping pill
-- `src/components/order/UpgradeStep.tsx` — delete the `quantity === 1` shipping-unlock nudge
+`src/components/order/StickyCheckoutBar.tsx`.
 
-### Already shipped earlier in this session
+Current: `visible = ctaOffscreen && scrollingDown` — hides whenever the user scrolls up, which is why it disappears unpredictably.
 
-- `src/components/order/IncludedChecklist.tsx` — "Fast & free shipping to {country}" on every order
-- `src/hooks/useVitalWalkProduct.ts` — static fallback price bumped $59.95 → $64.95
+Change to: **visible whenever the main CTA is offscreen**, regardless of scroll direction. Remove the `scrollingDown` state + scroll listener. Keep the fade/translate transition.
 
-### Verification after Shopify prices are live
+## Technical notes
 
-1. Hard-refresh the preview, open Step 1 — all three cards show "Free Shipping" pill, prices read $64.95 / $54.95 /ea / $49.95 /ea.
-2. Click into Step 3 — OrderSummary total matches Shopify (2-pair = $109.90, 3-pair = $149.85).
-3. Proceed to checkout — Shopify cart total matches the displayed total to the cent.
+- All four changes are presentational. No Shopify / cart / pricing changes.
+- `BUNDLE_OPTIONS` export stays intact.
+- Sticky bar simplification removes ~25 lines of scroll-tracking code.

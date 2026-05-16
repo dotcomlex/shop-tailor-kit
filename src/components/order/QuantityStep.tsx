@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
+import { Step1UrgencyStrip } from "./Step1UrgencyStrip";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
 import type { ShopifyProductData } from "@/lib/shopify";
@@ -41,16 +42,16 @@ interface BundleOption {
 }
 
 const OPTIONS: BundleOption[] = [
-  { qty: 1, name: "1 Pair VitalWalk® Shoes", savePct: 70 },
+  { qty: 1, name: "1 Pair", savePct: 70 },
   {
     qty: 2,
-    name: "2 Pairs VitalWalk® Shoes",
+    name: "2 Pairs",
     savePct: 80,
     ribbon: { label: "MOST POPULAR", tone: "popular" },
   },
   {
     qty: 3,
-    name: "3 Pairs VitalWalk® Shoes",
+    name: "3 Pairs",
     savePct: 85,
     ribbon: { label: "BEST DEAL", tone: "best" },
   },
@@ -105,7 +106,8 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
-      <div className="row-pad">
+      <div className="row-pad mt-2.5">
+        <Step1UrgencyStrip />
         <ul className="mt-3 space-y-2.5">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;

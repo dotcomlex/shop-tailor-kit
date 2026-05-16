@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { ArrowRight, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,6 @@ export function StickyCheckoutBar({
   ctaRef,
 }: StickyCheckoutBarProps) {
   const [ctaOffscreen, setCtaOffscreen] = useState(false);
-  const [scrollingDown, setScrollingDown] = useState(false);
 
   useEffect(() => {
     const el = ctaRef?.current;
@@ -31,27 +30,9 @@ export function StickyCheckoutBar({
     return () => obs.disconnect();
   }, [ctaRef]);
 
-  const lastY = useRef(typeof window !== "undefined" ? window.scrollY : 0);
-  const ticking = useRef(false);
-  useEffect(() => {
-    const onScroll = () => {
-      if (ticking.current) return;
-      ticking.current = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const dy = y - lastY.current;
-        if (Math.abs(dy) > 2) {
-          setScrollingDown(dy > 0);
-          lastY.current = y;
-        }
-        ticking.current = false;
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const visible = ctaOffscreen && scrollingDown;
+  // Visible whenever the main CTA is offscreen — no scroll-direction gate.
+  // Previously hid on scroll-up which made the bar feel flaky.
+  const visible = ctaOffscreen;
 
   return (
     <div

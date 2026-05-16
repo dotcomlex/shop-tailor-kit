@@ -1,7 +1,16 @@
-# Swatch layout: 2 × 2 on mobile
+# Tighten swatches, simplify zoom, relocate fit meter
 
-Change `ColorSizeStep.tsx` color grid from `grid-cols-3 sm:grid-cols-4` to `grid-cols-2 sm:grid-cols-4`. Keep swatches at the current 108px/132px size. Result on mobile: 2 large swatches per row, 2 rows total — Black no longer orphaned. Desktop unchanged (single row of 4).
+## 1. Swatch spacing — `ColorSizeStep.tsx`
+Reduce the color grid gap from `gap-3 sm:gap-4` to `gap-2 sm:gap-3`. That pulls the 2 × 2 mobile grid tighter without crowding tap targets.
 
-Update the empty/loading state colspan from `col-span-3 sm:col-span-4` to `col-span-2 sm:col-span-4`.
+## 2. Zoom dialog — `ColorZoomDialog.tsx`
+Strip the footer entirely. The dialog becomes just the high-res square image (with a close affordance via the existing Dialog X). No "Colorway / Beige" label, no "Select this color" button. Simplified props — drop `onSelect` and `isSelected`. Update `ColorSizeStep.tsx` to stop passing them.
 
-Single file, single edit.
+## 3. Move the "How do they fit?" meter — `ColorSizeStep.tsx`
+Today the render order inside each pair card is: Color grid → **TrueToSizeMeter** → Size label + tiles → SizingDialogs (View size chart / sizing tips). Move `<TrueToSizeMeter />` so it renders **after** `<SizingDialogs />` instead of between the swatches and the size grid. Keeps it discoverable but stops it from breaking the color → size flow.
+
+Single render-order swap, no logic changes.
+
+## Files
+- `src/components/order/ColorSizeStep.tsx` — gap tweak + move TrueToSizeMeter below SizingDialogs + drop zoom props
+- `src/components/order/ColorZoomDialog.tsx` — remove footer/select-button, image-only layout

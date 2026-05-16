@@ -83,7 +83,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                   </p>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                 {colors.length === 0 && (
                   <span className="col-span-2 text-[13px] text-[hsl(var(--text-mute))] sm:col-span-4">
                     Loading colors…
@@ -99,11 +99,6 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                     />
                   </div>
                 ))}
-              </div>
-
-              {/* True-to-size meter */}
-              <div className="mt-6">
-                <TrueToSizeMeter />
               </div>
 
               {/* Size */}
@@ -127,6 +122,11 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
               <div className="mt-4">
                 <SizingDialogs sizes={sizes} selectedSize={sel.size} />
               </div>
+
+              {/* True-to-size meter — under the sizing tabs */}
+              <div className="mt-4">
+                <TrueToSizeMeter />
+              </div>
             </div>
           );
         })}
@@ -140,8 +140,6 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
         color={zoom?.color ?? null}
         open={!!zoom}
         onOpenChange={(o) => !o && setZoom(null)}
-        onSelect={() => zoom && onUpdate(zoom.pairIndex, { color: zoom.color })}
-        isSelected={!!zoom && selections[zoom.pairIndex]?.color === zoom.color}
       />
     </section>
   );

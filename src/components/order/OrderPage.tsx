@@ -146,22 +146,19 @@ export function OrderPage() {
     if (!bp) return { bundleTotal: 0, bundleCompare: 0 };
     const perPair = parseFloat(bp.priceRange.minVariantPrice.amount);
     const total = Number.isFinite(perPair) ? perPair * quantity : 0;
-    // Hybrid compare logic — must match QuantityStep.readLocalizedTotals
-    // exactly so Step 1 cards and Step 3 summary agree to the cent.
-    //   1 Pair  → promotional 70% off (perPair / 0.30)
-    //   2/3 Pair → 1-pair retail × qty (competitor-style)
-    if (quantity === 1) {
-      const compare = total > 0 ? total / (1 - 0.70) : 0;
-      return { bundleTotal: total, bundleCompare: compare };
-    }
+    // Must match QuantityStep.readLocalizedTotals exactly so Step 1 and
+    // Step 3 agree to the cent. Reference per-pair = 1-pair selling price
+    // inflated to its 70%-off MSRP, then × qty for the strike-through.
     const onePair = bundles?.[1];
-    const onePairRetail = onePair
+    const onePairSelling = onePair
       ? parseFloat(onePair.priceRange.minVariantPrice.amount)
       : NaN;
-    const compare =
-      Number.isFinite(onePairRetail) && onePairRetail > perPair
-        ? onePairRetail * quantity
-        : total;
+    const referencePerPair = Number.isFinite(onePairSelling)
+      ? onePairSelling / (1 - 0.70)
+      : Number.isFinite(perPair)
+        ? perPair / (1 - 0.70)
+        : 0;
+    const compare = referencePerPair * quantity;
     return { bundleTotal: total, bundleCompare: compare };
   }, [bundles, quantity]);
 

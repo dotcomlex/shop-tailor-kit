@@ -65,12 +65,15 @@ interface QuantityStepProps {
 /**
  * Read the localized total/compare for a bundle pack-size.
  *
- * Hybrid pricing logic:
- *   - 1 Pair: promotional 70% off. Strike = perPair / 0.30 (no real
- *     compare-at on the 1-pair product in Shopify).
- *   - 2 / 3 Pairs: competitor-style. Strike = 1-pair retail × qty so the
- *     customer sees "what you'd pay buying singles". Save % is derived
- *     from the live Shopify prices, not hardcoded.
+ * Pricing logic (matches WideComfortShoes-style framing):
+ *   - Reference "original retail" per pair = 1-pair selling price / (1 − 0.70)
+ *     i.e. the inflated MSRP we already strike on the 1-pair card.
+ *   - Strike-through (total compare) = reference per pair × qty.
+ *   - Save % = round((1 − perPair / referencePerPair) × 100).
+ *
+ * 1-pair always shows 70% off. 2/3-pair save % is derived from the live
+ * Shopify prices so the bigger bundle naturally shows a bigger discount
+ * without any hardcoded marketing numbers.
  */
 function readLocalizedTotals(
   product: ShopifyProductData | null | undefined,
@@ -82,19 +85,18 @@ function readLocalizedTotals(
   if (!Number.isFinite(perPair)) return null;
   const total = perPair * qty;
 
-  if (qty === 1) {
-    const compare = total / (1 - 0.70);
-    return { total, compare, savePct: 70 };
-  }
-
-  const onePairRetail = onePairProduct
+  const onePairSelling = onePairProduct
     ? parseFloat(onePairProduct.priceRange.minVariantPrice.amount)
     : NaN;
-  if (!Number.isFinite(onePairRetail) || onePairRetail <= perPair) {
-    return { total, compare: total, savePct: 0 };
-  }
-  const compare = onePairRetail * qty;
-  const savePct = Math.round((1 - perPair / onePairRetail) * 100);
+  const referencePerPair = Number.isFinite(onePairSelling)
+    ? onePairSelling / (1 - 0.70)
+    : perPair / (1 - 0.70);
+
+  const compare = referencePerPair * qty;
+  const savePct =
+    compare > total
+      ? Math.round((1 - perPair / referencePerPair) * 100)
+      : 0;
   return { total, compare, savePct };
 }
 

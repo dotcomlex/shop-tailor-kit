@@ -1,4 +1,4 @@
-import { Check, Zap } from "lucide-react";
+import { Check, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/useCurrency";
 

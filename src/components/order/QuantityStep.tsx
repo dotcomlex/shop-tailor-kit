@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
-import { FreeShippingMarquee } from "./FreeShippingMarquee";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
 import type { ShopifyProductData } from "@/lib/shopify";
@@ -95,7 +94,10 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
   const { data: bundles } = useVitalWalkBundles();
 
   return (
-    <section aria-labelledby="step-1-heading">
+    <section
+      aria-labelledby="step-1-heading"
+      className="flex min-h-[calc(100dvh-7.5rem)] flex-col"
+    >
       <h2 id="step-1-heading" className="sr-only">
         Step 1: Select Quantity
       </h2>
@@ -105,10 +107,8 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         rightLabel="Bundle and Save!"
       />
 
-      <FreeShippingMarquee />
-
-      <div className="row-pad mt-2">
-        <ul className="space-y-2">
+      <div className="row-pad mt-3 flex flex-1 flex-col">
+        <ul className="space-y-3">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;
             const isPopular = opt.ribbon?.tone === "popular";
@@ -122,10 +122,6 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             const perPairFormatted = totals ? format(perPair) : "";
             const perPairCompareFormatted =
               totals && perPairCompare > perPair ? format(perPairCompare) : "";
-            const totalSavedFormatted =
-              totals && totals.compare > totals.total
-                ? format(totals.compare - totals.total)
-                : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">
@@ -144,7 +140,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   onClick={() => onQuantityChange(opt.qty)}
                   aria-pressed={selected}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-xl border-2 p-2.5 text-left transition-all sm:gap-4 sm:p-3.5",
+                    "flex w-full items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all sm:gap-4 sm:p-4",
                     selected
                       ? "border-order-blue bg-[#FDF7F0] ring-2 ring-[hsl(45_95%_55%/0.35)] shadow-[0_4px_14px_-4px_rgba(212,160,23,0.25)]"
                       : "bg-card border-border hover:border-[hsl(var(--text-mute))]",
@@ -166,13 +162,8 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))]">
                       {opt.name}
                     </p>
-                    <p className="mt-1 text-[13px] font-extrabold text-save tabular-nums">
+                    <p className="mt-1 text-[14px] font-extrabold text-save">
                       Save {opt.savePct}%
-                      {totalSavedFormatted && (
-                        <span className="ml-1 font-semibold text-[hsl(var(--text-body))]">
-                          · {totalSavedFormatted} off
-                        </span>
-                      )}
                     </p>
                   </div>
 
@@ -200,18 +191,15 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         </ul>
 
 
-        <div className="mt-3">
+        <div className="mt-4">
           <YellowCta label="Select Your Color and Size" onClick={onContinue} />
-          <p className="mt-1.5 text-center text-[11px] text-[hsl(var(--text-mute))]">
-            Color & size on next step →
-          </p>
         </div>
 
         {/* Trust strip — one calm text line + payment logos. No icons or
             dividers competing with the yellow CTA. The full review count
             and detailed rating live in VerifiedReviewsBlock further down;
             here we just need a quiet reassurance band. */}
-        <div className="mt-2 flex flex-col items-center gap-2.5">
+        <div className="mt-auto flex flex-col items-center gap-2.5 pt-4">
           <div className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[12px] text-[hsl(var(--text-body))]">
             <TrustpilotMiniStars />
             <span className="font-extrabold text-[hsl(var(--text-strong))] tabular-nums">

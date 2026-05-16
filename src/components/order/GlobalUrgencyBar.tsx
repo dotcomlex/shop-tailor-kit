@@ -24,11 +24,10 @@ function fmt(ms: number) {
 }
 
 /**
- * Slim Step 1 urgency strip — shares the same deadline key as ScarcityBar
- * so both timers stay in sync. Wording differs ("Sale ends" vs.
- * "Reserved for you") so they read as distinct moments in the funnel.
+ * Slim global page-top urgency bar. Shares the deadline key with
+ * ScarcityBar so both timers tick identically.
  */
-export function Step1UrgencyStrip() {
+export function GlobalUrgencyBar() {
   const [remaining, setRemaining] = useState<number>(() =>
     Math.max(0, getDeadline() - Date.now()),
   );
@@ -49,14 +48,25 @@ export function Step1UrgencyStrip() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center gap-1.5 rounded-md bg-[hsl(0_85%_97%)] px-3 py-1.5 text-center text-[12px] sm:text-[12.5px]">
-      <Flame className="h-3.5 w-3.5 text-save" strokeWidth={2.5} aria-hidden />
-      <span className="font-semibold text-[hsl(var(--text-body))]">
-        Sale ends in
-      </span>
-      <span className="font-extrabold tabular-nums text-save" aria-live="polite">
-        {fmt(remaining)}
-      </span>
+    <div className="w-full bg-[hsl(0_72%_42%)] text-white">
+      <div className="container-edge flex items-center justify-center gap-2 py-1.5 text-center text-[12px] sm:text-[13px]">
+        <Flame className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+        <span className="font-semibold uppercase tracking-wide">
+          Flash sale ends in
+        </span>
+        <span
+          className="font-extrabold tabular-nums"
+          aria-live="polite"
+        >
+          {fmt(remaining)}
+        </span>
+        <span className="hidden text-white/70 sm:inline" aria-hidden>
+          ·
+        </span>
+        <span className="hidden font-semibold sm:inline">
+          Free shipping today
+        </span>
+      </div>
     </div>
   );
 }

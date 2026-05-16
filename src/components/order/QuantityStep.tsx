@@ -1,9 +1,9 @@
-import { Star, Truck } from "lucide-react";
+import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { BundleThumb } from "./BundleThumb";
-import { Step1UrgencyStrip } from "./Step1UrgencyStrip";
+import { FreeShippingMarquee } from "./FreeShippingMarquee";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useVitalWalkBundles } from "@/hooks/useVitalWalkProduct";
 import type { ShopifyProductData } from "@/lib/shopify";
@@ -103,32 +103,29 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         number={1}
         title="Select Quantity"
         rightLabel="Bundle and Save!"
-        subStrip="You can select color and size on next step"
       />
 
-      <div className="row-pad mt-2.5">
-        <Step1UrgencyStrip />
-        <ul className="mt-3 space-y-2.5">
+      <FreeShippingMarquee />
+
+      <div className="row-pad mt-2">
+        <ul className="space-y-2">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;
             const isPopular = opt.ribbon?.tone === "popular";
             const ribbonClass = isPopular
-              ? // MOST POPULAR — loud red, slightly larger, with a soft
-                // ring + drop shadow so it lifts off the card.
-                "bg-[hsl(0_84%_50%)] text-white text-[11px] px-2.5 py-[4px] shadow-md"
-              : // BEST DEAL — secondary, calmer blue treatment.
-                "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
+              ? "bg-[hsl(0_84%_50%)] text-white text-[11px] px-2.5 py-[4px] shadow-md"
+              : "bg-[hsl(var(--order-blue))] text-white text-[10px] px-2 py-[3px] shadow-sm";
 
             const totals = readLocalizedTotals(bundles?.[opt.qty], opt.qty, bundles?.[1]);
-            // Headline = per-pair price (same across all 3 cards in spirit:
-            // each card shows its own per-pair tier). Strike = per-pair
-            // retail derived from the advertised save % so the ribbon, the
-            // strike, and Step 3 always agree.
             const perPair = totals ? totals.total / opt.qty : 0;
             const perPairCompare = totals ? totals.compare / opt.qty : 0;
             const perPairFormatted = totals ? format(perPair) : "";
             const perPairCompareFormatted =
               totals && perPairCompare > perPair ? format(perPairCompare) : "";
+            const totalSavedFormatted =
+              totals && totals.compare > totals.total
+                ? format(totals.compare - totals.total)
+                : "";
 
             return (
               <li key={opt.qty} className="relative pt-2.5">
@@ -147,13 +144,12 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                   onClick={() => onQuantityChange(opt.qty)}
                   aria-pressed={selected}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all sm:gap-4 sm:p-4",
+                    "flex w-full items-center gap-2.5 rounded-xl border-2 p-2.5 text-left transition-all sm:gap-4 sm:p-3.5",
                     selected
                       ? "border-order-blue bg-[#FDF7F0] ring-2 ring-[hsl(45_95%_55%/0.35)] shadow-[0_4px_14px_-4px_rgba(212,160,23,0.25)]"
                       : "bg-card border-border hover:border-[hsl(var(--text-mute))]",
                   )}
                 >
-                  {/* radio */}
                   <span
                     className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
@@ -164,26 +160,22 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     {selected && <span className="h-2 w-2 rounded-full bg-white" />}
                   </span>
 
-                  {/* thumb */}
                   <BundleThumb count={opt.qty} />
 
-                  {/* name + save + shipping pill */}
                   <div className="min-w-0 flex-1">
-                    <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))] sm:text-[17px]">
+                    <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))]">
                       {opt.name}
                     </p>
-                    <p className="mt-1 text-[14px] font-extrabold text-save">
+                    <p className="mt-1 text-[13px] font-extrabold text-save tabular-nums">
                       Save {opt.savePct}%
+                      {totalSavedFormatted && (
+                        <span className="ml-1 font-semibold text-[hsl(var(--text-body))]">
+                          · {totalSavedFormatted} off
+                        </span>
+                      )}
                     </p>
-                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--verified-green)/0.10)] px-2 py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-verified">
-                      <Truck className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-                      Free Shipping
-                    </span>
                   </div>
 
-                  {/* Price column — headline is the exact Shopify bundle
-                      total so the number on this card matches Step 3 /
-                      checkout to the cent. */}
                   <div className="shrink-0 text-right">
                     {perPairCompareFormatted ? (
                       <p className="text-[13px] font-semibold tabular-nums text-[hsl(var(--text-mute))] line-through">
@@ -193,7 +185,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                       <p className="h-[18px] w-16 ml-auto rounded bg-[hsl(var(--text-mute)/0.15)] animate-pulse" aria-hidden />
                     )}
                     {perPairFormatted ? (
-                      <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))] sm:text-[20px]">
+                      <p className="mt-0.5 text-[20px] font-extrabold leading-none tabular-nums text-[hsl(var(--text-strong))]">
                         {perPairFormatted}
                         <span className="ml-1 text-[12px] font-semibold text-[hsl(var(--text-mute))]">/ea</span>
                       </p>
@@ -208,15 +200,18 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         </ul>
 
 
-        <div className="mt-4">
+        <div className="mt-3">
           <YellowCta label="Select Your Color and Size" onClick={onContinue} />
+          <p className="mt-1.5 text-center text-[11px] text-[hsl(var(--text-mute))]">
+            Color & size on next step →
+          </p>
         </div>
 
         {/* Trust strip — one calm text line + payment logos. No icons or
             dividers competing with the yellow CTA. The full review count
             and detailed rating live in VerifiedReviewsBlock further down;
             here we just need a quiet reassurance band. */}
-        <div className="mt-3 flex flex-col items-center gap-2.5">
+        <div className="mt-2 flex flex-col items-center gap-2.5">
           <div className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[12px] text-[hsl(var(--text-body))]">
             <TrustpilotMiniStars />
             <span className="font-extrabold text-[hsl(var(--text-strong))] tabular-nums">

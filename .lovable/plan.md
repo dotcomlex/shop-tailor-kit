@@ -1,25 +1,21 @@
-# Bigger swatches, tighter grid, instant loading
+# Step 3 polish — bolder savings + "Today only" free shipping
 
-## 1. Bigger swatches — `ColorSwatch.tsx`
-Bump diameter:
-- Mobile: `h-[108px] w-[108px]` → `h-[140px] w-[140px]`
-- Desktop (`sm:`): `h-[132px] w-[132px]` → `h-[160px] w-[160px]`
+## 1. Bolder savings highlight — `OrderSummary.tsx`
+Replace the small italic line under Total ("You're saving $X today.") with a green pill badge that sits **above** the Total row, full-width-aligned to the right:
 
-Slightly larger zoom-trigger icon (`h-7 w-7` → `h-8 w-8`) so it stays proportional.
+```
+[ ✓ You saved $97.95 · 70% off ]            ← new pill
+Total                              $42.00
+```
 
-## 2. Tighter 2×2 grid — `ColorSizeStep.tsx`
-Drop the gap further on mobile: `gap-2 sm:gap-3` → `gap-1 sm:gap-2`. Combined with bigger circles, the white space between them collapses to a clean, dense block.
+- Pill style: `bg-verified/10 text-verified` with a check icon, rounded-full, semibold, ~11px.
+- Percent is computed from `saved / compare` (same data the strike-through already uses).
+- Drops the existing italic line.
 
-## 3. Kill the load lag
+## 2. "Today only" on free shipping — `OrderSummary.tsx`
+Next to the green `FREE` value on the Shipping row, add a small muted tag: `Today only`. Keeps the line visually balanced — label on the left, "FREE · Today only" on the right.
 
-**Step 2 paint** — `ColorSwatch.tsx`:
-- Switch swatch `<img>` from `loading="lazy"` to `loading="eager"` and add `fetchpriority="high"` so the four photos paint immediately when Step 2 mounts (they're tiny — 320px Shopify-resized JPGs).
-
-**Zoom instant-open** — new tiny effect in `ColorSizeStep.tsx`:
-- On mount, fire-and-forget preload of every color's 1200px zoom image via `new Image(); img.src = imageForColor(c, 1200)`. By the time the user taps the magnifier, the high-res file is in the browser cache → dialog opens with no flash.
-
-No design changes elsewhere. No new deps.
+Stays display-only; no business-logic or Shopify changes. No new files.
 
 ## Files
-- `src/components/order/ColorSwatch.tsx` — sizes + eager loading + larger zoom icon
-- `src/components/order/ColorSizeStep.tsx` — tighter gap + preload effect for zoom-size images
+- `src/components/order/OrderSummary.tsx` — savings pill above Total, "Today only" microcopy on shipping line

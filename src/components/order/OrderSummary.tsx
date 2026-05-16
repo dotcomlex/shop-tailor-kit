@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
 
 interface OrderSummaryProps {
@@ -67,10 +68,24 @@ export function OrderSummary({
         {shipsFree && (
           <div className="flex items-baseline justify-between">
             <span className="text-[hsl(var(--text-body))]">Shipping</span>
-            <span className="tabular-nums font-bold text-verified">FREE</span>
+            <span className="flex items-baseline gap-1.5">
+              <span className="tabular-nums font-bold text-verified">FREE</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--text-mute))]">
+                Today only
+              </span>
+            </span>
           </div>
         )}
       </div>
+
+      {saved > 0 && (
+        <div className="mt-3 flex justify-end">
+          <span className="inline-flex items-center gap-1 rounded-full bg-verified/10 px-2.5 py-1 text-[11.5px] font-bold text-verified">
+            <Check className="h-3 w-3" strokeWidth={3} />
+            You saved {format(saved)} · {Math.round((saved / compare) * 100)}% off
+          </span>
+        </div>
+      )}
 
       <div className="mt-3 border-t border-[hsl(var(--hairline))] pt-3">
         <div className="flex items-baseline justify-between">
@@ -79,12 +94,6 @@ export function OrderSummary({
             {format(total)}
           </span>
         </div>
-
-        {saved > 0 && (
-          <p className="mt-1.5 text-right text-[12px] italic text-[hsl(var(--text-mute))]">
-            You're saving {format(saved)} today.
-          </p>
-        )}
       </div>
     </div>
   );

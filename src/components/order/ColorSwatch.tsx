@@ -25,7 +25,7 @@ export function ColorSwatch({ color, selected, onSelect, onZoom }: ColorSwatchPr
       >
         <span
           className={cn(
-            "relative flex h-[108px] w-[108px] items-center justify-center rounded-full bg-white p-[2px] transition-all duration-150 sm:h-[132px] sm:w-[132px]",
+            "relative flex h-[140px] w-[140px] items-center justify-center rounded-full bg-white p-[2px] transition-all duration-150 sm:h-[160px] sm:w-[160px]",
             selected
               ? "ring-[3px] ring-[hsl(var(--order-blue))] ring-offset-2"
               : "ring-1 ring-black/5 group-hover:ring-2 group-hover:ring-[hsl(var(--text-mute))]/40 group-focus-visible:ring-2 group-focus-visible:ring-[hsl(var(--order-blue))]",
@@ -40,7 +40,10 @@ export function ColorSwatch({ color, selected, onSelect, onZoom }: ColorSwatchPr
                 src={imgUrl}
                 alt=""
                 className="h-full w-full object-cover"
-                loading="lazy"
+                loading="eager"
+                // @ts-expect-error - fetchpriority is a valid HTML attribute
+                fetchpriority="high"
+                decoding="async"
               />
             )}
           </span>
@@ -63,9 +66,9 @@ export function ColorSwatch({ color, selected, onSelect, onZoom }: ColorSwatchPr
             onZoom();
           }}
           aria-label={`View ${color} full size`}
-          className="absolute right-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[hsl(var(--text-strong))] shadow-md ring-1 ring-black/10 transition-transform hover:scale-110 active:scale-95"
+          className="absolute right-0 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[hsl(var(--text-strong))] shadow-md ring-1 ring-black/10 transition-transform hover:scale-110 active:scale-95"
         >
-          <Maximize2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <Maximize2 className="h-4 w-4" strokeWidth={2.5} />
         </button>
       )}
 

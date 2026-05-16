@@ -61,14 +61,6 @@ export function UpgradeStep({
           addOnLabel={addOnTotal > 0 ? "Priority Processing" : undefined}
         />
 
-        {quantity === 1 && (
-          <p className="-mt-1 px-1 text-center text-[12px] text-[hsl(var(--text-mute))]">
-            <span aria-hidden>🚚</span>{" "}
-            <span className="font-semibold text-[hsl(var(--text-body))]">Get 2+ pairs</span>{" "}
-            to unlock{" "}
-            <span className="font-semibold text-verified">free shipping</span>.
-          </p>
-        )}
 
         {priorityAvailable && (
           <PriorityUpsellCard

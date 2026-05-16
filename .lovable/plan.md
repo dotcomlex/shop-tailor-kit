@@ -1,21 +1,10 @@
-# Step 3 polish — bolder savings + "Today only" free shipping
+# Cleaner savings — inline tag on Subtotal row
 
-## 1. Bolder savings highlight — `OrderSummary.tsx`
-Replace the small italic line under Total ("You're saving $X today.") with a green pill badge that sits **above** the Total row, full-width-aligned to the right:
+## `OrderSummary.tsx`
+- Remove the standalone savings pill block above Total.
+- On the Subtotal row, keep the existing right-side stack: `[strike compare] [bold price]`. Add a small green `−75%` tag directly to the right of the price (or wrap under on narrow viewports — single flex row, `flex-wrap`).
+  - Style: `text-[11px] font-bold text-verified bg-verified/10 rounded-md px-1.5 py-0.5`, no icon, no dollar amount.
+  - Percent: `Math.round(saved / compare * 100)`.
+- No other changes — Total row stays clean, "Today only" stays on shipping line.
 
-```
-[ ✓ You saved $97.95 · 70% off ]            ← new pill
-Total                              $42.00
-```
-
-- Pill style: `bg-verified/10 text-verified` with a check icon, rounded-full, semibold, ~11px.
-- Percent is computed from `saved / compare` (same data the strike-through already uses).
-- Drops the existing italic line.
-
-## 2. "Today only" on free shipping — `OrderSummary.tsx`
-Next to the green `FREE` value on the Shipping row, add a small muted tag: `Today only`. Keeps the line visually balanced — label on the left, "FREE · Today only" on the right.
-
-Stays display-only; no business-logic or Shopify changes. No new files.
-
-## Files
-- `src/components/order/OrderSummary.tsx` — savings pill above Total, "Today only" microcopy on shipping line
+Single file, display-only.

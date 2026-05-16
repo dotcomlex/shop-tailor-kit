@@ -106,7 +106,8 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         subStrip="You can select color and size on next step"
       />
 
-      <div className="row-pad">
+      <div className="row-pad mt-2.5">
+        <Step1UrgencyStrip />
         <ul className="mt-3 space-y-2.5">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;

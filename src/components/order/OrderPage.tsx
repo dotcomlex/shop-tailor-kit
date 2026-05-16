@@ -146,14 +146,22 @@ export function OrderPage() {
     if (!bp) return { bundleTotal: 0, bundleCompare: 0 };
     const perPair = parseFloat(bp.priceRange.minVariantPrice.amount);
     const total = Number.isFinite(perPair) ? perPair * quantity : 0;
-    // Strike-through is derived from the advertised bundle discount so the
-    // "X% OFF" badge on Step 1 and the savings shown on Step 3 always agree
-    // exactly. 1 pair = 70%, 2 pairs = 75%, 3 pairs = 80%.
-    const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.75, 3: 0.80 };
-    const pct = SAVE_PCT[quantity] ?? 0;
-    const compare = pct > 0 && total > 0 ? total / (1 - pct) : total;
+    // Must match QuantityStep.readLocalizedTotals exactly so Step 1 and
+    // Step 3 agree to the cent. Reference per-pair = 1-pair selling price
+    // inflated to its 70%-off MSRP, then × qty for the strike-through.
+    const onePair = bundles?.[1];
+    const onePairSelling = onePair
+      ? parseFloat(onePair.priceRange.minVariantPrice.amount)
+      : NaN;
+    const referencePerPair = Number.isFinite(onePairSelling)
+      ? onePairSelling / (1 - 0.70)
+      : Number.isFinite(perPair)
+        ? perPair / (1 - 0.70)
+        : 0;
+    const compare = referencePerPair * quantity;
     return { bundleTotal: total, bundleCompare: compare };
   }, [bundles, quantity]);
+
 
   // Re-fetch the localized bundle prices whenever the user returns to the
   // tab. Catches the case where Shopify Markets revalues FX while the tab

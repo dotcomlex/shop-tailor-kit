@@ -41,17 +41,17 @@ interface BundleOption {
 }
 
 const OPTIONS: BundleOption[] = [
-  { qty: 1, name: "1 Pair", savePct: 70 },
+  { qty: 1, name: "Get 1 Pair", savePct: 70 },
   {
     qty: 2,
-    name: "2 Pairs",
-    savePct: 80,
+    name: "Get 2 Pairs",
+    savePct: 0, // computed dynamically from 1-pair retail
     ribbon: { label: "MOST POPULAR", tone: "popular" },
   },
   {
     qty: 3,
-    name: "3 Pairs",
-    savePct: 85,
+    name: "Get 3 Pairs",
+    savePct: 0, // computed dynamically from 1-pair retail
     ribbon: { label: "BEST DEAL", tone: "best" },
   },
 ];
@@ -63,31 +63,43 @@ interface QuantityStepProps {
 }
 
 /**
- * Read the localized total/compare for a bundle pack-size from the Shopify
- * @inContext response.
+ * Read the localized total/compare for a bundle pack-size.
  *
- * Bundle products (2-pair, 3-pair) store PER-PAIR prices on simple
- * "Pair #1/#2/#3" variants. The 1-pair product stores the regular price.
- * Total = per-pair price × pack size. Compare = 1-pair retail × pack size,
- * which is the "if you bought them individually" reference for the
- * strikethrough.
+ * Pricing logic (matches WideComfortShoes-style framing):
+ *   - Reference "original retail" per pair = 1-pair selling price / (1 − 0.70)
+ *     i.e. the inflated MSRP we already strike on the 1-pair card.
+ *   - Strike-through (total compare) = reference per pair × qty.
+ *   - Save % = round((1 − perPair / referencePerPair) × 100).
+ *
+ * 1-pair always shows 70% off. 2/3-pair save % is derived from the live
+ * Shopify prices so the bigger bundle naturally shows a bigger discount
+ * without any hardcoded marketing numbers.
  */
 function readLocalizedTotals(
   product: ShopifyProductData | null | undefined,
   qty: number,
-  _onePairProduct: ShopifyProductData | null | undefined,
+  onePairProduct: ShopifyProductData | null | undefined,
 ) {
   if (!product) return null;
   const perPair = parseFloat(product.priceRange.minVariantPrice.amount);
   if (!Number.isFinite(perPair)) return null;
   const total = perPair * qty;
-  // Strike-through is derived from the advertised bundle save % so the
-  // ribbon ("75% OFF"), the strike, and Step 3 always agree to the cent.
-  const SAVE_PCT: Record<number, number> = { 1: 0.70, 2: 0.80, 3: 0.85 };
-  const pct = SAVE_PCT[qty] ?? 0;
-  const compare = pct > 0 && total > 0 ? total / (1 - pct) : total;
-  return { total, compare };
+
+  const onePairSelling = onePairProduct
+    ? parseFloat(onePairProduct.priceRange.minVariantPrice.amount)
+    : NaN;
+  const referencePerPair = Number.isFinite(onePairSelling)
+    ? onePairSelling / (1 - 0.70)
+    : perPair / (1 - 0.70);
+
+  const compare = referencePerPair * qty;
+  const savePct =
+    compare > total
+      ? Math.round((1 - perPair / referencePerPair) * 100)
+      : 0;
+  return { total, compare, savePct };
 }
+
 
 export function QuantityStep({ quantity, onQuantityChange, onContinue }: QuantityStepProps) {
   const { format } = useCurrency();
@@ -119,6 +131,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             const perPairFormatted = totals ? format(perPair) : "";
             const perPairCompareFormatted =
               totals && perPairCompare > perPair ? format(perPairCompare) : "";
+            const savePct = totals?.savePct ?? opt.savePct;
 
             return (
               <li key={opt.qty} className="relative pt-2.5">
@@ -159,9 +172,11 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
                     <p className="text-[17px] font-extrabold leading-tight tracking-tight text-[hsl(var(--text-strong))]">
                       {opt.name}
                     </p>
-                    <p className="mt-1 text-[14px] font-extrabold text-save">
-                      Save {opt.savePct}%
-                    </p>
+                    {savePct > 0 && (
+                      <p className="mt-1 text-[14px] font-extrabold text-save">
+                        Save {savePct}%
+                      </p>
+                    )}
                   </div>
 
                   <div className="shrink-0 text-right">

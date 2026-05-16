@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ShopifyProductData } from "@/lib/shopify";
 import { StepHeader } from "./StepHeader";
 import { YellowCta } from "./YellowCta";
 import { ColorSwatch } from "./ColorSwatch";
+import { ColorZoomDialog } from "./ColorZoomDialog";
 import { SizeTileGrid } from "./SizeTileGrid";
 import { TrueToSizeMeter } from "./TrueToSizeMeter";
 import { SizingDialogs } from "./SizingDialogs";
@@ -29,6 +31,7 @@ function getOptionValues(product: ShopifyProductData | null | undefined, name: "
 export function ColorSizeStep({ product, selections, onUpdate, onContinue }: ColorSizeStepProps) {
   const colors = getOptionValues(product, "color");
   const sizes = getOptionValues(product, "size");
+  const [zoom, setZoom] = useState<{ pairIndex: number; color: string } | null>(null);
 
   const allComplete = selections.every((s) => s.color && s.size);
   const multiPair = selections.length > 1;
@@ -80,9 +83,9 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                   </p>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-4 gap-3 sm:gap-4">
+              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4">
                 {colors.length === 0 && (
-                  <span className="col-span-4 text-[13px] text-[hsl(var(--text-mute))]">
+                  <span className="col-span-3 text-[13px] text-[hsl(var(--text-mute))] sm:col-span-4">
                     Loading colors…
                   </span>
                 )}
@@ -92,6 +95,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                       color={c}
                       selected={sel.color === c}
                       onSelect={() => onUpdate(idx, { color: c })}
+                      onZoom={() => setZoom({ pairIndex: idx, color: c })}
                     />
                   </div>
                 ))}
@@ -131,6 +135,14 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
       <div className="row-pad mt-5">
         <YellowCta label="Next" onClick={onContinue} disabled={!allComplete} />
       </div>
+
+      <ColorZoomDialog
+        color={zoom?.color ?? null}
+        open={!!zoom}
+        onOpenChange={(o) => !o && setZoom(null)}
+        onSelect={() => zoom && onUpdate(zoom.pairIndex, { color: zoom.color })}
+        isSelected={!!zoom && selections[zoom.pairIndex]?.color === zoom.color}
+      />
     </section>
   );
 }

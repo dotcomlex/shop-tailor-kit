@@ -1,33 +1,47 @@
-# Plan
+# Pricing audit + Step 2 image polish + Step 3 free-shipping line
 
-## Changes
+## 1. Pricing flow — audit (no code changes expected)
 
-### 1. More engaging bundle names
-- `1 Pair` → `Get 1 Pair`
-- `2 Pairs` → `Get 2 Pairs`
-- `3 Pairs` → `Get 3 Pairs`
+Re-confirm the math you're seeing is what reaches Shopify. Current logic:
 
-(Applied in the Step 1 quantity cards. Step 3 order summary keeps its existing label format.)
+- **Step 1 (`QuantityStep`)** — Uses one inflated reference per-pair = `onePairSelling / (1 − 0.70)`. Strike = `reference × qty`. Save% = `round((1 − bundlePerPair / reference) × 100)`. So 1 pair always shows 70%, 2 pair and 3 pair show derived %.
+- **Step 3 (`OrderPage.bundleCompare`)** — Same formula, so the strike-through total in the Order Summary matches Step 1 to the cent.
+- **Checkout (`OrderPage.handleCheckout`)** — Cart lines use the **real Shopify variant prices** of the 2-pair / 3-pair bundle products (`bundleProduct`). The inflated "compare" number is display-only. Shopify charges exactly what's on the variant — strike-through never leaks into the order.
 
-### 2. Hybrid bundle savings logic
-- **1 Pair:** keep the current promotional 70% off. Strike-through stays as today (`perPair / 0.30`) since the 1-pair product has no real compare-at-price set in Shopify and this preserves the "regular retail" framing customers already see.
-- **2 Pairs / 3 Pairs:** switch to competitor-style math.
-  - Strike-through (compare) = `1-pair perPair × qty` (what they'd pay buying singles).
-  - Save % = `round((1 − bundlePerPair / onePairPerPair) × 100)` — computed from real prices, not hardcoded.
+What the user is seeing right now (1 pair 70%, 2 pair ~75%, 3 pair ~77%) is the honest derived math, not a 15% / 23% bug. If you want bigger 2/3-pair Save% numbers to match the 1-pair anchor visually, that's a separate decision — flag in chat after plan approval and I can adjust the reference price.
 
-This makes the 2/3-pair offer feel more honest and grounded ("$59.97 ea vs $69.99 ea retail × 2 = $139.98") and matches the WideComfortShoes pattern the user referenced.
+**Action:** read-through audit only — confirm `QuantityStep.readLocalizedTotals` and `OrderPage.bundleCompare` reference prices match, and that `handleCheckout` does not pass any inflated value to Shopify. No edits.
 
-### 3. Keep downstream totals in sync
-- `OrderPage.tsx` derives `bundleCompare` from a hardcoded `SAVE_PCT` map. Update it to the same hybrid logic so Step 3's order summary, savings line, and the sticky checkout bar all match Step 1 to the cent.
-- Save % shown on Step 1 cards becomes dynamic for 2/3 pair (derived from live Shopify prices) instead of the static `80` / `85`.
+## 2. Step 2 — bigger swatches + tap-to-zoom
 
-## Will this look more engaging?
-Yes — for two reasons:
-1. "Get 2 Pairs" reads as an action/offer instead of a quantity label.
-2. The strike-through becomes a believable number tied to the real single-pair price, so the savings feel real rather than marketing-inflated. The Save % may drop slightly on 2/3 pair vs today (e.g. ~57% instead of 80%), but it will be defensible and consistent with what competitors show.
+**`ColorSwatch.tsx`**
+- Bump base size: `h-[108px] w-[108px]` mobile, `h-[132px] w-[132px]` sm+.
+- Keep the ring/check styling, just scale the inner image.
+- Make the photo region act as the zoom trigger (the outer `<button>` still handles selection — a small icon overlay handles zoom).
+- Add a small magnifier icon (top-right of the swatch) that opens a full-screen dialog with the high-res color image. Tapping the label/ring still selects the color.
 
-## Files to edit
-- `src/components/order/QuantityStep.tsx` — names, hybrid `readLocalizedTotals`, dynamic Save % per row.
-- `src/components/order/OrderPage.tsx` — replace hardcoded `SAVE_PCT` in the `bundleCompare` memo with the same hybrid logic so Step 3 stays aligned.
+**New `ColorZoomDialog.tsx`** (shadcn `Dialog`)
+- Full-screen on mobile, centered max-w-2xl on desktop.
+- Shows `imageForColor(color, 1200)` (request a larger size from the existing helper).
+- Includes color name + a "Select this color" button that selects + closes.
 
-No Shopify/checkout/business-logic changes beyond display math.
+**`ColorSizeStep.tsx`**
+- Wire the new "Select this color" action through the existing `onUpdate(idx, { color })`.
+- Tighten the grid to `grid-cols-3` on mobile so the bigger circles breathe (4 cols on sm+).
+
+## 3. Step 3 — always-on free shipping line
+
+**`OrderSummary.tsx`**
+- Remove the `qty > 1` gate. Always render the "Shipping — FREE" row.
+- Keeps the green `FREE` styling. No other layout changes.
+
+## 4. Files touched
+
+```text
+src/components/order/ColorSwatch.tsx        (resize + zoom trigger)
+src/components/order/ColorZoomDialog.tsx    (new)
+src/components/order/ColorSizeStep.tsx      (grid cols + zoom wiring)
+src/components/order/OrderSummary.tsx       (always show free shipping)
+```
+
+No changes to `OrderPage.tsx`, `QuantityStep.tsx`, Shopify cart, or checkout logic.

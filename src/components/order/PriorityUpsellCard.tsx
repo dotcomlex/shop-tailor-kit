@@ -69,28 +69,25 @@ export function PriorityUpsellCard({
         <p className="mt-0.5 text-[11.5px] leading-snug text-[hsl(var(--text-body))] sm:text-[12px]">
           Skip the line — your order ships first ⚡
         </p>
+        {selected && (
+          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-verified animate-fade-in">
+            <Check className="h-3 w-3" strokeWidth={3.5} />
+            Added
+          </p>
+        )}
       </div>
 
-      {/* Toggle pill — high-contrast on yellow */}
+      {/* Fixed-size circular checkbox — never changes width */}
       <span
         className={cn(
-          "relative ml-1 flex h-7 shrink-0 items-center justify-center rounded-full border px-2.5 text-[11.5px] font-bold uppercase tracking-wider transition-colors",
+          "relative ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
           selected
             ? "border-verified bg-verified text-white"
-            : "border-[hsl(var(--text-strong)/0.35)] bg-white text-[hsl(var(--text-strong))] group-hover:border-[hsl(var(--text-strong))]",
+            : "border-[hsl(var(--text-strong)/0.35)] bg-white group-hover:border-[hsl(var(--text-strong))]",
         )}
+        aria-hidden
       >
-        {selected ? (
-          <>
-            <Check className="mr-1 h-3 w-3 text-white" strokeWidth={3.5} />
-            Added
-            <span className="mx-1 opacity-60" aria-hidden>·</span>
-            Remove
-            <X className="ml-0.5 h-3 w-3 text-white" strokeWidth={3.5} aria-hidden />
-          </>
-        ) : (
-          "Add"
-        )}
+        {selected && <Check className="h-3.5 w-3.5" strokeWidth={3.5} />}
       </span>
     </button>
   );

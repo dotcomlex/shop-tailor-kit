@@ -94,10 +94,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
   const { data: bundles } = useVitalWalkBundles();
 
   return (
-    <section
-      aria-labelledby="step-1-heading"
-      className="flex min-h-[calc(100dvh-7.5rem)] flex-col"
-    >
+    <section aria-labelledby="step-1-heading">
       <h2 id="step-1-heading" className="sr-only">
         Step 1: Select Quantity
       </h2>
@@ -107,7 +104,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
         rightLabel="Bundle and Save!"
       />
 
-      <div className="row-pad mt-3 flex flex-1 flex-col">
+      <div className="row-pad mt-3">
         <ul className="space-y-3">
           {OPTIONS.map((opt) => {
             const selected = quantity === opt.qty;
@@ -199,7 +196,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
             dividers competing with the yellow CTA. The full review count
             and detailed rating live in VerifiedReviewsBlock further down;
             here we just need a quiet reassurance band. */}
-        <div className="mt-auto flex flex-col items-center gap-2.5 pt-4">
+        <div className="mt-3 flex flex-col items-center gap-2.5">
           <div className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[12px] text-[hsl(var(--text-body))]">
             <TrustpilotMiniStars />
             <span className="font-extrabold text-[hsl(var(--text-strong))] tabular-nums">

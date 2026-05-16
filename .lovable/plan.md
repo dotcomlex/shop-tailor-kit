@@ -1,52 +1,38 @@
-# Step 1 — Fix spacing, simplify marquee, fit one screen
+# Step 1 — Restore trust strip, drop top timer, paint marquee red
 
-## What to change
+## What's broken in the screenshots
 
-### 1. Move marquee out from under the green step header
-Right now the scrolling band sits between the green "1. Select Quantity" bar and the bundle cards — it visually crowds the cards and looks tacked on. Move it to sit **directly under the red flash-sale bar, above the SiteHeader logo row**, so the scarcity/shipping messaging reads as one cohesive top-of-page strip.
+1. The `mt-auto` on the trust strip pushed it to the bottom of the viewport, leaving a giant dead zone between the yellow CTA and the trust line.
+2. The top red flash-sale timer is redundant with Step 3's scarcity bar and the user wants it gone.
+3. The free-shipping marquee is green/calm — doesn't carry urgency.
+4. "Color & size on next step →" was already removed last turn (confirmed in current file).
 
-Order at top of page becomes:
-```
-🔥 Flash sale ends in 02:19         ← red bar
-🚚 FREE SHIPPING — TODAY ONLY ✦ …   ← marquee (moved)
-[VitalWalk logo · USD · Need help?] ← SiteHeader
-[1. Select Quantity | Bundle & Save!]
-[bundle cards...]
-```
+## The fixes
 
-### 2. Simplify marquee copy — free shipping only
-Drop "60-day money-back guarantee" and "ships in 24h". The 60-day badge already lives in the trust strip under the CTA and inside the reviews block; doubling it up dilutes the scarcity message.
+### 1. Restore trust strip directly under the CTA
+In `QuantityStep.tsx`:
+- Remove `mt-auto … pt-4` from the trust strip wrapper — change back to `mt-3 flex flex-col items-center gap-2.5`.
+- Remove the `flex min-h-[calc(100dvh-7.5rem)] flex-col` on the outer `<section>` and the `flex flex-1 flex-col` on the inner row-pad div — those were the cause of the bottom-anchor stretching. Plain block layout.
+- Trust strip now sits ~12px below the CTA, exactly like before the broken pass.
 
-New marquee content (loops):
-```
-🚚 FREE SHIPPING — TODAY ONLY  ✦  FREE SHIPPING — TODAY ONLY  ✦  …
-```
-Only one message, repeated with a sparkle separator. Reads cleaner, hammers the one point we want.
+### 2. Remove the top countdown bar
+In `OrderPage.tsx`:
+- Drop the `<GlobalUrgencyBar />` mount and its import.
+- The file `GlobalUrgencyBar.tsx` can stay on disk (Step 3's `ScarcityBar` is the single remaining timer the user wants).
 
-### 3. Remove the "$X off" amount from bundle cards
-Drop the absolute-dollar add-on under each save %. The line goes back to just:
-```
-Save 70%
-Save 80%
-Save 85%
-```
-Clean, scannable, no math overload.
+### 3. Make the marquee red + keep only "Free shipping today only"
+In `FreeShippingMarquee.tsx`:
+- Swap the green tint (`--verified-green` background + text) for a confident red treatment: background `hsl(0_85%_96%)` (soft red wash), text `hsl(0_72%_42%)` (the same red used by `--save`), border `hsl(0_72%_42%/0.2)`.
+- Copy stays as today: only "FREE SHIPPING — TODAY ONLY" repeated with sparkle separators. No timer text inside.
+- Marquee continues to sit at the very top of the page (above SiteHeader) so it's the first thing the eye lands on.
 
-### 4. Make Step 1 fill the viewport — eliminate the bottom whitespace
-The user reports content feels crammed at the top with empty space below. Currently the main has `pt-3 pb-3` on Step 1 and `space-y-4` between step blocks (unused on Step 1 since steps 2/3 aren't rendered yet), but the *bundle list* itself was tightened too aggressively in the last pass, leaving the content top-loaded.
-
-Rebalance:
-- Bring back generous breathing room **inside** the card area: list `space-y-2` → `space-y-3`, card padding `p-2.5` → `p-3`. Cards feel premium again.
-- After the trust strip, add `flex-1` spacer behavior so the white container itself fills the viewport. Concretely: make the Step 1 section a `flex flex-col` with `min-h-[calc(100dvh-<header+urgency>)]`, and use `mt-auto` on the trust strip so it sits at the **bottom** of the viewport rather than floating mid-page with dead space below.
-- Drop the under-CTA "Color & size on next step →" micro-copy (added last turn) — it's noise; the CTA label already implies it.
-- Keep the StepHeader without subStrip (as it is now).
-
-Result: header + cards anchored top, CTA mid, trust strip + payment badges anchored bottom, no scroll on a 390×844 phone.
+### 4. Page-fill behavior
+Without `min-h` hacks, the natural content height of Step 1 (header + 3 cards + CTA + trust strip + payment badges) fits comfortably on a 390×844 viewport without scroll. The bottom of the white container ends right under the payment badges; the dark page bg shows below — no awkward white void.
 
 ## Files touched
 
-- `src/components/order/OrderPage.tsx` — mount `<FreeShippingMarquee />` between `<GlobalUrgencyBar />` and `<SiteHeader />`.
-- `src/components/order/QuantityStep.tsx` — remove marquee import/usage from inside Step 1, remove "$X off" sub-text, remove "Color & size on next step" micro-copy, restore `space-y-3` + `p-3`, restructure outer wrapper to flex-fill the viewport (`flex flex-col min-h-…` with `mt-auto` trust strip).
-- `src/components/order/FreeShippingMarquee.tsx` — simplify items to a single repeated "FREE SHIPPING — TODAY ONLY" message; drop ShieldCheck + Clock imports.
+- `src/components/order/OrderPage.tsx` — remove `GlobalUrgencyBar` import + mount.
+- `src/components/order/QuantityStep.tsx` — drop `min-h` flex-fill wrappers, restore `mt-3` on trust strip.
+- `src/components/order/FreeShippingMarquee.tsx` — red color tokens instead of green.
 
-No business logic, Shopify, or pricing changes.
+No business logic, Shopify, or pricing changes. Confirmed "Color & size on next step" already removed.

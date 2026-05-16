@@ -1,4 +1,3 @@
-import { Check } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
 
 interface OrderSummaryProps {
@@ -42,9 +41,9 @@ export function OrderSummary({
       )}
 
       <div className="space-y-2 text-[14px]">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-baseline justify-between gap-2">
           <span className="text-[hsl(var(--text-body))]">Subtotal</span>
-          <span className="flex items-baseline gap-2">
+          <span className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-1">
             {saved > 0 && (
               <span className="text-[12.5px] tabular-nums text-[hsl(var(--text-mute))] line-through">
                 {format(compare)}
@@ -53,6 +52,11 @@ export function OrderSummary({
             <span className="tabular-nums font-semibold text-[hsl(var(--text-strong))]">
               {format(subtotal)}
             </span>
+            {saved > 0 && (
+              <span className="rounded-md bg-verified/10 px-1.5 py-0.5 text-[11px] font-bold text-verified">
+                −{Math.round((saved / compare) * 100)}%
+              </span>
+            )}
           </span>
         </div>
 
@@ -77,15 +81,6 @@ export function OrderSummary({
           </div>
         )}
       </div>
-
-      {saved > 0 && (
-        <div className="mt-3 flex justify-end">
-          <span className="inline-flex items-center gap-1 rounded-full bg-verified/10 px-2.5 py-1 text-[11.5px] font-bold text-verified">
-            <Check className="h-3 w-3" strokeWidth={3} />
-            You saved {format(saved)} · {Math.round((saved / compare) * 100)}% off
-          </span>
-        </div>
-      )}
 
       <div className="mt-3 border-t border-[hsl(var(--hairline))] pt-3">
         <div className="flex items-baseline justify-between">

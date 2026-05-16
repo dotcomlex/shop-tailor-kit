@@ -1,87 +1,52 @@
-# Step 1 Polish — Make it feel "holy shit," not overwhelming
+# Step 1 — Fix spacing, simplify marquee, fit one screen
 
-Goal: Step 1 should fit on one mobile screen (390×844), feel premium and aesthetic, and channel scarcity *outside* the bundle cards so they can breathe.
+## What to change
 
-## The four moves
+### 1. Move marquee out from under the green step header
+Right now the scrolling band sits between the green "1. Select Quantity" bar and the bundle cards — it visually crowds the cards and looks tacked on. Move it to sit **directly under the red flash-sale bar, above the SiteHeader logo row**, so the scarcity/shipping messaging reads as one cohesive top-of-page strip.
 
-### 1. Lift the countdown OUT of the card area — make it a global page strip
-Right now the "Sale ends in 02:19" strip sits between the green step header and the bundle cards, crowding the most important content. Move it to a slim global strip pinned **above the whole white order container** (above the SiteHeader-adjacent section, or just under it — whichever reads cleaner against the dark page background).
-
-- New component: `src/components/order/GlobalUrgencyBar.tsx` — full-width slim bar (32px tall), dark green/red gradient or solid `--save` red, white text: "⏰ Flash Sale ends in **02:19** · Free shipping on every order". Uses the same `vitalwalk_offer_deadline_v2` localStorage key so it stays in sync with Step 3's `ScarcityBar`.
-- Mount it inside `OrderPage.tsx`, right above the first `<section>` / SiteHeader wrapper so it spans the full viewport width.
-- Delete `Step1UrgencyStrip` from inside `QuantityStep` (the component file can stay for now or be removed — the plan removes its usage; we can clean up the file in the same change).
-
-### 2. Replace the per-card "FREE SHIPPING" pills with ONE scrolling marquee
-Repeating "FREE SHIPPING" on all 3 cards dilutes its value. Pull it out and make it a single, animated band that sits **between the green sub-strip ("You can select color and size on next step") and the bundle list**.
-
-- New component: `src/components/order/FreeShippingMarquee.tsx` — full-width thin band (~30px), soft cream/verified-green tinted background, single line of right-to-left scrolling text that repeats:
-  > 🚚 FREE SHIPPING TODAY ONLY  ·  ✦  ·  60-DAY MONEY-BACK GUARANTEE  ·  ✦  ·  SHIPS IN 24H  ·  ✦
-- Pure CSS `@keyframes` translateX animation, ~25s loop, `prefers-reduced-motion` disables it.
-- Remove the green `Truck + Free Shipping` pill from every bundle card. The card content becomes: thumb · (name + Save %) · price column. Cleaner, less visual weight.
-
-### 3. Tighten bundle names and card density
-Names are fine as "1 Pair / 2 Pairs / 3 Pairs" but feel vague alone. Add a tiny **per-pair savings line** to give them substance without bringing back the brand name.
-
-Card content becomes:
+Order at top of page becomes:
 ```
-[thumb] 1 Pair                $216.50
-        Save 70% · $151 off   $64.95 /ea
-```
-- Headline: `1 Pair` / `2 Pairs` / `3 Pairs` (same as today, 17px extrabold)
-- Sub-line: `Save 70% · $151 off` — combines the save % with the absolute $ saved (compare − total), tabular-nums, 13px. The absolute-dollar number is what actually moves people; % alone is abstract.
-- Remove the shipping pill (now in the marquee).
-
-Card padding drops from `p-3` to `p-2.5`, gap between cards from `space-y-2.5` to `space-y-2`. Saves ~30px vertical — exactly what we need to fit the page.
-
-### 4. Fit the whole step on one screen — kill the empty space below
-At 390×844 the current layout overflows slightly and leaves dead space because the trust strip + payment logos sit far below the CTA. Compress:
-
-- Remove the StepHeader's `subStrip` ("You can select color and size on next step") — it's redundant once you reach Step 2 anyway, and it eats ~36px. Move that copy to a tiny `text-[11px] text-muted` line directly under the CTA: "Color & size on next step →".
-- Bundle list `mt-2.5` → `mt-2`, list `space-y-2.5` → `space-y-2`.
-- CTA `mt-4` → `mt-3`.
-- Trust strip `mt-3` → `mt-2`, payment-badge img `h-[16px]` (unchanged).
-- Net: ~70px reclaimed. Step 1 fits cleanly on iPhone 12/13/14/15 (390×844) with the global urgency bar visible.
-
-## Visual hierarchy after the changes (top → bottom)
-
-```
-┌──────────────────────────────────────────┐
-│ 🔥 Flash Sale ends in 02:19 · Free ship  │  ← NEW global urgency bar
-├──────────────────────────────────────────┤
-│ VitalWalk logo    USD    Need help?      │  ← SiteHeader
-├──────────────────────────────────────────┤
-│ 1. Select Quantity        Bundle & Save! │  ← StepHeader (no sub-strip)
-├──────────────────────────────────────────┤
-│ « FREE SHIPPING TODAY · 60-DAY GUARANTEE »│  ← NEW scrolling marquee
-├──────────────────────────────────────────┤
-│ ○ [👟] 1 Pair                    $216.50 │
-│        Save 70% · $151 off       $64.95  │
-│                                          │
-│ ● [👟] 2 Pairs       MOST POPULAR        │
-│        Save 80% · $220 off       $54.95  │
-│                                          │
-│ ○ [👟] 3 Pairs       BEST DEAL           │
-│        Save 85% · $283 off       $49.95  │
-├──────────────────────────────────────────┤
-│      [ Select Your Color and Size → ]    │
-│           Color & size on next step      │
-├──────────────────────────────────────────┤
-│  ★★★★★ 4.9 · 2,847 reviews · 60-Day      │
-│      VISA · MC · CF · PayPal · SSL        │
-└──────────────────────────────────────────┘
+🔥 Flash sale ends in 02:19         ← red bar
+🚚 FREE SHIPPING — TODAY ONLY ✦ …   ← marquee (moved)
+[VitalWalk logo · USD · Need help?] ← SiteHeader
+[1. Select Quantity | Bundle & Save!]
+[bundle cards...]
 ```
 
-## Technical details
+### 2. Simplify marquee copy — free shipping only
+Drop "60-day money-back guarantee" and "ships in 24h". The 60-day badge already lives in the trust strip under the CTA and inside the reviews block; doubling it up dilutes the scarcity message.
 
-- **Files created:** `GlobalUrgencyBar.tsx`, `FreeShippingMarquee.tsx`.
-- **Files edited:** `QuantityStep.tsx` (remove urgency strip + shipping pill, add per-card $ saved, tighten paddings), `OrderPage.tsx` (mount GlobalUrgencyBar at the very top), `StepHeader` usage (drop subStrip on Step 1 only — pass `subStrip={undefined}`).
-- **Files removed (usage):** `Step1UrgencyStrip` no longer imported. File can be deleted.
-- **Shared deadline:** GlobalUrgencyBar reads/writes `vitalwalk_offer_deadline_v2` so its timer matches Step 3's `ScarcityBar` to the second.
-- **No business logic touched** — no Shopify, no cart, no pricing math beyond computing `compare − total` for the per-card "$X off" display (data already available via `readLocalizedTotals`).
-- **Accessibility:** marquee gets `aria-hidden` + paused under `prefers-reduced-motion`; urgency timer uses `aria-live="polite"`.
+New marquee content (loops):
+```
+🚚 FREE SHIPPING — TODAY ONLY  ✦  FREE SHIPPING — TODAY ONLY  ✦  …
+```
+Only one message, repeated with a sparkle separator. Reads cleaner, hammers the one point we want.
 
-## What we deliberately are NOT doing
+### 3. Remove the "$X off" amount from bundle cards
+Drop the absolute-dollar add-on under each save %. The line goes back to just:
+```
+Save 70%
+Save 80%
+Save 85%
+```
+Clean, scannable, no math overload.
 
-- No changes to Step 2 / Step 3 / sticky bar / priority upsell.
-- No changes to Shopify prices, discount codes, or bundle products.
-- Not removing free-shipping copy entirely — moving it from 3 weak repetitions to 1 prominent moving banner that *adds* scarcity ("today only").
+### 4. Make Step 1 fill the viewport — eliminate the bottom whitespace
+The user reports content feels crammed at the top with empty space below. Currently the main has `pt-3 pb-3` on Step 1 and `space-y-4` between step blocks (unused on Step 1 since steps 2/3 aren't rendered yet), but the *bundle list* itself was tightened too aggressively in the last pass, leaving the content top-loaded.
+
+Rebalance:
+- Bring back generous breathing room **inside** the card area: list `space-y-2` → `space-y-3`, card padding `p-2.5` → `p-3`. Cards feel premium again.
+- After the trust strip, add `flex-1` spacer behavior so the white container itself fills the viewport. Concretely: make the Step 1 section a `flex flex-col` with `min-h-[calc(100dvh-<header+urgency>)]`, and use `mt-auto` on the trust strip so it sits at the **bottom** of the viewport rather than floating mid-page with dead space below.
+- Drop the under-CTA "Color & size on next step →" micro-copy (added last turn) — it's noise; the CTA label already implies it.
+- Keep the StepHeader without subStrip (as it is now).
+
+Result: header + cards anchored top, CTA mid, trust strip + payment badges anchored bottom, no scroll on a 390×844 phone.
+
+## Files touched
+
+- `src/components/order/OrderPage.tsx` — mount `<FreeShippingMarquee />` between `<GlobalUrgencyBar />` and `<SiteHeader />`.
+- `src/components/order/QuantityStep.tsx` — remove marquee import/usage from inside Step 1, remove "$X off" sub-text, remove "Color & size on next step" micro-copy, restore `space-y-3` + `p-3`, restructure outer wrapper to flex-fill the viewport (`flex flex-col min-h-…` with `mt-auto` trust strip).
+- `src/components/order/FreeShippingMarquee.tsx` — simplify items to a single repeated "FREE SHIPPING — TODAY ONLY" message; drop ShieldCheck + Clock imports.
+
+No business logic, Shopify, or pricing changes.

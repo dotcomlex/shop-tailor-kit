@@ -26,7 +26,7 @@ export function OrderSummary({
   // Shipping cost is intentionally NOT computed here. Shopify reveals the
   // exact rate once the customer enters their address — surfacing it on
   // the funnel hurt CVR. We keep a soft, qualitative line instead.
-  const shipsFree = qty > 1;
+  const shipsFree = true;
   const showAddOn = addOnTotal > 0 && !!addOnLabel;
 
   return (

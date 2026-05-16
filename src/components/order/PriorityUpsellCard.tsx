@@ -27,6 +27,7 @@ export function PriorityUpsellCard({
       type="button"
       onClick={() => onToggle(!selected)}
       aria-pressed={selected}
+      aria-label={selected ? "Remove Priority Processing" : "Add Priority Processing"}
       className={cn(
         "group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border px-3.5 py-3 text-left transition-all duration-150 sm:px-4",
         "active:scale-[0.995]",

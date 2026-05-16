@@ -84,6 +84,9 @@ export function PriorityUpsellCard({
           <>
             <Check className="mr-1 h-3 w-3 text-white" strokeWidth={3.5} />
             Added
+            <span className="mx-1 opacity-60" aria-hidden>·</span>
+            Remove
+            <X className="ml-0.5 h-3 w-3 text-white" strokeWidth={3.5} aria-hidden />
           </>
         ) : (
           "Add"

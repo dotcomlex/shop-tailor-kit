@@ -449,14 +449,14 @@ export function OrderPage() {
   };
 
   return (
-    <div className={`flex flex-col bg-[hsl(0_0%_98.5%)] ${currentStep >= 3 ? "min-h-[100dvh]" : ""}`}>
+    <div className="flex min-h-[100svh] flex-col bg-[hsl(0_0%_98.5%)]">
       <FreeShippingMarquee />
       <SiteHeader />
 
       <main
-        className={`container-order ${
+        className={`container-order flex-1 ${
           currentStep >= 3
-            ? "flex-1 pt-3 pb-24 sm:pt-4 md:pb-16"
+            ? "pt-3 pb-24 sm:pt-4 md:pb-16"
             : "pt-3 pb-4 sm:pt-4 sm:pb-8"
         }`}
       >

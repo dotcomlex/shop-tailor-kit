@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/money";
 // Static fallback so the page renders instantly even before the API responds.
 // USD-based — only used until Shopify's localized response arrives.
 export const STATIC_FALLBACK = {
-  price: "59.95",
+  price: "64.95",
   compareAtPrice: "199.83",
   currency: "USD",
 };

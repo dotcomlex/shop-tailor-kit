@@ -8,17 +8,13 @@ interface IncludedChecklistProps {
 
 export function IncludedChecklist({ quantity = 1 }: IncludedChecklistProps) {
   const { country } = useGeo();
-  const shipsFree = quantity > 1;
   const dest = country?.name ?? "your door";
 
-  // Match Shopify's actual configured shipping behavior so the funnel never
-  // promises something checkout won't honor. Splits the trailing word so we
-  // can wrap it together with the country flag in a non-breaking span — keeps
-  // the flag from orphaning onto its own line on narrow viewports.
-  const head = shipsFree
-    ? `Fast & free shipping to `
-    : `Fast shipping to ${dest} · free on 2+ `;
-  const tail = shipsFree ? dest : "pairs";
+  // Free shipping is now universal across every tier — shipping cost is
+  // already absorbed into product pricing, so we surface it as a trust
+  // signal on every order regardless of quantity.
+  const head = `Fast & free shipping to `;
+  const tail = dest;
 
   return (
     <ul className="space-y-2 rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-3.5">

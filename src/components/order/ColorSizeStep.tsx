@@ -34,6 +34,18 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
   const sizes = getOptionValues(product, "size");
   const [zoom, setZoom] = useState<{ pairIndex: number; color: string } | null>(null);
 
+  // Preload high-res zoom images so the dialog opens instantly.
+  useEffect(() => {
+    if (!colors.length) return;
+    colors.forEach((c) => {
+      const url = imageForColor(c, 1200);
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [colors]);
+
   const allComplete = selections.every((s) => s.color && s.size);
   const multiPair = selections.length > 1;
 
@@ -84,7 +96,7 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                   </p>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+              <div className="mt-3 grid grid-cols-2 gap-1 sm:grid-cols-4 sm:gap-2">
                 {colors.length === 0 && (
                   <span className="col-span-2 text-[13px] text-[hsl(var(--text-mute))] sm:col-span-4">
                     Loading colors…

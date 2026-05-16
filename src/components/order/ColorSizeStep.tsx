@@ -83,9 +83,9 @@ export function ColorSizeStep({ product, selections, onUpdate, onContinue }: Col
                   </p>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4">
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {colors.length === 0 && (
-                  <span className="col-span-3 text-[13px] text-[hsl(var(--text-mute))] sm:col-span-4">
+                  <span className="col-span-2 text-[13px] text-[hsl(var(--text-mute))] sm:col-span-4">
                     Loading colors…
                   </span>
                 )}

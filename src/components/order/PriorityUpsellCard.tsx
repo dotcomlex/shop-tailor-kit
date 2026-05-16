@@ -56,12 +56,12 @@ export function PriorityUpsellCard({
       </span>
 
       <div className="relative min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2">
           <span className="text-[13.5px] font-extrabold tracking-tight text-[hsl(var(--text-strong))] sm:text-[14px]">
-            Priority Processing
+            Add Priority Processing?
           </span>
           {priceLabel && (
-            <span className="shrink-0 text-[13px] font-bold tabular-nums text-[hsl(var(--text-strong))]">
+            <span className="text-[13px] font-bold tabular-nums text-[hsl(var(--text-body))]">
               +{priceLabel}
             </span>
           )}

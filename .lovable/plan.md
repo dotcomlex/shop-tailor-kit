@@ -1,21 +1,24 @@
-# Priority upsell — clearer title + tighter price
+# Step 1 quantity-card polish
 
-## `PriorityUpsellCard.tsx`
+Scope is limited to the three quantity cards on Step 1 — no other component touched.
 
-**Title copy:** "Priority Processing" → "Add Priority Processing?"  
-Makes the action explicit for older customers.
+## Changes
 
-**Price layout:** Stop using `justify-between` in the title row — it pushes `+$4.95` all the way to the far edge of the text block (next to the checkbox), which looks disconnected. Instead, place the price **inline right after the title** with a small gap:
+1. **Bigger thumbnail + more breathing room**
+   - Thumbnail goes from ~56px → **76px** square.
+   - Card vertical padding bumps from `py-3` → `py-5` (~16px more total).
+   - Slight gap increase between thumb and title so the shoe doesn't crowd the copy.
 
-```
-[⚡]  Add Priority Processing?  +$4.95              (○)
-     Skip the line — your order ships first ⚡
-     ✓ Added                                          (when on)
-```
+2. **Lift the ribbons onto the card border**
+   - "MOST POPULAR" and "BEST DEAL" ribbons move from inside the card to straddling the top border (`-top-2.5`).
+   - Add a soft shadow so they read as a sticker on top of the card.
+   - Cards get a small `mt-3` so the lifted ribbon doesn't get clipped.
 
-Implementation:
-- Wrap title + price in a single `<span className="inline-flex flex-wrap items-baseline gap-x-2">`.
-- Price styling unchanged (`text-[13px] font-bold tabular-nums`), but maybe drop one shade so it reads as secondary to the title.
-- Drops the `justify-between` from the inner header row.
+## Files
+- `src/components/order/QuantityStep.tsx` (only file changed)
 
-No other changes. Same file.
+## Out of scope
+- MSRP / strike price values stay as-is.
+- No "ships together" microline.
+- No color, font, or animation changes.
+- Other steps untouched.

@@ -1,3 +1,5 @@
+import { X } from "lucide-react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { COLOR_FALLBACK_HEX, imageForColor } from "@/data/swatchImages";
 
@@ -14,9 +16,9 @@ export function ColorZoomDialog({ color, open, onOpenChange }: ColorZoomDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white border-0">
+      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white border-0 [&>button]:hidden">
         <div
-          className="aspect-square w-full overflow-hidden"
+          className="relative aspect-square w-full overflow-hidden"
           style={{ backgroundColor: fallback }}
         >
           {imgUrl && (
@@ -26,6 +28,12 @@ export function ColorZoomDialog({ color, open, onOpenChange }: ColorZoomDialogPr
               className="h-full w-full object-cover"
             />
           )}
+          <DialogPrimitive.Close
+            aria-label="Close"
+            className="absolute right-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <X className="h-5 w-5" strokeWidth={2.5} />
+          </DialogPrimitive.Close>
         </div>
       </DialogContent>
     </Dialog>

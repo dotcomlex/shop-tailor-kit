@@ -56,7 +56,7 @@ export function VerifiedReviewsBlock() {
           ·
         </span>
         <span className="text-[13px] font-semibold text-[hsl(var(--text-body))]">
-          {TOTAL_REVIEWS.toLocaleString()} verified reviews
+          {TOTAL_REVIEWS.toLocaleString()}+ verified reviews
         </span>
       </div>
 

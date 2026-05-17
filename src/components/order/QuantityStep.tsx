@@ -221,7 +221,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               ·
             </span>
             <span className="font-semibold tabular-nums">
-              {TRUST_REVIEWS.toLocaleString()} reviews
+              {TRUST_REVIEWS.toLocaleString()}+ reviews
             </span>
             <span className="text-[hsl(var(--text-mute))]" aria-hidden>
               ·

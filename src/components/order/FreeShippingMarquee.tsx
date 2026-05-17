@@ -10,7 +10,7 @@ export function FreeShippingMarquee() {
   const item = (
     <span className="mx-6 inline-flex items-center gap-1.5">
       <Truck className="h-3.5 w-3.5 text-white" strokeWidth={2.5} aria-hidden />
-      FREE SHIPPING — TODAY ONLY
+      FREE SHIPPING — SALE ENDS AT MIDNIGHT
     </span>
   );
 

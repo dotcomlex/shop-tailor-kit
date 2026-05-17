@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Star, ShieldCheck } from "lucide-react";
 import { ORDER_REVIEWS } from "@/data/reviews";
 
-const TOTAL_REVIEWS = 2847;
+const TOTAL_REVIEWS = 10297;
 const RATING = "4.9";
 
 function TrustpilotStars({ size = 16 }: { size?: number }) {

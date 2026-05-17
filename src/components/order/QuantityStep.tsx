@@ -13,7 +13,7 @@ import trustBadges from "@/assets/trust-badges.png";
 // here matches the full reviews section further down the page (no fabricated
 // review counts — same source of truth).
 const TRUST_RATING = "4.9";
-const TRUST_REVIEWS = 2847;
+const TRUST_REVIEWS = 10297;
 
 function TrustpilotMiniStars() {
   return (

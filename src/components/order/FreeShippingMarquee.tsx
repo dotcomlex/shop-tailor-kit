@@ -16,7 +16,7 @@ export function FreeShippingMarquee() {
 
   return (
     <div
-      className="relative overflow-hidden bg-[hsl(0_78%_46%)] py-1.5"
+      className="relative overflow-hidden bg-black py-1.5"
       aria-label="Free shipping today only"
     >
       <div

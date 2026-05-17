@@ -13,7 +13,7 @@ import trustBadges from "@/assets/trust-badges.png";
 // here matches the full reviews section further down the page (no fabricated
 // review counts — same source of truth).
 const TRUST_RATING = "4.9";
-const TRUST_REVIEWS = 2847;
+const TRUST_REVIEWS = 10297;
 
 function TrustpilotMiniStars() {
   return (
@@ -221,7 +221,7 @@ export function QuantityStep({ quantity, onQuantityChange, onContinue }: Quantit
               ·
             </span>
             <span className="font-semibold tabular-nums">
-              {TRUST_REVIEWS.toLocaleString()} reviews
+              {TRUST_REVIEWS.toLocaleString()}+ reviews
             </span>
             <span className="text-[hsl(var(--text-mute))]" aria-hidden>
               ·

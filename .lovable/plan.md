@@ -1,24 +1,16 @@
-# Step 1 quantity-card polish
+# Step 1 — Tighten quantity card containers
 
-Scope is limited to the three quantity cards on Step 1 — no other component touched.
+Cards currently feel too airy after the last `py-5` bump. Pull the padding back so the three cards read as a tight group.
 
 ## Changes
-
-1. **Bigger thumbnail + more breathing room**
-   - Thumbnail goes from ~56px → **76px** square.
-   - Card vertical padding bumps from `py-3` → `py-5` (~16px more total).
-   - Slight gap increase between thumb and title so the shoe doesn't crowd the copy.
-
-2. **Lift the ribbons onto the card border**
-   - "MOST POPULAR" and "BEST DEAL" ribbons move from inside the card to straddling the top border (`-top-2.5`).
-   - Add a soft shadow so they read as a sticker on top of the card.
-   - Cards get a small `mt-3` so the lifted ribbon doesn't get clipped.
+- `QuantityStep.tsx`: card padding `py-5` → `py-3.5` (both base + sm).
+- `QuantityStep.tsx`: gap between thumb and text `gap-3.5` → `gap-3`.
+- Thumb size stays as-is (76px) — it remains the hero.
 
 ## Files
-- `src/components/order/QuantityStep.tsx` (only file changed)
+- `src/components/order/QuantityStep.tsx` (only file)
 
 ## Out of scope
-- MSRP / strike price values stay as-is.
-- No "ships together" microline.
-- No color, font, or animation changes.
-- Other steps untouched.
+- No content/copy changes.
+- No ribbon, color, or font changes.
+- No other step touched.

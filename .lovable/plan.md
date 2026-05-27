@@ -1,43 +1,48 @@
-# Plan
+# Triple-Check Currency Sync — All Markets
 
-## 1. Fix the X (close) button on the Step 2 image zoom dialog
+## Goal
+Verify that the price shown on the order page exactly matches what Shopify charges at checkout, for every supported market — with zero client-side FX math.
 
-**Root cause (most likely):** `ColorZoomDialog` uses the default shadcn `DialogContent`, whose close button is a tiny 16px white-X icon absolutely positioned over the photo. With `p-0` and an edge-to-edge product image, the X often blends into the shoe and the tap target is too small on mobile — so taps land on the image (no action) instead of the close button. Functionally `onOpenChange` is wired correctly, which matches your symptom of "sometimes works, sometimes doesn't."
+## How sync works today (no code changes needed unless we find a bug)
+1. `useGeo` detects buyer country
+2. `fetchVitalWalkProduct(country)` calls Storefront API with `@inContext(country: $country)` — Shopify returns prices already localized
+3. UI formats those localized amounts with `Intl.NumberFormat` (`src/lib/money.ts`) — no conversion
+4. `createCheckoutForLines(..., country)` sets `buyerIdentity.countryCode` on cart → checkout opens in matching Shopify Market + currency
+5. Dev warning fires if Shopify silently returns USD for a non-US country (= Market not enabled in Shopify Admin)
 
-**Change (visual/UX only, `src/components/order/ColorZoomDialog.tsx`):**
-- Hide the default tiny X by giving DialogContent a wrapper, and add our own close button:
-  - Bigger tap target (44×44, well above iOS 44pt minimum)
-  - Solid contrast pill: dark/translucent background with white X icon so it's always visible on any shoe color
-  - Positioned `top-3 right-3`, `z-50`, `pointer-events-auto`
-  - Uses `DialogClose` from `@/components/ui/dialog` (so it always triggers `onOpenChange(false)` → resets `zoom` state)
-- Also add a `Close` overlay tap zone: clicking the dark area around the image already closes the dialog (Radix default), keep that intact.
-- Add `aria-label="Close"` for a11y.
+## Verification plan (browser, 1 pass per market)
+For each country, navigate to `https://order.vitalwalk.store/?country=<CC>`, select 2-Pair Black UK6 (or local equiv), click checkout, and confirm in the Shopify-hosted checkout:
+- Currency code matches order page
+- Per-pair × qty math matches (no rounding drift)
+- `buyerIdentity.countryCode` reflected (country selector on checkout)
+- Variant = correct color/size
 
-No other files touched, no logic changes elsewhere.
+Markets to check:
+- US (USD) — baseline
+- GB (GBP)
+- AU (AUD)
+- CA (CAD)
+- DE (EUR)
+- FR (EUR)
+- JP (JPY) — zero-decimal currency, extra risk
 
-## 2. Full multi-currency funnel QA (US, UK, CA)
+## What I'm looking for
+- Any market where Shopify falls back to USD (→ console warn from `useCurrency`) = needs Market enabled in Shopify Admin → Settings → Markets (not a code fix)
+- Any drift between order page subtotal and Shopify checkout subtotal
+- JPY formatting (must show no decimals — already handled in `formatMoney`)
+- `buyerIdentity.countryCode` propagation
 
-I'll act as a customer end-to-end in the live preview, using the browser tool. For each market I'll:
-1. Open the site (US default first, then simulate UK & CA — note: Shopify markets switch via cart context; I'll confirm what's actually currency-driven vs hardcoded).
-2. **Step 1 (Quantity)** — verify prices, "Total" lines, savings math, and currency symbol/code match the active currency.
-3. **Step 2 (Color + Size)** — verify variant pricing updates, swatches load, size chart correct, zoom dialog opens and **X reliably closes** (the fix above).
-4. **Step 3 (Upgrade / extras)** — verify add-ons reflect correct currency and totals recalculate cleanly.
-5. **Sticky checkout bar / Order Summary** — totals, currency, line items consistent.
-6. **Complete Order → Upsell modal**:
-   - Decline path → cart proceeds to Shopify checkout **without** upsell items (as you confirmed last turn).
-   - Accept path → upsell items added, redirect to Shopify checkout.
-7. **Shopify checkout handoff** — verify `checkoutUrl` opens, `channel=online_store` param present, correct currency shown on Shopify's side, no lag/flicker, no double-add of upsell on decline.
-8. Repeat for UK and CA where currency switching is supported.
+## Deliverable
+A short per-market report:
+```
+US  ✅ $X.XX  → checkout $X.XX  USD
+GB  ✅ £X.XX  → checkout £X.XX  GBP
+AU  ✅ A$X.XX → checkout A$X.XX AUD
+CA  …
+DE  …
+FR  …
+JP  …
+```
+Plus any anomalies and whether they're a code issue (I'll fix) or a Shopify Markets config issue (you'll need to toggle in Shopify Admin).
 
-I'll capture screenshots at each step and report:
-- ✅ what's perfect
-- ⚠️ any inconsistency (price mismatch, wrong currency, lag, stuck state, broken close, etc.)
-- 🛠 a follow-up fix list if anything fails — no code changes outside of #1 without your approval.
-
-## Out of scope
-- No copy/content changes on Step 1 (your earlier "forget it" still stands).
-- No business-logic changes to upsell behavior (already correct).
-- No design system / color token changes.
-
-## Files touched
-- `src/components/order/ColorZoomDialog.tsx` (only file edited)
+No code changes planned unless verification turns up a real bug.

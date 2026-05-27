@@ -113,15 +113,9 @@ function writeCache(country: DetectedCountry | null) {
   }
 }
 
-// Only these markets are configured in Shopify Admin. Visitors detected
-// outside this set fall back to US so prices/checkout stay consistent
-// (instead of silently being charged in the International market's GBP).
-const SUPPORTED_COUNTRIES = new Set(["US", "GB", "AU", "CA"]);
-
 function buildCountry(code: string, fallbackName?: string): DetectedCountry | null {
-  let c = (code || "").toUpperCase();
+  const c = (code || "").toUpperCase();
   if (!c || c.length !== 2) return null;
-  if (!SUPPORTED_COUNTRIES.has(c)) c = "US";
   return {
     code: c,
     name: NAME_BY_CODE[c] ?? fallbackName ?? c,

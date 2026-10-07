@@ -1,43 +1,35 @@
-# Sanity check: get.vitalwalk.store → order.vitalwalk.store
+# Customer Walkthrough: CloudStrider in US, UK, CA and AU
 
-Read-only verification across the two live domains. No edits, no checkout test (already done in the earlier passes for US/GB/AU/CA).
+## Goal
+Go through get.vitalwalk.store/products/cloudstrider the way a real customer would, in 4 countries (US, UK, CA, AU). Check that:
+- The page loads fast
+- The currency is correct and stays the same all the way through
+- The upsell popup picks the right size for what the customer chose
+- The cart drawer shows exactly what was added
+- The official Shopify checkout shows the same items, sizes and total
 
-## What I'll check
+This is a check only. Nothing on the site changes unless a problem turns up.
 
-**1. get.vitalwalk.store**
-- Loads with 200, no blank screen
-- Hero/CTA renders cleanly at the user's viewport
-- The "Claim / Get" CTA points at `order.vitalwalk.store` (not the old `cart.` domain)
-- No red console errors, no broken images
-- Localized currency renders (geo → currency pipeline working)
+## Steps for each country
+1. **Open the page as a visitor from that country.** Record how long it takes to load and whether prices appear in local currency straight away, without showing USD first.
+2. **Pick a shoe size, for example US Men 8, then click Add to Cart.**
+3. **Check the upsell popup:**
+   - Insoles: the size picked for you matches the shoe size
+   - Socks: the size range is right (US M 8 should be L/XL, a small size should be S/M)
+   - Prices are in local currency
+4. **Accept both upsells, then open the cart drawer.** Check that each item shows the same size, color and price as the popup, and that the subtotal and savings add up.
+5. **Click Checkout.** On the official Shopify checkout, check that the items, sizes, currency and total match the cart drawer.
+6. **Try once more with a small size, for example US Women 6,** to make sure the sock size range and insole size switch correctly.
 
-**2. order.vitalwalk.store**
-- Loads with 200
-- Step 1/2/3 all render, no stuck skeletons
-- Prices render in local currency (no USD flash, no `[currency] Shopify returned USD` warning)
-- 1pr / 2pr / 3pr bundle tiles all show prices
-- Color swatches + size grid populate from Shopify
-- Sticky checkout bar + summary stay in sync
-- No console errors, no failed network requests (Shopify Storefront, geo edge fn, FB pixel)
+## What you get back
+A table for each country with:
+- Page load time
+- Price on the product page, in the popup, in the cart and at checkout
+- Shoe size, the insole size and sock size picked, and what actually landed in the cart
+- Any mismatch, with a screenshot
 
-**3. Cross-domain handoff**
-- Clicking the CTA on `get.` lands on `order.` with the same geo/currency
-- No flash-of-USD between the two pages
+If something doesn't match, I'll explain the fix and check with you before changing anything.
 
-## Output
-
-A short pass/fail report:
-
-```
-get.vitalwalk.store   | loads ✓ | currency ✓ | CTA → order ✓ | console clean ✓
-order.vitalwalk.store | loads ✓ | currency ✓ | bundles ✓     | console clean ✓
-Handoff               | geo preserved ✓
-```
-
-Plus a flag list for anything that's broken or noisy (warnings, slow requests, fallback to USD, etc.). If everything is clean I'll just say "all good".
-
-## Scope
-
-- One pass at the current viewport (1067×781)
-- US geo by default (whatever the sandbox IP resolves to)
-- No checkout creation, no order placement, no code changes
+## Technical notes
+- An automated browser runs against the live site, setting the country for each run. Screenshots and on-page checks are taken at every step.
+- Size matching is checked against how the site currently matches insole sizes (exact size first, otherwise the nearest smaller size) and sock sizes (S/M up to US W 8, US M 7.5 or UK 6.5).
